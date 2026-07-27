@@ -80,7 +80,7 @@ export const Cover = ({ url, preview }: CoverImageProps) => {
             variant="outline"
             size="sm"
           >
-            <ImageIcon className="mr-2 h-4 w-4" />
+            <ImageIcon className="h-4 w-4" />
             Change cover
           </Button>
           <Button
@@ -94,7 +94,7 @@ export const Cover = ({ url, preview }: CoverImageProps) => {
               <Spinner size="sm" />
             ) : (
               <>
-                <X className="mr-2 h-4 w-4" />
+                <X className="h-4 w-4" />
                 Remove
               </>
             )}
@@ -111,11 +111,11 @@ export const Cover = ({ url, preview }: CoverImageProps) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" alignOffset={7} sideOffset={5}>
               <DropdownMenuItem onClick={() => coverImage.onReplace(url)}>
-                <ImageIcon className="mr-2 h-4 w-4" />
+                <ImageIcon className="h-4 w-4" />
                 Change cover
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onRemove} disabled={isRemoving}>
-                <X className="mr-2 h-4 w-4" />
+                <X className="h-4 w-4" />
                 Remove
               </DropdownMenuItem>
             </DropdownMenuContent>
