@@ -246,7 +246,11 @@ const Navigation = () => {
             onClick={search.onOpen}
             shortcut="Ctrl + K"
           />
-          <Item label="Settings" icon={Settings} onClick={settings.onOpen} />
+          <Item
+            label="Settings"
+            icon={Settings}
+            onClick={() => settings.onOpen("preferences")}
+          />
           <Item onClick={handleCreate} label="New page" icon={PlusCircle} />
         </div>
         <div className="mt-4">

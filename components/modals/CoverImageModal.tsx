@@ -11,7 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCoverImage } from "@/hooks/useCoverImage";
 import { SingleImageDropzone } from "@/components/single-image-dropzone";
 import { useEffect, useState } from "react";
-import { useEdgeStore } from "@/lib/edgestore";
+import { deleteUploadedFiles, uploadFile } from "@/lib/uploadthing";
+import { logger } from "@/lib/logger";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useParams } from "next/navigation";
@@ -50,7 +51,6 @@ export const CoverImageModal = () => {
 
   const update = useMutation(api.documents.update);
   const coverImage = useCoverImage();
-  const { edgestore } = useEdgeStore();
 
   const [isDragging, setIsDragging] = useState(false);
 
@@ -105,34 +105,59 @@ export const CoverImageModal = () => {
     if (file) {
       setIsSubmitting(true);
       setFile(file);
-
-      const res = await edgestore.publicFiles.upload({
-        file,
-        options: {
-          replaceTargetUrl: coverImage.url?.startsWith("http")
-            ? coverImage.url
-            : undefined,
-        },
-      });
-
-      await update({
-        id: params.documentId as Id<"documents">,
-        coverImage: res.url,
-      });
-
-      onClose();
+      let uploadedUrl: string | undefined;
+      try {
+        uploadedUrl = await uploadFile("coverImage", file);
+        await update({
+          id: params.documentId as Id<"documents">,
+          coverImage: uploadedUrl,
+        });
+        if (coverImage.url) {
+          await deleteUploadedFiles([coverImage.url]).catch((deleteError) => {
+            logger.error(
+              "Failed to delete the previous cover image",
+              deleteError,
+            );
+          });
+        }
+        onClose();
+      } catch (error) {
+        logger.error("Failed to upload cover image", error);
+        if (uploadedUrl) {
+          await deleteUploadedFiles([uploadedUrl]).catch((cleanupError) => {
+            logger.error(
+              "Failed to clean up uploaded cover image",
+              cleanupError,
+            );
+          });
+        }
+        setIsSubmitting(false);
+        toast.error(
+          error instanceof Error ? error.message : "Cover upload failed",
+        );
+      }
     }
   };
 
   const onSelectColor = async (color: string) => {
-    if (coverImage.url?.startsWith("http")) {
-      await edgestore.publicFiles.delete({ url: coverImage.url });
+    try {
+      await update({
+        id: params.documentId as Id<"documents">,
+        coverImage: color,
+      });
+      if (coverImage.url) {
+        await deleteUploadedFiles([coverImage.url]).catch((deleteError) => {
+          logger.error(
+            "Failed to delete the previous cover image",
+            deleteError,
+          );
+        });
+      }
+      onClose();
+    } catch (error) {
+      logger.error("Failed to change cover color", error);
+      toast.error("Could not change the cover");
     }
-    await update({
-      id: params.documentId as Id<"documents">,
-      coverImage: color,
-    });
-    onClose();
   };
 
   return (

@@ -108,7 +108,11 @@ const NavDrawer = ({ resetWidth, isMobile }: NavDrawerProps) => {
             </div>
             <ActionTooltip label="Settings">
               <div className="justify-end">
-                <Item icon={Settings} onClick={settings.onOpen} navDrawer />
+                <Item
+                  icon={Settings}
+                  onClick={() => settings.onOpen("preferences")}
+                  navDrawer
+                />
               </div>
             </ActionTooltip>
           </div>

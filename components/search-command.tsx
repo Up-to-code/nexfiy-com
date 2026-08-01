@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { File } from "lucide-react";
 import { useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+import { authClient } from "@/lib/auth-client";
 
 import {
   Command,
@@ -20,7 +20,7 @@ import { api } from "@/convex/_generated/api";
 import { DialogTitle } from "./ui/dialog";
 
 export const SearchCommand = () => {
-  const { user } = useUser();
+  const { data: session } = authClient.useSession();
   const router = useRouter();
   const documents = useQuery(api.documents.getSearch);
   const [isMounted, setIsMounted] = useState(false);
@@ -66,7 +66,9 @@ export const SearchCommand = () => {
           return 0;
         }}
       >
-        <CommandInput placeholder={`Search ${user?.fullName}'s Zotion..`} />
+        <CommandInput
+          placeholder={`Search ${session?.user.name ?? "your"} workspace…`}
+        />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
           <CommandGroup heading="Documents" className="pb-1">

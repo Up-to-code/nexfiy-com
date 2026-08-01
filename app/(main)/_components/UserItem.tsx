@@ -10,12 +10,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useNavDrawer } from "@/hooks/useNavDrawer";
 import { cn } from "@/lib/utils";
-import { SignOutButton, useClerk, useUser } from "@clerk/nextjs";
 import { ChevronsLeftRight, LogOut, Settings } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
+import { useSettings } from "@/hooks/useSettingsModal";
+import { useRouter } from "next/navigation";
 
 export const UserItem = ({ navDrawer }: { navDrawer?: boolean }) => {
-  const { user } = useUser();
-  const { openUserProfile } = useClerk();
+  const { data: session } = authClient.useSession();
+  const settings = useSettings();
+  const router = useRouter();
 
   const { setInnerPopoverOpen } = useNavDrawer();
 
@@ -41,10 +44,10 @@ export const UserItem = ({ navDrawer }: { navDrawer?: boolean }) => {
             )}
           >
             <Avatar className="h-5 w-5">
-              <AvatarImage src={user?.imageUrl} />
+              <AvatarImage src={session?.user.image ?? undefined} />
             </Avatar>
             <span className="line-clamp-1 text-start font-medium">
-              {user?.fullName}&apos;s Zotion
+              {session?.user.name ?? "My workspace"}
             </span>
           </div>
           <ChevronsLeftRight className="text-muted-foreground ml-2 h-4 w-4 rotate-90" />
@@ -58,17 +61,17 @@ export const UserItem = ({ navDrawer }: { navDrawer?: boolean }) => {
       >
         <div className="flex flex-col space-y-4 p-2">
           <p className="text-muted-foreground text-xs leading-none font-medium">
-            {user?.emailAddresses[0]?.emailAddress}
+            {session?.user.email}
           </p>
           <div className="flex items-center gap-x-2">
             <div className="bg-secondary rounded-md p-1">
               <Avatar>
-                <AvatarImage src={user?.imageUrl} />
+                <AvatarImage src={session?.user.image ?? undefined} />
               </Avatar>
             </div>
             <div className="space-y-1">
               <p className="line-clamp-1 text-sm">
-                {user?.fullName}&apos;s Zotion
+                {session?.user.name ?? "My workspace"}
               </p>
             </div>
           </div>
@@ -81,11 +84,11 @@ export const UserItem = ({ navDrawer }: { navDrawer?: boolean }) => {
           <button
             onClick={() => {
               setInnerPopoverOpen(false);
-              openUserProfile();
+              settings.onOpen("account");
             }}
           >
             <Settings className="text-muted-foreground size-4" />
-            Manage Account
+            Workspace settings
           </button>
         </DropdownMenuItem>
 
@@ -93,14 +96,19 @@ export const UserItem = ({ navDrawer }: { navDrawer?: boolean }) => {
           asChild
           className="group w-full cursor-pointer hover:text-black dark:hover:text-white!"
         >
-          <SignOutButton>
-            <button>
-              <LogOut className="text-muted-foreground size-4" />
-              <span className="text-muted-foreground transition-colors group-hover:text-black dark:group-hover:text-white">
-                Log Out
-              </span>
-            </button>
-          </SignOutButton>
+          <button
+            onClick={async () => {
+              setInnerPopoverOpen(false);
+              await authClient.signOut();
+              router.push("/");
+              router.refresh();
+            }}
+          >
+            <LogOut className="text-muted-foreground size-4" />
+            <span className="text-muted-foreground transition-colors group-hover:text-black dark:group-hover:text-white">
+              Log Out
+            </span>
+          </button>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

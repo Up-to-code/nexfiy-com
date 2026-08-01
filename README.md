@@ -2,7 +2,7 @@
 
 This project is a simplified clone of the popular productivity application, Notion. It's designed to replicate some of the core features of Notion, providing a platform where users can create, edit, and organize their notes in a flexible and intuitive interface.
 
-It uses Convex as the backend, which is a real-time database that allows for instant data updates. The application also uses Edgestore, a distributed key-value store, to manage the images and files uploaded by the users. The user authentication is handled by Clerk, a secure and scalable user authentication API.
+It uses Convex as the real-time backend, UploadThing for images and files, and Better Auth for user accounts. Each user can also configure private remote MCP server connections from Workspace Settings.
 
 ## Live
 
@@ -31,6 +31,7 @@ Zotion - [https://zotion-app.vercel.app/](https://zotion-app.vercel.app/)
 
 - 🔄 Real-time database for instant data updates
 - 📤📥 File upload, deletion, and replacement options
+- 🔌 Per-user MCP server connections with server-side connection testing
 
 ### Security and Sharing
 
@@ -43,9 +44,9 @@ Zotion - [https://zotion-app.vercel.app/](https://zotion-app.vercel.app/)
 ![Shadcn-ui](https://img.shields.io/badge/shadcn/ui-000000.svg?style=for-the-badge&logo=shadcn/ui&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6.svg?style=for-the-badge&logo=TypeScript&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC.svg?style=for-the-badge&logo=Tailwind-CSS&logoColor=white)
-![Clerk](https://img.shields.io/badge/Clerk-6C47FF.svg?style=for-the-badge&logo=Clerk&logoColor=white)
+![Better Auth](https://img.shields.io/badge/Better_Auth-111111.svg?style=for-the-badge)
 ![Convex](https://img.shields.io/badge/Convex-ee342f.svg?style=for-the-badge&logo=Convex&logoColor=white)
-![Edgestore](https://img.shields.io/badge/Edgestore-a57fff.svg?style=for-the-badge&logo=Edgestore&logoColor=white)
+![UploadThing](https://img.shields.io/badge/UploadThing-EF1236.svg?style=for-the-badge&logoColor=white)
 ![Blocknote](https://img.shields.io/badge/Blocknote-ff8c00.svg?style=for-the-badge&logo=Blocknote&logoColor=white)
 ![dnd-kit](https://img.shields.io/badge/dnd--kit-000000?style=for-the-badge&logo=react&logoColor=white)
 
@@ -63,13 +64,10 @@ npm install
 ```
 CONVEX_DEPLOYMENT=
 NEXT_PUBLIC_CONVEX_URL=
-CLERK_JWT_ISSUER_DOMAIN=
+NEXT_PUBLIC_CONVEX_SITE_URL=
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
-CLERK_SECRET_KEY=
-
-EDGE_STORE_ACCESS_KEY=
-EDGE_STORE_SECRET_KEY=
+UPLOADTHING_TOKEN=
 
 // for deploying
 CONVEX_DEPLOY_KEY=
@@ -79,6 +77,13 @@ CONVEX_DEPLOY_KEY=
 
 ```
 npx convex dev
+```
+
+Set Better Auth's deployment variables once for each Convex deployment:
+
+```
+npx convex env set BETTER_AUTH_SECRET <a-random-32-byte-secret>
+npx convex env set SITE_URL http://localhost:3000
 ```
 
 5. Run the development server

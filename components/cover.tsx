@@ -12,7 +12,8 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useParams } from "next/navigation";
 import { Id } from "@/convex/_generated/dataModel";
-import { useEdgeStore } from "@/lib/edgestore";
+import { deleteUploadedFiles } from "@/lib/uploadthing";
+import { logger } from "@/lib/logger";
 import { Skeleton } from "./ui/skeleton";
 import { Spinner } from "./spinner";
 import {
@@ -28,7 +29,6 @@ interface CoverImageProps {
 }
 
 export const Cover = ({ url, preview }: CoverImageProps) => {
-  const { edgestore } = useEdgeStore();
   const [isRemoving, setIsRemoving] = useState(false);
 
   const params = useParams();
@@ -45,11 +45,9 @@ export const Cover = ({ url, preview }: CoverImageProps) => {
       await removeCoverImage({
         id: params.documentId as Id<"documents">,
       });
-      if (url && url.startsWith("http")) {
-        await edgestore.publicFiles.delete({ url });
-      }
+      if (url) await deleteUploadedFiles([url]);
     } catch (err) {
-      console.error("Failed to remove cover image:", err);
+      logger.error("Failed to remove cover image", err);
     } finally {
       setIsRemoving(false);
     }

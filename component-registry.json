@@ -1,0 +1,24 @@
+{
+  "components": [
+    {
+      "name": "AuthForm",
+      "path": "components/auth/AuthForm.tsx",
+      "kind": "domain-shared",
+      "summary": "Better Auth email/password form shared by sign-in and sign-up routes.",
+      "usedIn": ["app/(auth)/sign-in", "app/(auth)/sign-up"],
+      "props": ["mode"],
+      "createdAt": "2026-08-01",
+      "notes": "Redirects successful authentication to the documents workspace."
+    },
+    {
+      "name": "Logo",
+      "path": "components/logo.tsx",
+      "kind": "shared-ui",
+      "summary": "Theme-aware Zotion brand mark shared by landing and authentication surfaces.",
+      "usedIn": ["app/(landing)", "app/(auth)"],
+      "props": [],
+      "createdAt": "2026-08-01",
+      "notes": "Uses the existing light and dark brand assets."
+    }
+  ]
+}

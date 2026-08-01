@@ -2,13 +2,14 @@
 
 import { useScrollTop } from "@/hooks/useScrollTop";
 import { cn } from "@/lib/utils";
-import { Logo } from "./Logo";
+import { Logo } from "@/components/logo";
 import { ModeToggle } from "@/components/mode-toggle";
 import { useConvexAuth } from "convex/react";
-import { SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/spinner";
 import Link from "next/link";
+import { authClient } from "@/lib/auth-client";
+import { LogOut } from "lucide-react";
 
 export const Navbar = () => {
   const { isAuthenticated, isLoading } = useConvexAuth();
@@ -27,14 +28,17 @@ export const Navbar = () => {
           {isLoading && <Spinner />}
           {!isLoading && !isAuthenticated && (
             <>
-              <SignInButton mode="modal">
-                <Button className="hidden md:block" variant="ghost" size="sm">
-                  Log In
-                </Button>
-              </SignInButton>
-              <SignUpButton mode="modal">
-                <Button size="sm">Get Zotion Free</Button>
-              </SignUpButton>
+              <Button
+                className="hidden md:block"
+                variant="ghost"
+                size="sm"
+                asChild
+              >
+                <Link href="/sign-in">Log In</Link>
+              </Button>
+              <Button size="sm" asChild>
+                <Link href="/sign-up">Get Zotion Free</Link>
+              </Button>
             </>
           )}
 
@@ -43,7 +47,14 @@ export const Navbar = () => {
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/documents"> Enter Zotion </Link>
               </Button>
-              <UserButton afterSignOutUrl="/" />
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Log out"
+                onClick={() => authClient.signOut()}
+              >
+                <LogOut />
+              </Button>
             </>
           )}
           <ModeToggle />

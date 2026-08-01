@@ -113,7 +113,7 @@ export const Menu = ({ documentId }: MenuProps) => {
           onChange={onTocChange}
         />
         <DropdownMenuSeparator className="mx-1.5" />
-        <DropdownMenuItem onClick={settings.onOpen}>
+        <DropdownMenuItem onClick={() => settings.onOpen("preferences")}>
           <Settings className="mr-2 h-4 w-4" />
           Settings
         </DropdownMenuItem>

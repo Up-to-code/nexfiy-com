@@ -27,4 +27,25 @@ export default defineSchema({
     editorFont: v.optional(v.string()),
     focusMode: v.optional(v.boolean()),
   }).index("by_user", ["userId"]),
+
+  mcpServers: defineTable({
+    ownerId: v.string(),
+    name: v.string(),
+    url: v.string(),
+    transport: v.union(v.literal("streamable-http"), v.literal("sse")),
+    authType: v.union(
+      v.literal("none"),
+      v.literal("bearer"),
+      v.literal("custom-header"),
+    ),
+    headerName: v.optional(v.string()),
+    secret: v.optional(v.string()),
+    isEnabled: v.boolean(),
+    lastTestedAt: v.optional(v.number()),
+    lastTestStatus: v.optional(
+      v.union(v.literal("success"), v.literal("error")),
+    ),
+    lastTestMessage: v.optional(v.string()),
+    toolCount: v.optional(v.number()),
+  }).index("by_owner", ["ownerId"]),
 });

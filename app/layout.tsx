@@ -5,10 +5,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ConvexClientProvider } from "@/components/providers/convex-provider";
 import { ModalProvider } from "@/components/providers/modal-provider";
-import { EdgeStoreProvider } from "@/lib/edgestore";
-import { ClerkProvider } from "@clerk/nextjs";
 import { ToasterProvider } from "@/components/providers/toaster-provider";
-import { shadcn } from "@clerk/themes";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const lora = Lora({ subsets: ["latin"], variable: "--font-lora" });
@@ -47,27 +44,19 @@ export default function RootLayout({
       <body
         className={`${inter.className} ${inter.variable} ${lora.variable} ${jetbrainsMono.variable}`}
       >
-        <ClerkProvider
-          appearance={{
-            theme: shadcn,
-          }}
-        >
-          <ConvexClientProvider>
-            <EdgeStoreProvider>
-              <ThemeProvider
-                attribute="class"
-                defaultTheme="system"
-                enableSystem
-                disableTransitionOnChange
-                storageKey="zotion-theme-2"
-              >
-                <ToasterProvider />
-                <ModalProvider />
-                {children}
-              </ThemeProvider>
-            </EdgeStoreProvider>
-          </ConvexClientProvider>
-        </ClerkProvider>
+        <ConvexClientProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+            storageKey="zotion-theme-2"
+          >
+            <ToasterProvider />
+            <ModalProvider />
+            {children}
+          </ThemeProvider>
+        </ConvexClientProvider>
       </body>
     </html>
   );
