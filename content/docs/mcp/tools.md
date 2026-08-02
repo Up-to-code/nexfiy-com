@@ -22,11 +22,13 @@ These tools are advertised to clients as read-only.
 
 | Tool                | Purpose                                                           |
 | ------------------- | ----------------------------------------------------------------- |
-| `create_document`   | Create a document.                                                |
+| `create_document`   | Create a dynamic page-block document by default.                  |
 | `create_child_page` | Create a page below another page.                                 |
 | `create_workspace`  | Create a page hierarchy from an outline, up to 50 pages per call. |
 | `update_document`   | Update document metadata or page content.                         |
 | `archive_document`  | Archive a document. This is a destructive operation.              |
+
+`create_document` and every page in `create_workspace` use the normalized `page_blocks` model when `contentModel` is omitted. Agents can therefore follow creation immediately with block or image tools without knowing an internal compatibility flag.
 
 ## Page blocks
 

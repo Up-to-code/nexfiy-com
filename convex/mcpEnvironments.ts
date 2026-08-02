@@ -581,6 +581,8 @@ export const createDocument = mutation({
         );
       }
     }
+    const now = Date.now();
+    const contentModel = args.contentModel ?? "page_blocks";
     const id = await ctx.db.insert("documents", {
       title,
       parentDocument: args.parentId,
@@ -592,9 +594,20 @@ export const createDocument = mutation({
       isArchived: false,
       isPublished: args.isPublished ?? false,
       kind: "page",
-      contentModel: args.contentModel,
-      updatedAt: Date.now(),
+      contentModel,
+      updatedAt: now,
     });
+    if (contentModel === "page_blocks") {
+      await ctx.db.insert("pageBlocks", {
+        workspaceId: environment.workspaceId,
+        pageId: id,
+        type: "paragraph",
+        order: 0,
+        text: "",
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
     return { key: "document", id, title, parentId: args.parentId ?? null };
   },
 });
@@ -653,6 +666,8 @@ export const createWorkspace = mutation({
           `Page ${index + 1} references a parent that must appear earlier in the blueprint`,
         );
       }
+      const now = Date.now();
+      const contentModel = page.contentModel ?? "page_blocks";
       const id = await ctx.db.insert("documents", {
         title,
         parentDocument: parentId,
@@ -664,10 +679,21 @@ export const createWorkspace = mutation({
         isArchived: false,
         isPublished: page.isPublished ?? false,
         kind: "page",
-        contentModel: page.contentModel,
+        contentModel,
         order: index,
-        updatedAt: Date.now(),
+        updatedAt: now,
       });
+      if (contentModel === "page_blocks") {
+        await ctx.db.insert("pageBlocks", {
+          workspaceId: environment.workspaceId,
+          pageId: id,
+          type: "paragraph",
+          order: 0,
+          text: "",
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
       idsByKey.set(key, id);
       created.push({ key, id, title, parentId: parentId ?? null });
     }

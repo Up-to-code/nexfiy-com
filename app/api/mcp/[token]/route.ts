@@ -344,7 +344,7 @@ async function handleMcpRequest(request: Request, context: RouteContext) {
     {
       title: "Create a Nexfiy document",
       description:
-        "Create a document in this workspace, optionally nested below another document.",
+        "Create a dynamic page-block document in this workspace by default, optionally nested below another document. Request blocknote only for legacy rich-content compatibility.",
       inputSchema: {
         title: z.string().min(1).max(200),
         parentId: z.string().optional(),
