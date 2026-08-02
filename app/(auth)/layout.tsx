@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { Logo } from "@/components/logo";
 import { ModeToggle } from "@/components/mode-toggle";
 
@@ -11,9 +9,7 @@ export default function AuthLayout({
   return (
     <main className="bg-background min-h-full">
       <header className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
-        <Link href="/" aria-label="Go to Nexfiy home">
-          <Logo />
-        </Link>
+        <Logo />
         <ModeToggle />
       </header>
 

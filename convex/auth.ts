@@ -102,6 +102,9 @@ export const createAuthOptions = (ctx: GenericCtx<DataModel>) => {
   return {
     baseURL: siteUrl,
     trustedOrigins,
+    onAPIError: {
+      errorURL: "/auth-error",
+    },
     database: authComponent.adapter(ctx),
     emailAndPassword: { enabled: true, requireEmailVerification: false },
     socialProviders: {
