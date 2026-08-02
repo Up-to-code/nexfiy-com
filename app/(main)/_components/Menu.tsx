@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Id } from "@/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
@@ -14,6 +15,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   AArrowDown,
+  BookTemplate,
+  FilePlus2,
   Maximize2,
   MoreHorizontal,
   Settings,
@@ -26,6 +29,8 @@ import { useSettings } from "@/hooks/useSettingsModal";
 import { ActionTooltip } from "@/components/action-tooltip";
 import { useWordCount } from "@/hooks/useWordCount";
 import { Switch } from "@/components/ui/switch";
+import { TemplateGalleryDialog } from "@/features/templates/TemplateGalleryDialog";
+import { logger } from "@/lib/logger";
 
 interface MenuProps {
   documentId: Id<"documents">;
@@ -42,6 +47,8 @@ export const Menu = ({ documentId }: MenuProps) => {
   });
   const archive = useMutation(api.documents.archive);
   const update = useMutation(api.documents.update);
+  const createTemplate = useMutation(api.pageTemplates.createFromPage);
+  const [isTemplateGalleryOpen, setIsTemplateGalleryOpen] = useState(false);
 
   const isFullWidth = document?.fullWidth ?? true;
   const toggleToc = document?.showToc ?? true;
@@ -79,82 +86,112 @@ export const Menu = ({ documentId }: MenuProps) => {
     });
   };
 
+  const onSaveAsTemplate = async () => {
+    if (!document) return;
+    try {
+      await createTemplate({
+        sourcePageId: documentId,
+        name: document.title,
+      });
+      toast.success("Page tree saved as a template");
+    } catch (error) {
+      logger.error("Failed to save page template", error);
+      toast.error("Could not save this page as a template");
+    }
+  };
+
   return (
-    <DropdownMenu>
-      <ActionTooltip label="Page actions">
-        <DropdownMenuTrigger asChild>
-          <Button size="sm" variant="ghost" aria-label="Page actions">
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-      </ActionTooltip>
-      <DropdownMenuContent
-        className="w-65 px-2"
-        align="end"
-        alignOffset={8}
-        forceMount
-      >
-        <MenuToggleItem
-          label="Small text"
-          icon={AArrowDown}
-          checked={isSmallText}
-          onChange={onSmallTextChange}
-        />
-        <MenuToggleItem
-          label="Full width"
-          icon={Maximize2}
-          checked={isFullWidth}
-          onChange={onFullWidthChange}
-        />
-        <MenuToggleItem
-          label="Show table of contents"
-          icon={TableOfContents}
-          checked={toggleToc}
-          onChange={onTocChange}
-        />
-        <DropdownMenuSeparator className="mx-1.5" />
-        <DropdownMenuItem onClick={() => settings.onOpen("preferences")}>
-          <Settings className="mr-2 h-4 w-4" />
-          Settings
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={onArchive}>
-          <Trash className="mr-2 h-4 w-4" />
-          Move to Trash
-        </DropdownMenuItem>
-        <DropdownMenuSeparator className="mx-1.5" />
-        <div className="text-muted-foreground/70 space-y-0.5 p-2 text-[.6875rem]">
-          <p>
-            Word count: {words.wordCount}{" "}
-            {words.wordCount === 1 ? "word" : "words"}
-          </p>
-          <p>
-            Last edited on{" "}
-            {document
-              ? new Date(
-                  document.updatedAt ?? document._creationTime,
-                ).toLocaleString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  hour12: true,
-                })
-              : "..."}
-          </p>
-          <p>
-            Created on{" "}
-            {document
-              ? new Date(document._creationTime).toLocaleString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })
-              : "..."}
-          </p>
-        </div>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <ActionTooltip label="Page actions">
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" variant="ghost" aria-label="Page actions">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+        </ActionTooltip>
+        <DropdownMenuContent
+          className="w-65 px-2"
+          align="end"
+          alignOffset={8}
+          forceMount
+        >
+          <MenuToggleItem
+            label="Small text"
+            icon={AArrowDown}
+            checked={isSmallText}
+            onChange={onSmallTextChange}
+          />
+          <MenuToggleItem
+            label="Full width"
+            icon={Maximize2}
+            checked={isFullWidth}
+            onChange={onFullWidthChange}
+          />
+          <MenuToggleItem
+            label="Show table of contents"
+            icon={TableOfContents}
+            checked={toggleToc}
+            onChange={onTocChange}
+          />
+          <DropdownMenuSeparator className="mx-1.5" />
+          <DropdownMenuItem onClick={onSaveAsTemplate}>
+            <BookTemplate className="mr-2 h-4 w-4" />
+            Save as template
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setIsTemplateGalleryOpen(true)}>
+            <FilePlus2 className="mr-2 h-4 w-4" />
+            Add subpage from template
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="mx-1.5" />
+          <DropdownMenuItem onClick={() => settings.onOpen("preferences")}>
+            <Settings className="mr-2 h-4 w-4" />
+            Settings
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onArchive}>
+            <Trash className="mr-2 h-4 w-4" />
+            Move to Trash
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="mx-1.5" />
+          <div className="text-muted-foreground/70 space-y-0.5 p-2 text-[.6875rem]">
+            <p>
+              Word count: {words.wordCount}{" "}
+              {words.wordCount === 1 ? "word" : "words"}
+            </p>
+            <p>
+              Last edited on{" "}
+              {document
+                ? new Date(
+                    document.updatedAt ?? document._creationTime,
+                  ).toLocaleString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: true,
+                  })
+                : "..."}
+            </p>
+            <p>
+              Created on{" "}
+              {document
+                ? new Date(document._creationTime).toLocaleString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })
+                : "..."}
+            </p>
+          </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <TemplateGalleryDialog
+        open={isTemplateGalleryOpen}
+        onOpenChange={setIsTemplateGalleryOpen}
+        parentDocument={documentId}
+      />
+    </>
   );
 };
 

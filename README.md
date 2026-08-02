@@ -1,18 +1,18 @@
-# Zotion
+# Nexfiy
 
-This project is a simplified clone of the popular productivity application, Notion. It's designed to replicate some of the core features of Notion, providing a platform where users can create, edit, and organize their notes in a flexible and intuitive interface.
+Nexfiy is a flexible productivity workspace where users can create, edit, and organize notes and documents in one intuitive interface.
 
 It uses Convex as the real-time backend, UploadThing for images and files, and Better Auth for user accounts. Each user can also configure private remote MCP server connections from Workspace Settings.
 
 ## Live
 
-Zotion - [https://zotion-app.vercel.app/](https://zotion-app.vercel.app/)
+Nexfiy - [https://nexfiy.com/](https://nexfiy.com/)
 
 ## Features
 
 ### Productivity and Organization
 
-- 📝 Notion-style editor for seamless note-taking
+- 📝 Flexible document editor for seamless note-taking
 - 📂 Infinite children documents for hierarchical organization
 - 🖐️ Drag-and-drop reordering for intuitive file management
 - ⭐ Pin important documents for quick access
@@ -84,6 +84,38 @@ Set Better Auth's deployment variables once for each Convex deployment:
 ```
 npx convex env set BETTER_AUTH_SECRET <a-random-32-byte-secret>
 npx convex env set SITE_URL http://localhost:3000
+npx convex env set GOOGLE_CLIENT_ID <google-client-id>
+npx convex env set GOOGLE_CLIENT_SECRET <google-client-secret>
+npx convex env set APPLE_CLIENT_ID com.nexfiy.web
+npx convex env set APPLE_CLIENT_SECRET <signed-apple-client-secret>
+```
+
+Google OAuth must allow these development callbacks:
+
+```
+http://localhost:3000/api/auth/callback/google
+http://localhost:3001/api/auth/callback/google
+```
+
+The production callbacks are:
+
+```
+https://nexfiy.com/api/auth/callback/google
+https://nexfiy.com/api/auth/callback/apple
+```
+
+Apple Sign in requires HTTPS and therefore works through the production domain,
+not localhost. The signed Apple client secret expires after at most six months;
+rotate it before expiry and update `APPLE_CLIENT_SECRET` in Convex.
+
+Production billing uses the live Nexfiy Dodo brand and product
+`pdt_0NkWHmeRZI6qHKsuyAW4f`. Keep local development on the test product. Set the
+live API key and webhook secret only in the production Convex deployment, set
+`DODO_PAYMENTS_ENVIRONMENT=live_mode`, and configure both server and public
+product IDs to the live product. The production webhook endpoint is:
+
+```
+https://nexfiy.com/api/auth/dodopayments/webhooks
 ```
 
 5. Run the development server

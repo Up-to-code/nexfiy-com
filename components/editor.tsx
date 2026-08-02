@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { EditorFont } from "@/hooks/useEditorFont";
 import { useCoverImage } from "@/hooks/useCoverImage";
 import { useWordCount } from "@/hooks/useWordCount";
@@ -19,7 +19,6 @@ import { logger } from "@/lib/logger";
 import { codeBlockOptions } from "@blocknote/code-block";
 import "@blocknote/core/style.css";
 import "@blocknote/mantine/style.css";
-import { Doc } from "@/convex/_generated/dataModel";
 
 interface EditorProps {
   onChange: (value: string) => void;
@@ -53,12 +52,30 @@ const schema = BlockNoteSchema.create().extend({
 
 const MEDIA_BLOCK_TYPES = new Set(["image", "video", "audio", "file"]);
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function countInlineWords(content: unknown): number {
+  if (!Array.isArray(content)) return 0;
+  return content.reduce((count, item) => {
+    if (!isRecord(item)) return count;
+    if (item.type === "link") return count + countInlineWords(item.content);
+    if (item.type !== "text" || typeof item.text !== "string") return count;
+    const words = item.text
+      .trim()
+      .split(/\s+/)
+      .filter((word) => /[a-zA-Z0-9]/.test(word));
+    return count + words.length;
+  }, 0);
+}
+
 const getMediaUrls = (editor: BlockNoteEditor): Set<string> => {
   const urls = new Set<string>();
 
   editor.forEachBlock((block) => {
     if (MEDIA_BLOCK_TYPES.has(block.type)) {
-      const url = (block.props as any)?.url;
+      const url = (block.props as Record<string, unknown>)?.url;
       if (url && typeof url === "string" && url.trim() !== "") {
         urls.add(url);
       }
@@ -79,7 +96,7 @@ const Editor = ({
 }: EditorProps) => {
   const { resolvedTheme } = useTheme();
   const coverImage = useCoverImage();
-  const wordCount = useWordCount();
+  const setWordCount = useWordCount((state) => state.setWordCount);
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const trackedUrlsRef = useRef<Set<string>>(new Set());
@@ -88,7 +105,21 @@ const Editor = ({
     return await uploadFile("documentFile", file);
   };
 
-  const getWords = () => {
+  const editor: BlockNoteEditor = useCreateBlockNote({
+    initialContent: initialContent
+      ? (JSON.parse(initialContent) as PartialBlock[])
+      : undefined,
+    uploadFile: handleUpload,
+    schema,
+    tables: {
+      splitCells: true,
+      cellBackgroundColor: true,
+      cellTextColor: true,
+      headers: true,
+    },
+  });
+
+  const getWords = useCallback(() => {
     let count: number = 0;
     editor.forEachBlock((block) => {
       if (
@@ -112,39 +143,26 @@ const Editor = ({
       }
 
       if (block.type === "table") {
-        block.content.rows.forEach((row) => {
-          row.cells.forEach((cell: any) => {
-            const words = cell.content
-              .filter((c: any) => c.type === "text")
-              .map((c: any) => c.text)
-              .join(" ")
-              .trim()
-              .split(/\s+/)
-              .filter((word: string) => /[a-zA-Z0-9]/.test(word));
-
-            count += words.length;
+        const tableContent: unknown = block.content;
+        const rows =
+          isRecord(tableContent) && Array.isArray(tableContent.rows)
+            ? tableContent.rows
+            : [];
+        rows.forEach((row) => {
+          const cells =
+            isRecord(row) && Array.isArray(row.cells) ? row.cells : [];
+          cells.forEach((cell) => {
+            const content =
+              isRecord(cell) && "content" in cell ? cell.content : cell;
+            count += countInlineWords(content);
           });
         });
       }
 
       return true;
     });
-    wordCount.setWordCount(count);
-  };
-
-  const editor: BlockNoteEditor = useCreateBlockNote({
-    initialContent: initialContent
-      ? (JSON.parse(initialContent) as PartialBlock[])
-      : undefined,
-    uploadFile: handleUpload,
-    schema,
-    tables: {
-      splitCells: true,
-      cellBackgroundColor: true,
-      cellTextColor: true,
-      headers: true,
-    },
-  });
+    setWordCount(count);
+  }, [editor, setWordCount]);
 
   useEffect(() => {
     if (editor) {
@@ -154,7 +172,7 @@ const Editor = ({
     if (editor && onEditorReady) {
       onEditorReady(editor);
     }
-  }, [editor]);
+  }, [editor, getWords, onEditorReady]);
 
   const handleEditorChange = () => {
     const currentUrls = getMediaUrls(editor);
@@ -201,6 +219,8 @@ const Editor = ({
 
     e.stopPropagation();
 
+    // BlockNote does not expose its Tiptap view in the public type surface.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const view = (editor as any)._tiptapEditor.view;
     const pos = view.posAtCoords({ left: e.clientX, top: e.clientY });
 

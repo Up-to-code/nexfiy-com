@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "notion-clone",
+      "name": "nexfiy",
       "dependencies": {
         "@blocknote/code-block": "^0.52.1",
         "@blocknote/core": "^0.52.1",

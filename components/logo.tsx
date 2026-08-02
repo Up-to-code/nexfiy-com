@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { Poppins } from "next/font/google";
 
 import { cn } from "@/lib/utils";
@@ -10,7 +11,11 @@ const font = Poppins({
 
 export const Logo = () => {
   return (
-    <div className="flex items-center gap-2">
+    <Link
+      href="/"
+      aria-label="Go to the Nexfiy home page"
+      className="group focus-visible:ring-ring/50 flex items-center gap-2 rounded-lg outline-none focus-visible:ring-2"
+    >
       <Image
         width={40}
         height={40}
@@ -27,7 +32,14 @@ export const Logo = () => {
         className="hidden size-9 dark:block"
         priority
       />
-      <span className={cn("font-semibold", font.className)}>Zotion</span>
-    </div>
+      <span
+        className={cn(
+          "font-semibold transition-opacity group-hover:opacity-75",
+          font.className,
+        )}
+      >
+        Nexfiy
+      </span>
+    </Link>
   );
 };

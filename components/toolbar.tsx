@@ -123,7 +123,7 @@ export const Toolbar = ({ initialData, preview, editorFont }: ToolbarProps) => {
       {!!initialData.icon && preview && (
         <p
           className={cn(
-            "text-6xl",
+            "relative z-20 w-max text-6xl",
             !initialData.coverImage && "pt-6",
             initialData.coverImage && "-mt-8",
           )}

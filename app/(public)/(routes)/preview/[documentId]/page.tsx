@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo, use } from "react";
+import { use } from "react";
 
 import { Cover } from "@/components/cover";
 import { Toolbar } from "@/components/toolbar";
@@ -9,7 +9,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
+import { NormalizedBlockNoteEditor } from "@/features/blocks/NormalizedBlockNoteEditor";
+import { DatabasePage } from "@/features/databases/DatabasePage";
 
 interface DocumentIdPageProps {
   params: Promise<{
@@ -17,26 +19,16 @@ interface DocumentIdPageProps {
   }>;
 }
 
+const LegacyEditor = dynamic(() => import("@/components/editor"), {
+  ssr: false,
+});
+
 const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
   const { documentId } = use(params);
-
-  const Editor = useMemo(
-    () => dynamic(() => import("@/components/editor"), { ssr: false }),
-    [],
-  );
 
   const document = useQuery(api.documents.getById, {
     documentId: documentId,
   });
-
-  const update = useMutation(api.documents.update);
-
-  const onChange = (content: string) => {
-    update({
-      id: documentId,
-      content,
-    });
-  };
 
   if (document === undefined) {
     return (
@@ -58,6 +50,15 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
     return <div>Not found</div>;
   }
 
+  if (document.kind === "database") {
+    return (
+      <div className="pb-40">
+        <Cover preview url={document.coverImage} />
+        <DatabasePage document={document} preview />
+      </div>
+    );
+  }
+
   return (
     <div className="pb-40">
       <Cover preview url={document.coverImage} />
@@ -67,12 +68,21 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
           initialData={document}
           editorFont={document.editorFont ?? "default"}
         />
-        <Editor
-          editable={false}
-          onChange={onChange}
-          initialContent={document.content}
-          editorFont={document.editorFont ?? "default"}
-        />
+        {document.contentModel === "page_blocks" ? (
+          <NormalizedBlockNoteEditor
+            pageId={document._id}
+            editorFont={document.editorFont ?? "default"}
+            smallText={document.smallText}
+            editable={false}
+          />
+        ) : (
+          <LegacyEditor
+            editable={false}
+            onChange={() => undefined}
+            initialContent={document.content}
+            editorFont={document.editorFont ?? "default"}
+          />
+        )}
       </div>
     </div>
   );

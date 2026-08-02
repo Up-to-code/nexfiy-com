@@ -1,67 +1,70 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useState, type DragEvent as ReactDragEvent } from "react";
+import { useMutation, useQuery } from "convex/react";
 import { useParams, useRouter } from "next/navigation";
-
 import {
-  DndContext,
   closestCorners,
+  DndContext,
+  type DragEndEvent,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
-  DragEndEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
   sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
   useSortable,
-  arrayMove,
+  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import {
-  restrictToVerticalAxis,
-  restrictToParentElement,
-} from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
+import { FileIcon, Table2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { api } from "@/convex/_generated/api";
-import { Doc, Id } from "@/convex/_generated/dataModel";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
+import { BLOCK_DRAG_MIME } from "@/features/blocks/drag";
+import { optimisticallyMoveBlock } from "@/features/blocks/optimisticBlockMove";
+import { usePageTreeMutations } from "@/features/documents/usePageTreeMutations";
 
 import { Item } from "./Item";
 
-import { FileIcon } from "lucide-react";
-import { toast } from "sonner";
-
-interface SortableItemProps {
-  document: Doc<"documents">;
-  level: number;
-  onExpand: (id: string) => void;
-  expanded: boolean;
-  onRedirect: (id: string) => void;
-  activeId?: string | string[];
-  isFavorite?: boolean;
-  onFavorite?: (id: Id<"documents">) => void;
-  navDrawer?: boolean;
-}
 interface DocumentListProps {
   parentDocumentId?: Id<"documents">;
   level?: number;
-  data?: Doc<"documents">[];
   navDrawer?: boolean;
 }
 
-const SortableItem = ({
+interface SortablePageProps {
+  document: Doc<"documents">;
+  level: number;
+  expanded: boolean;
+  expandedPages: Record<string, boolean>;
+  onExpand: (id: string) => void;
+  onRedirect: (id: string) => void;
+  onFavorite: (id: Id<"documents">) => void;
+  activeId?: string | string[];
+  navDrawer?: boolean;
+  onBlockMove: (
+    blockId: Id<"pageBlocks">,
+    targetPageId: Id<"documents">,
+  ) => void;
+}
+
+function SortablePage({
   document,
   level,
-  onExpand,
   expanded,
+  expandedPages,
+  onExpand,
   onRedirect,
-  activeId,
   onFavorite,
+  activeId,
   navDrawer,
-}: SortableItemProps) => {
+  onBlockMove,
+}: SortablePageProps) {
+  const [isBlockTarget, setIsBlockTarget] = useState(false);
   const {
     attributes,
     listeners,
@@ -69,188 +72,262 @@ const SortableItem = ({
     transform,
     transition,
     isDragging,
+    isOver,
   } = useSortable({ id: document._id });
 
-  const style = {
-    transform: CSS.Transform.toString(
-      transform ? { ...transform, scaleY: 1, scaleX: 1 } : null,
-    ),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 100 : undefined,
-    cursor: isDragging ? "grabbing" : "pointer",
-  };
-
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(
+          transform ? { ...transform, scaleX: 1, scaleY: 1 } : null,
+        ),
+        transition,
+        opacity: isDragging ? 0.45 : 1,
+        zIndex: isDragging ? 100 : undefined,
+      }}
+      className={isOver && !isDragging ? "ring-primary/30 ring-1" : undefined}
+      onDragOver={(event: ReactDragEvent<HTMLDivElement>) => {
+        if (document.contentModel !== "page_blocks") return;
+        if (!event.dataTransfer.types.includes(BLOCK_DRAG_MIME)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        event.dataTransfer.dropEffect = "move";
+        setIsBlockTarget(true);
+      }}
+      onDragLeave={() => setIsBlockTarget(false)}
+      onDrop={(event: ReactDragEvent<HTMLDivElement>) => {
+        if (document.contentModel !== "page_blocks") return;
+        const blockId = event.dataTransfer.getData(BLOCK_DRAG_MIME);
+        if (!blockId) return;
+        event.preventDefault();
+        event.stopPropagation();
+        setIsBlockTarget(false);
+        onBlockMove(blockId as Id<"pageBlocks">, document._id);
+      }}
+      {...attributes}
+      {...listeners}
+    >
+      {isBlockTarget ? (
+        <div className="border-primary bg-primary/5 pointer-events-none absolute inset-0 z-20 rounded border-2" />
+      ) : null}
       <Item
         id={document._id}
         onClick={() => onRedirect(document._id)}
         label={document.title}
-        icon={FileIcon}
+        icon={document.kind === "database" ? Table2 : FileIcon}
         documentIcon={document.icon}
         active={activeId === document._id}
         level={level}
         onExpand={() => onExpand(document._id)}
         expanded={expanded}
         isFavorite={document.isFavorite}
-        onFavorite={() => onFavorite?.(document._id)}
+        onFavorite={() => onFavorite(document._id)}
         navDrawer={navDrawer}
+        supportsCanvasSubPages={
+          document.contentModel === "page_blocks" &&
+          document.kind !== "database"
+        }
       />
-      {expanded && (
-        <DocumentList
+      {expanded ? (
+        <DocumentBranch
           parentDocumentId={document._id}
           level={level + 1}
           navDrawer={navDrawer}
+          activeId={activeId}
+          onExpand={onExpand}
+          onRedirect={onRedirect}
+          onFavorite={onFavorite}
+          expandedPages={expandedPages}
+          onBlockMove={onBlockMove}
         />
-      )}
+      ) : null}
     </div>
   );
-};
+}
 
-export const DocumentList = ({
+function DocumentBranch({
   parentDocumentId,
-  level = 0,
+  level,
   navDrawer,
-}: DocumentListProps) => {
-  const params = useParams();
-  const router = useRouter();
-
-  const reorder = useMutation(api.documents.reorder);
-  const toggleFavorite = useMutation(api.documents.toggleFavorite);
-
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [isDragging, setIsDragging] = useState(false);
-  const [orderedDocuments, setOrderedDocuments] = useState<Doc<"documents">[]>(
-    [],
-  );
-
+  activeId,
+  expandedPages,
+  onExpand,
+  onRedirect,
+  onFavorite,
+  onBlockMove,
+}: {
+  parentDocumentId?: Id<"documents">;
+  level: number;
+  navDrawer?: boolean;
+  activeId?: string | string[];
+  expandedPages: Record<string, boolean>;
+  onExpand: (id: string) => void;
+  onRedirect: (id: string) => void;
+  onFavorite: (id: Id<"documents">) => void;
+  onBlockMove: (
+    blockId: Id<"pageBlocks">,
+    targetPageId: Id<"documents">,
+  ) => void;
+}) {
   const documents = useQuery(api.documents.getSidebar, {
     parentDocument: parentDocumentId,
   });
 
-  useEffect(() => {
-    if (isDragging) {
-      return;
-    }
-    if (documents) {
-      setOrderedDocuments(documents);
-    }
-  }, [documents]);
+  if (documents === undefined) {
+    return (
+      <>
+        <Item.Skeleton level={level} />
+        {level === 0 ? <Item.Skeleton level={level} /> : null}
+      </>
+    );
+  }
 
-  const onExpand = (documentId: string) => {
-    setExpanded((prevExpanded) => ({
-      ...prevExpanded,
-      [documentId]: !prevExpanded[documentId],
-    }));
-  };
+  if (documents.length === 0 && level !== 0) {
+    return (
+      <p
+        style={{ paddingLeft: `${level * 12 + 25}px` }}
+        className="text-muted-foreground/80 py-1 text-sm font-medium"
+      >
+        No pages inside
+      </p>
+    );
+  }
 
+  return (
+    <SortableContext
+      items={documents.map((document) => document._id)}
+      strategy={verticalListSortingStrategy}
+    >
+      {documents.map((document) => (
+        <SortablePage
+          key={document._id}
+          document={document}
+          level={level}
+          expanded={expandedPages[document._id] ?? false}
+          expandedPages={expandedPages}
+          onExpand={onExpand}
+          onRedirect={onRedirect}
+          onFavorite={onFavorite}
+          activeId={activeId}
+          navDrawer={navDrawer}
+          onBlockMove={onBlockMove}
+        />
+      ))}
+    </SortableContext>
+  );
+}
+
+export function DocumentList({
+  parentDocumentId,
+  level = 0,
+  navDrawer,
+}: DocumentListProps) {
+  const params = useParams();
+  const router = useRouter();
+  const { movePage } = usePageTreeMutations();
+  const moveBlock = useMutation(api.pageBlocks.move).withOptimisticUpdate(
+    optimisticallyMoveBlock,
+  );
+  const toggleFavorite = useMutation(api.documents.toggleFavorite);
+  const [expandedPages, setExpandedPages] = useState<Record<string, boolean>>(
+    {},
+  );
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   );
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    setIsDragging(false);
-
-    const { active, over } = event;
-
-    if (!over) return;
-
-    if (active.id !== over.id) {
-      const oldIndex = orderedDocuments.findIndex(
-        (doc) => doc._id === active.id,
-      );
-      const newIndex = orderedDocuments.findIndex((doc) => doc._id === over.id);
-
-      if (oldIndex !== -1 && newIndex !== -1) {
-        setOrderedDocuments((prev) => arrayMove(prev, oldIndex, newIndex));
-        reorder({
-          id: active.id as Id<"documents">,
-          parentDocument: parentDocumentId,
-          newOrder: newIndex,
-        });
-      }
-    }
+  const onExpand = (documentId: string) => {
+    setExpandedPages((current) => ({
+      ...current,
+      [documentId]: !current[documentId],
+    }));
   };
 
-  const onToggleFavorite = (id: Id<"documents">) => {
-    const promise = toggleFavorite({ id });
-    toast.promise(promise, {
+  const onFavorite = (id: Id<"documents">) => {
+    toast.promise(toggleFavorite({ id }), {
       loading: "Updating favorites...",
       success: "Favorites updated!",
       error: "Failed to update favorites.",
     });
   };
 
-  const onRedirect = (documentId: string) => {
-    router.push(`/documents/${documentId}`);
+  const handleDragEnd = (event: DragEndEvent) => {
+    document.body.classList.remove("cursor-grabbing");
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const translated = active.rect.current.translated;
+    const activeCenter = translated
+      ? translated.top + translated.height / 2
+      : 0;
+    const overCenter = over.rect.top + over.rect.height / 2;
+    const placement =
+      event.delta.x > 28
+        ? "inside"
+        : activeCenter < overCenter
+          ? "before"
+          : "after";
+    const promise = movePage({
+      id: active.id as Id<"documents">,
+      targetId: over.id as Id<"documents">,
+      placement,
+    });
+    toast.promise(promise, {
+      loading: "Moving page...",
+      success:
+        placement === "inside" ? "Page nested successfully" : "Page moved",
+      error: "Could not move that page",
+    });
+    if (placement === "inside") {
+      setExpandedPages((current) => ({
+        ...current,
+        [String(over.id)]: true,
+      }));
+    }
   };
 
-  if (documents === undefined) {
-    return (
-      <>
-        <Item.Skeleton level={level} />
-        {level === 0 && (
-          <>
-            <Item.Skeleton level={level} />
-            <Item.Skeleton level={level} />
-          </>
-        )}
-      </>
+  const handleBlockMove = (
+    blockId: Id<"pageBlocks">,
+    targetPageId: Id<"documents">,
+  ) => {
+    toast.promise(
+      moveBlock({
+        blockId,
+        targetPageId,
+        placement: "after",
+      }),
+      {
+        loading: "Moving block...",
+        success: "Block moved to page",
+        error: "Could not move the block",
+      },
     );
-  }
+  };
 
   return (
-    <div className="w-full">
-      {orderedDocuments.length === 0 && level !== 0 && (
-        <p
-          style={{ paddingLeft: level ? `${level * 12 + 25}px` : undefined }}
-          className="text-muted-foreground/80 py-1 text-sm font-medium"
-        >
-          No pages inside
-        </p>
-      )}
-
-      <DndContext
-        sensors={sensors}
-        onDragStart={() => {
-          setIsDragging(true);
-          document.body.classList.add("cursor-grabbing");
-        }}
-        onDragEnd={(event) => {
-          document.body.classList.remove("cursor-grabbing");
-          handleDragEnd(event);
-        }}
-        modifiers={[restrictToVerticalAxis, restrictToParentElement]}
-        collisionDetection={closestCorners}
-      >
-        <SortableContext
-          items={orderedDocuments.map((doc) => doc._id)}
-          strategy={verticalListSortingStrategy}
-        >
-          {orderedDocuments.map((document) => (
-            <SortableItem
-              key={document._id}
-              document={document}
-              level={level}
-              onExpand={onExpand}
-              expanded={expanded[document._id]}
-              onRedirect={onRedirect}
-              activeId={params.documentId}
-              isFavorite={document.isFavorite}
-              onFavorite={onToggleFavorite}
-              navDrawer={navDrawer}
-            />
-          ))}
-        </SortableContext>
-      </DndContext>
-    </div>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      onDragStart={() => document.body.classList.add("cursor-grabbing")}
+      onDragCancel={() => document.body.classList.remove("cursor-grabbing")}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="w-full">
+        <DocumentBranch
+          parentDocumentId={parentDocumentId}
+          level={level}
+          navDrawer={navDrawer}
+          activeId={params.documentId}
+          expandedPages={expandedPages}
+          onExpand={onExpand}
+          onRedirect={(documentId) => router.push(`/documents/${documentId}`)}
+          onFavorite={onFavorite}
+          onBlockMove={handleBlockMove}
+        />
+      </div>
+    </DndContext>
   );
-};
+}

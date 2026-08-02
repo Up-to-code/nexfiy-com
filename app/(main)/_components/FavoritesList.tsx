@@ -63,6 +63,10 @@ export const FavoritesList = ({ navDrawer }: { navDrawer?: boolean }) => {
             onFavorite={() => onToggleFavorite(document._id)}
             showDragHandle={false}
             navDrawer={navDrawer}
+            supportsCanvasSubPages={
+              document.contentModel === "page_blocks" &&
+              document.kind !== "database"
+            }
           />
           {expanded[document._id] && (
             <DocumentList

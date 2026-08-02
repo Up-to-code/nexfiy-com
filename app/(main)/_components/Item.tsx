@@ -44,6 +44,7 @@ interface ItemProps {
   shortcut?: string;
   showDragHandle?: boolean;
   navDrawer?: boolean;
+  supportsCanvasSubPages?: boolean;
 }
 
 export const Item = ({
@@ -61,6 +62,7 @@ export const Item = ({
   shortcut,
   showDragHandle = true,
   navDrawer,
+  supportsCanvasSubPages = false,
 }: ItemProps) => {
   const router = useRouter();
   const params = useParams();
@@ -68,6 +70,7 @@ export const Item = ({
   const { setInnerPopoverOpen } = useNavDrawer();
 
   const create = useMutation(api.documents.create);
+  const createChildPage = useMutation(api.pageBlocks.createChildPage);
   const archive = useMutation(api.documents.archive);
   const restore = useMutation(api.documents.restore);
 
@@ -112,14 +115,19 @@ export const Item = ({
     event.stopPropagation();
     if (!id) return;
 
-    const promise = create({ title: "Untitled", parentDocument: id }).then(
-      (documentId) => {
+    const creation = supportsCanvasSubPages
+      ? createChildPage({
+          pageId: id,
+          title: "Untitled",
+          operationId: crypto.randomUUID(),
+        }).then((result) => result.pageId)
+      : create({ title: "Untitled", parentDocument: id });
+    const promise = creation.then((documentId) => {
         if (!expanded) {
           onExpand?.();
         }
         router.push(`/documents/${documentId}`);
-      },
-    );
+      });
 
     toast.promise(promise, {
       loading: "Creating new note",

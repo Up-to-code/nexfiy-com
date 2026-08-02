@@ -1,6 +1,70 @@
 {
   "components": [
     {
+      "name": "ProUpgradePrompt",
+      "path": "features/billing/ProUpgradePrompt.tsx",
+      "kind": "domain-shared",
+      "summary": "Consistent upgrade state for Pro-only workspace capabilities.",
+      "usedIn": [
+        "features/content-api/ContentApiSettings",
+        "features/mcp/McpSettings",
+        "features/organizations/OrganizationSettings"
+      ],
+      "props": ["feature"],
+      "createdAt": "2026-08-02",
+      "notes": "The prompt is explanatory only; every paid operation is independently enforced on the server."
+    },
+    {
+      "name": "BillingAccessBanner",
+      "path": "features/billing/BillingAccessBanner.tsx",
+      "kind": "domain-shared",
+      "summary": "Persistent verified-checkout and payment-grace status shown across the authenticated workspace.",
+      "usedIn": ["app/(main)"],
+      "props": [],
+      "createdAt": "2026-08-02",
+      "notes": "Renders directly from the reactive Convex subscription record and never grants optimistic access."
+    },
+    {
+      "name": "DocsActions",
+      "path": "features/docs/DocsActions.tsx",
+      "kind": "domain-shared",
+      "summary": "Client-only controls for copying and downloading the exact Markdown source behind a public documentation page.",
+      "usedIn": ["app/(landing)/docs/[[...slug]]"],
+      "props": ["markdown", "filename"],
+      "createdAt": "2026-08-02",
+      "notes": "Keeps browser clipboard and Blob APIs outside the server-rendered documentation shell."
+    },
+    {
+      "name": "DocsSearch",
+      "path": "features/docs/DocsSearch.tsx",
+      "kind": "domain-shared",
+      "summary": "Searchable documentation navigation shared by desktop and mobile docs layouts.",
+      "usedIn": ["app/(landing)/docs/layout"],
+      "props": [],
+      "createdAt": "2026-08-02",
+      "notes": "Filters the static documentation manifest without fetching or duplicating server data."
+    },
+    {
+      "name": "MarkdownDocument",
+      "path": "features/docs/MarkdownDocument.tsx",
+      "kind": "domain-shared",
+      "summary": "Server-rendered Markdown document with GFM tables, anchored headings, internal links, and dual-theme Shiki code blocks.",
+      "usedIn": ["app/(landing)/docs/[[...slug]]"],
+      "props": ["markdown"],
+      "createdAt": "2026-08-02",
+      "notes": "Keeps documentation rendering server-first; only clipboard, download, and navigation filtering require client components."
+    },
+    {
+      "name": "DatabaseAccessPicker",
+      "path": "features/content-api/DatabaseAccessPicker.tsx",
+      "kind": "domain-shared",
+      "summary": "Searchable multi-select database access picker shared by Content API integration creation and access editing.",
+      "usedIn": ["features/content-api/ContentApiSettings"],
+      "props": ["sources", "selected", "onChange", "compact"],
+      "createdAt": "2026-08-02",
+      "notes": "Selection is UI draft state; the available database list remains a live Convex query."
+    },
+    {
       "name": "AuthForm",
       "path": "components/auth/AuthForm.tsx",
       "kind": "domain-shared",
@@ -14,11 +78,94 @@
       "name": "Logo",
       "path": "components/logo.tsx",
       "kind": "shared-ui",
-      "summary": "Theme-aware Zotion brand mark shared by landing and authentication surfaces.",
+      "summary": "Theme-aware Nexfiy brand mark shared by landing and authentication surfaces.",
       "usedIn": ["app/(landing)", "app/(auth)"],
       "props": [],
       "createdAt": "2026-08-01",
       "notes": "Uses the existing light and dark brand assets."
+    },
+    {
+      "name": "NexfiyProCheckout",
+      "path": "features/billing/NexfiyProCheckout.tsx",
+      "kind": "domain-shared",
+      "summary": "Authenticated Dodo checkout and customer-portal control for the single Nexfiy Pro per-seat plan.",
+      "usedIn": ["app/pricing", "components/modals/SettingsModal"],
+      "props": ["compact", "className"],
+      "createdAt": "2026-08-01",
+      "notes": "Seat quantity is sent to Dodo checkout; active subscription state comes from verified Convex webhook data."
+    },
+    {
+      "name": "OrganizationProvider",
+      "path": "features/organizations/OrganizationProvider.tsx",
+      "kind": "domain-shared",
+      "summary": "Provides the active Better Auth organization and organization switching throughout the authenticated workspace.",
+      "usedIn": [
+        "app/(main)",
+        "features/organizations",
+        "app/(main)/_components/UserItem"
+      ],
+      "props": ["children"],
+      "createdAt": "2026-08-01",
+      "notes": "Organization context is for workspace UX; Convex functions remain responsible for server-side authorization."
+    },
+    {
+      "name": "WorkspaceAvatar",
+      "path": "features/organizations/WorkspaceAvatar.tsx",
+      "kind": "domain-shared",
+      "summary": "Rounded workspace identity mark that displays an available image or a name-derived initial.",
+      "usedIn": [
+        "features/organizations/OrganizationSettings",
+        "app/(main)/_components/UserItem"
+      ],
+      "props": ["name", "image", "className"],
+      "createdAt": "2026-08-02",
+      "notes": "Uses the account avatar for personal workspaces and the Better Auth organization logo when present."
+    },
+    {
+      "name": "Select",
+      "path": "components/ui/select.tsx",
+      "kind": "shared-ui",
+      "summary": "Accessible Radix-based custom select menu used instead of native browser dropdowns.",
+      "usedIn": ["features/mcp"],
+      "props": ["value", "onValueChange", "children"],
+      "createdAt": "2026-08-01",
+      "notes": "Includes trigger, content, item, label, separator, and scroll controls."
+    },
+    {
+      "name": "LegalPage",
+      "path": "components/marketing/LegalPage.tsx",
+      "kind": "domain-shared",
+      "summary": "Theme-aware marketing document layout shared by Nexfiy legal pages.",
+      "usedIn": ["app/privacy", "app/refund-policy", "app/terms"],
+      "props": ["children", "description", "icon", "label", "title"],
+      "createdAt": "2026-08-01",
+      "notes": "Server-rendered shell with shared navigation, footer, document typography, and contact panel."
+    },
+    {
+      "name": "TemplateGalleryDialog",
+      "path": "features/templates/TemplateGalleryDialog.tsx",
+      "kind": "domain-shared",
+      "summary": "Realtime gallery for instantiating saved nested page templates at the workspace root or beneath a current page.",
+      "usedIn": [
+        "app/(main)/(routes)/documents",
+        "app/(main)/_components/Menu"
+      ],
+      "props": ["open", "onOpenChange", "parentDocument"],
+      "createdAt": "2026-08-01",
+      "notes": "Template data remains in Convex; successful instantiation navigates to the newly created root page."
+    },
+    {
+      "name": "NormalizedBlockNoteEditor",
+      "path": "features/blocks/NormalizedBlockNoteEditor.tsx",
+      "kind": "domain-shared",
+      "summary": "BlockNote editor and read-only renderer backed by normalized page blocks.",
+      "usedIn": [
+        "app/(main)/(routes)/documents/[documentId]",
+        "app/(public)/(routes)/preview/[documentId]"
+      ],
+      "props": ["pageId", "editable", "editorFont", "smallText"],
+      "createdAt": "2026-08-02",
+      "notes": "Keeps the default BlockNote editing experience while persisting blocks through the normalized Convex page-block model."
     }
   ]
 }

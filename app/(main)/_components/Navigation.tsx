@@ -1,6 +1,12 @@
 "use client";
 
-import React, { ComponentRef, useEffect, useRef, useState } from "react";
+import React, {
+  ComponentRef,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useMediaQuery } from "usehooks-ts";
 import { useMutation } from "convex/react";
 import { useParams, usePathname, useRouter } from "next/navigation";
@@ -57,9 +63,36 @@ const Navigation = () => {
   const navbarRef = useRef<ComponentRef<"div">>(null);
 
   const [isResetting, setIsResetting] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(isMobile);
 
   const [isNavbarHovered, setIsNavbarHovered] = useState(false);
+
+  const resetWidth = useCallback(() => {
+    if (!sidebarRef.current || !navbarRef.current) return;
+    setIsCollapsed(false);
+    setIsResetting(true);
+    setTimeout(() => {
+      if (!sidebarRef.current || !navbarRef.current) return;
+      sidebarRef.current.style.width = isMobile ? "100%" : "240px";
+      navbarRef.current.style.setProperty(
+        "width",
+        isMobile ? "0" : "calc(100% - 240px)",
+      );
+      navbarRef.current.style.setProperty("left", isMobile ? "100%" : "240px");
+    }, 0);
+    setTimeout(() => setIsResetting(false), 300);
+  }, [isMobile]);
+
+  const collapse = useCallback(() => {
+    if (!sidebarRef.current || !navbarRef.current) return;
+    setIsCollapsed(true);
+    setIsResetting(true);
+    sidebarRef.current.style.width = "0";
+    navbarRef.current.style.setProperty("width", "100%");
+    navbarRef.current.style.setProperty("left", "0");
+    setTimeout(() => setIsResetting(false), 300);
+  }, []);
 
   // sidebar effects
   useEffect(() => {
@@ -68,13 +101,13 @@ const Navigation = () => {
     } else {
       resetWidth();
     }
-  }, [isMobile]);
+  }, [collapse, isMobile, resetWidth]);
 
   useEffect(() => {
     if (isMobile) {
       collapse();
     }
-  }, [pathname, isMobile]);
+  }, [collapse, pathname, isMobile]);
 
   // focus mode effects
   useEffect(() => {
@@ -89,7 +122,14 @@ const Navigation = () => {
     }
 
     prevFocusMode.current = focusMode;
-  }, [params.documentId, focusMode, isMobile, isCollapsed]);
+  }, [
+    collapse,
+    focusMode,
+    isCollapsed,
+    isMobile,
+    params.documentId,
+    resetWidth,
+  ]);
 
   useEffect(() => {
     if (!navbarRef.current) return;
@@ -101,10 +141,11 @@ const Navigation = () => {
       isCollapsed &&
       !isMobile
     ) {
-      setTimeout(
+      const timer = setTimeout(
         () => navbarRef.current?.style.setProperty("opacity", "0"),
         400,
       );
+      return () => clearTimeout(timer);
     } else {
       navbarRef.current.style.removeProperty("opacity");
     }
@@ -115,13 +156,14 @@ const Navigation = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.key === "\\") {
         e.preventDefault();
-        isCollapsed ? resetWidth() : collapse();
+        if (isCollapsed) resetWidth();
+        else collapse();
       }
     };
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isCollapsed]);
+  }, [collapse, isCollapsed, resetWidth]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -133,7 +175,7 @@ const Navigation = () => {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [focusMode]);
+  }, [focusMode, setFocusMode]);
 
   const handleMouseDown = (
     event: React.MouseEvent<HTMLDivElement, MouseEvent>,
@@ -142,6 +184,7 @@ const Navigation = () => {
     event.stopPropagation();
 
     isResizingRef.current = true;
+    setIsResizing(true);
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
   };
@@ -165,42 +208,9 @@ const Navigation = () => {
 
   const handleMouseUp = () => {
     isResizingRef.current = false;
+    setIsResizing(false);
     document.removeEventListener("mousemove", handleMouseMove);
     document.removeEventListener("mouseup", handleMouseUp);
-  };
-
-  const resetWidth = () => {
-    if (sidebarRef.current && navbarRef.current) {
-      setIsCollapsed(false);
-      setIsResetting(true);
-      setTimeout(() => {
-        if (sidebarRef.current && navbarRef.current) {
-          sidebarRef.current.style.width = isMobile ? "100%" : "240px";
-          navbarRef.current.style.removeProperty("width");
-          navbarRef.current.style.setProperty(
-            "width",
-            isMobile ? "0" : "calc(100%-240px)",
-          );
-          navbarRef.current.style.setProperty(
-            "left",
-            isMobile ? "100%" : "240px",
-          );
-        }
-      }, 0);
-      setTimeout(() => setIsResetting(false), 300);
-    }
-  };
-
-  const collapse = () => {
-    if (sidebarRef.current && navbarRef.current) {
-      setIsCollapsed(true);
-      setIsResetting(true);
-
-      sidebarRef.current.style.width = "0";
-      navbarRef.current.style.setProperty("width", "100%");
-      navbarRef.current.style.setProperty("left", "0");
-      setTimeout(() => setIsResetting(false), 300);
-    }
   };
 
   const handleCreate = () => {
@@ -220,7 +230,7 @@ const Navigation = () => {
       <aside
         ref={sidebarRef}
         className={cn(
-          "group/sidebar bg-secondary relative z-300 flex h-full w-60 flex-col overflow-hidden overflow-x-hidden pb-4",
+          "group/sidebar bg-sidebar border-sidebar-border relative z-300 flex h-full w-60 flex-col overflow-hidden overflow-x-hidden border-r pb-4",
           isResetting && "transition-all duration-300 ease-in-out",
           isMobile && "w-0",
         )}
@@ -293,8 +303,9 @@ const Navigation = () => {
         onMouseEnter={() => setIsNavbarHovered(true)}
         onMouseLeave={() => setIsNavbarHovered(false)}
         className={cn(
-          "absolute top-0 left-60 z-40 w-[calc(100%-240px)]",
-          !isResizingRef.current && "transition-all duration-300 ease-in-out",
+          "absolute top-0 left-60 z-40 w-[calc(100%_-_240px)]",
+          !isResizing &&
+            "transition-[left,width,opacity,transform] duration-300 ease-out",
           isMobile && "left-0 w-full",
         )}
       >

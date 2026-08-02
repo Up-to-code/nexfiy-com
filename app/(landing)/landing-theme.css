@@ -1,0 +1,47 @@
+.dark .marketing-shell .bg-white,
+.dark .marketing-shell [class*="bg-white/"] {
+  background-color: var(--background) !important;
+}
+
+.dark .marketing-shell [class*="bg-[#f6f5f4]"],
+.dark .marketing-shell [class*="bg-[#f9f8f6]"],
+.dark .marketing-shell [class*="bg-[#ebeae8]"],
+.dark .marketing-shell .bg-zinc-50,
+.dark .marketing-shell .bg-zinc-100 {
+  background-color: var(--secondary) !important;
+}
+
+.dark .marketing-shell .bg-zinc-900 {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+}
+
+.dark .marketing-shell .text-zinc-900,
+.dark .marketing-shell .text-zinc-800 {
+  color: var(--foreground) !important;
+}
+
+.dark .marketing-shell .text-zinc-700,
+.dark .marketing-shell .text-zinc-600,
+.dark .marketing-shell .text-zinc-500,
+.dark .marketing-shell .text-zinc-400 {
+  color: var(--muted-foreground) !important;
+}
+
+.dark .marketing-shell [class*="border-zinc-"] {
+  border-color: var(--border) !important;
+}
+
+.dark .marketing-shell [class*="from-[#d93829]"],
+.dark .marketing-shell [class*="from-[#2563eb]"],
+.dark .marketing-shell [class*="from-[#d97706]"] {
+  border: 1px solid var(--border);
+  background-image: none !important;
+  background-color: var(--card) !important;
+  color: var(--card-foreground) !important;
+}
+
+.dark .marketing-shell [class*="bg-[#fff2c2]"] {
+  background-color: var(--secondary) !important;
+  color: var(--secondary-foreground) !important;
+}

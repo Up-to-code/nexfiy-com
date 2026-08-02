@@ -1,44 +1,38 @@
-import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import Link from "next/link";
 
+const footerLinks = [
+  { href: "/documents", label: "Workspace" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/docs", label: "Developers" },
+  { href: "/#faq", label: "FAQ" },
+  { href: "/refund-policy", label: "Refunds" },
+  { href: "/privacy", label: "Privacy" },
+  { href: "/terms", label: "Terms" },
+] as const;
+
 export const Footer = () => {
   return (
-    <footer className="bg-background dark:bg-dark z-50 flex w-full items-center p-4 md:px-6">
-      <Logo />
-      <div className="text-muted-foreground flex w-full items-center justify-end gap-x-1 md:ml-auto">
-        <Button asChild variant="ghost" className="text-base">
-          <Link
-            href="https://github.com/adityaphasu/notion-clone"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Open project on GitHub"
-            className="flex items-center justify-between gap-0.5"
-          >
-            <svg
-              width="65px"
-              height="65px"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-              className="size-6 fill-black dark:fill-white"
+    <footer className="border-t border-zinc-200 bg-white py-10 text-sm text-zinc-600 dark:border-white/10 dark:bg-[#191919] dark:text-white/65">
+      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
+        <div className="space-y-2">
+          <Logo />
+          <p className="text-xs text-zinc-500 dark:text-white/45">
+            © 2026 Nexfiy Labs, Inc.
+          </p>
+        </div>
+
+        <nav aria-label="Footer" className="flex flex-wrap gap-x-6 gap-y-3">
+          {footerLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="font-medium transition-colors hover:text-zinc-900 dark:hover:text-white"
             >
-              <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
-              <g
-                id="SVGRepo_tracerCarrier"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              ></g>
-              <g id="SVGRepo_iconCarrier">
-                <path
-                  fillRule="evenodd"
-                  clipRule="evenodd"
-                  d="M12.026 2c-5.509 0-9.974 4.465-9.974 9.974 0 4.406 2.857 8.145 6.821 9.465.499.09.679-.217.679-.481 0-.237-.008-.865-.011-1.696-2.775.602-3.361-1.338-3.361-1.338-.452-1.152-1.107-1.459-1.107-1.459-.905-.619.069-.605.069-.605 1.002.07 1.527 1.028 1.527 1.028.89 1.524 2.336 1.084 2.902.829.091-.645.351-1.085.635-1.334-2.214-.251-4.542-1.107-4.542-4.93 0-1.087.389-1.979 1.024-2.675-.101-.253-.446-1.268.099-2.64 0 0 .837-.269 2.742 1.021a9.582 9.582 0 0 1 2.496-.336 9.554 9.554 0 0 1 2.496.336c1.906-1.291 2.742-1.021 2.742-1.021.545 1.372.203 2.387.099 2.64.64.696 1.024 1.587 1.024 2.675 0 3.833-2.33 4.675-4.552 4.922.355.308.675.916.675 1.846 0 1.334-.012 2.41-.012 2.737 0 .267.178.577.687.479C19.146 20.115 22 16.379 22 11.974 22 6.465 17.535 2 12.026 2z"
-                ></path>
-              </g>
-            </svg>
-            <span>Github</span>
-          </Link>
-        </Button>
+              {link.label}
+            </Link>
+          ))}
+        </nav>
       </div>
     </footer>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo, use, useState, useEffect } from "react";
+import { use, useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 
 import { Cover } from "@/components/cover";
@@ -14,6 +14,8 @@ import { useMutation, useQuery } from "convex/react";
 import { BlockNoteEditor } from "@blocknote/core";
 import { TableOfContents } from "@/components/table-of-contents";
 import { useEditorFont } from "@/hooks/useEditorFont";
+import { DatabasePage } from "@/features/databases/DatabasePage";
+import { NormalizedBlockNoteEditor } from "@/features/blocks/NormalizedBlockNoteEditor";
 
 interface DocumentIdPageProps {
   params: Promise<{
@@ -21,15 +23,14 @@ interface DocumentIdPageProps {
   }>;
 }
 
+const LegacyEditor = dynamic(() => import("@/components/editor"), {
+  ssr: false,
+});
+
 const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
   const { documentId } = use(params);
   const [editor, setEditor] = useState<BlockNoteEditor | null>(null);
   const { resolvedTheme } = useTheme();
-
-  const Editor = useMemo(
-    () => dynamic(() => import("@/components/editor"), { ssr: false }),
-    [],
-  );
 
   const doc = useQuery(api.documents.getById, {
     documentId: documentId,
@@ -38,29 +39,31 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
   const { editorFont, isFontLoading } = useEditorFont({ enabled: true });
 
   const update = useMutation(api.documents.update);
+  const documentTitle = doc?.title;
+  const documentIcon = doc?.icon;
 
   useEffect(() => {
-    if (!doc) return;
+    if (documentTitle === undefined) return;
 
     const defaultFavicon =
       resolvedTheme === "dark" ? "/logo-dark.svg" : "/logo.svg";
 
-    window.document.title = `${doc.title || "Untitled"} | Zotion`;
+    window.document.title = `${documentTitle || "Untitled"} | Nexfiy`;
 
     const link = window.document.querySelector(
       "link[rel~='icon']",
     ) as HTMLLinkElement;
     if (link) {
-      link.href = doc.icon
-        ? `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' font-size='100'>${doc.icon}</text></svg>`
+      link.href = documentIcon
+        ? `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' font-size='100'>${documentIcon}</text></svg>`
         : defaultFavicon;
     }
 
     return () => {
-      window.document.title = "Zotion";
+      window.document.title = "Nexfiy";
       if (link) link.href = defaultFavicon;
     };
-  }, [doc?.title, doc?.icon, resolvedTheme, documentId]);
+  }, [documentTitle, documentIcon, resolvedTheme]);
 
   useEffect(() => {
     if (!doc) return;
@@ -104,8 +107,17 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
     return <div>Not found</div>;
   }
 
+  if (doc.kind === "database") {
+    return (
+      <div className="pt-13 pb-35">
+        <Cover url={doc.coverImage} />
+        <DatabasePage document={doc} />
+      </div>
+    );
+  }
+
   return (
-    <div className="pb-35">
+    <div className="pt-13 pb-35">
       <Cover url={doc.coverImage} />
       <div
         className={`relative mx-auto md:w-[90%] ${
@@ -113,14 +125,24 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
         }`}
       >
         <Toolbar initialData={doc} editorFont={activeFont} />
-        <Editor
-          onChange={onChange}
-          initialContent={doc.content}
-          smallText={isSmallText}
-          onEditorReady={setEditor}
-          editorFont={activeFont}
-        />
-        {showToc && <TableOfContents editor={editor} />}
+        {doc.contentModel === "page_blocks" ? (
+          <NormalizedBlockNoteEditor
+            pageId={doc._id}
+            editorFont={activeFont}
+            smallText={isSmallText}
+          />
+        ) : (
+          <>
+            <LegacyEditor
+              onChange={onChange}
+              initialContent={doc.content}
+              smallText={isSmallText}
+              onEditorReady={setEditor}
+              editorFont={activeFont}
+            />
+            {showToc && <TableOfContents editor={editor} />}
+          </>
+        )}
       </div>
     </div>
   );

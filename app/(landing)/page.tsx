@@ -1,14 +1,26 @@
+import { Hero } from "./_components/Hero";
+import { VisionSection } from "./_components/VisionSection";
+import { AiFeatures } from "./_components/AiFeatures";
+import { WhyNexfiy } from "./_components/WhyNexfiy";
+import { ComparisonSection } from "./_components/ComparisonSection";
+import { PricingPreview } from "./_components/PricingPreview";
+import { CtaSection } from "./_components/CtaSection";
 import { Footer } from "./_components/Footer";
-import { Heading } from "./_components/Heading";
-import { Heroes } from "./_components/Heroes";
+import { WorkflowSection } from "./_components/WorkflowSection";
+import { FaqSection } from "./_components/FaqSection";
 
 export default function LandingPage() {
   return (
-    <div className="dark:bg-dark flex min-h-full flex-col">
-      <div className="flex flex-1 flex-col items-center justify-center gap-y-8 px-6 pb-10 text-center md:justify-start">
-        <Heading />
-        <Heroes />
-      </div>
+    <div className="bg-background flex min-h-full flex-col">
+      <Hero />
+      <VisionSection />
+      <AiFeatures />
+      <WorkflowSection />
+      <WhyNexfiy />
+      <ComparisonSection />
+      <PricingPreview />
+      <FaqSection />
+      <CtaSection />
       <Footer />
     </div>
   );

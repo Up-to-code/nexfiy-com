@@ -4,7 +4,6 @@ import "./globals.css";
 
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ConvexClientProvider } from "@/components/providers/convex-provider";
-import { ModalProvider } from "@/components/providers/modal-provider";
 import { ToasterProvider } from "@/components/providers/toaster-provider";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -15,7 +14,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Zotion",
+  title: "Nexfiy",
   description:
     "The seamless platform where creative and productive work happens.",
   icons: {
@@ -42,6 +41,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
+        suppressHydrationWarning
         className={`${inter.className} ${inter.variable} ${lora.variable} ${jetbrainsMono.variable}`}
       >
         <ConvexClientProvider>
@@ -50,10 +50,9 @@ export default function RootLayout({
             defaultTheme="system"
             enableSystem
             disableTransitionOnChange
-            storageKey="zotion-theme-2"
+            storageKey="nexfiy-theme-2"
           >
             <ToasterProvider />
-            <ModalProvider />
             {children}
           </ThemeProvider>
         </ConvexClientProvider>

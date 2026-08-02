@@ -33,7 +33,7 @@ export const Navbar = ({ isCollapsed, onResetWidth }: NavbarProps) => {
 
   if (document === undefined) {
     return (
-      <nav className="bg-background dark:bg-dark flex w-full items-center justify-between px-3 py-2">
+      <nav className="bg-background/90 flex w-full items-center justify-between border-b px-3 py-2 backdrop-blur-md">
         <Title.Skeleton />
         <div className="flex items-center gap-x-2">
           <Menu.Skeleton />
@@ -48,7 +48,7 @@ export const Navbar = ({ isCollapsed, onResetWidth }: NavbarProps) => {
 
   return (
     <>
-      <nav className="bg-background dark:bg-dark flex w-full items-center gap-x-2 px-3 py-2">
+      <nav className="bg-background/90 flex w-full items-center gap-x-2 border-b px-3 py-2 backdrop-blur-md">
         {isCollapsed && (
           <ActionTooltip label="Open sidebar (Ctrl + \)">
             <button aria-label="Menu" onClick={onResetWidth}>

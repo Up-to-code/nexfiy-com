@@ -1,0 +1,283 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import {
+  CalendarDays,
+  GalleryVerticalEnd,
+  ListFilter,
+  Plus,
+  Table2,
+  Workflow,
+  SlidersHorizontal,
+} from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { Id } from "@/convex/_generated/dataModel";
+import { cn } from "@/lib/utils";
+
+import { AddPropertyDialog } from "./AddPropertyDialog";
+import { DatabaseBoard } from "./DatabaseBoard";
+import { DatabaseCalendar } from "./DatabaseCalendar";
+import { DatabaseGrid } from "./DatabaseGrid";
+import { DatabaseTimeline } from "./DatabaseTimeline";
+import { useDatabase } from "./useDatabase";
+import { ViewSettingsDialog } from "./ViewSettingsDialog";
+import { PropertySettingsDialog } from "./PropertySettingsDialog";
+
+const VIEW_ICONS = {
+  table: Table2,
+  board: GalleryVerticalEnd,
+  calendar: CalendarDays,
+  timeline: ListFilter,
+};
+
+export function DatabaseTable({
+  documentId,
+  dataSourceId,
+  initialViewId,
+  embedded = false,
+  readOnly = false,
+}: {
+  documentId?: Id<"documents">;
+  dataSourceId?: Id<"dataSources">;
+  initialViewId?: Id<"databaseViews">;
+  embedded?: boolean;
+  readOnly?: boolean;
+}) {
+  const [selectedViewId, setSelectedViewId] = useState<
+    Id<"databaseViews"> | undefined
+  >(initialViewId);
+  const databaseState = useDatabase(documentId, selectedViewId, dataSourceId);
+  const [isAddingProperty, setIsAddingProperty] = useState(false);
+  const [isConfiguringView, setIsConfiguringView] = useState(false);
+  const [editingPropertyId, setEditingPropertyId] = useState<
+    Id<"databaseProperties"> | undefined
+  >();
+  const database = databaseState.database;
+  const activeView = database?.views.find(
+    (view) => view.id === database.activeViewId,
+  );
+  const editingProperty = database?.properties.find(
+    (property) => property.id === editingPropertyId,
+  );
+  const visibleProperties = useMemo(() => {
+    if (!database) return [];
+    if (!activeView) return database.properties;
+    const visible = new Set(activeView.visiblePropertyIds);
+    return database.properties.filter((property) => visible.has(property.id));
+  }, [activeView, database]);
+
+  if (databaseState.isLoading) {
+    return <Skeleton className="h-64 w-full" />;
+  }
+  if (!database) {
+    return (
+      <p className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
+        This database is unavailable.
+      </p>
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        "space-y-3",
+        embedded ? "pb-2" : "pb-16",
+        readOnly &&
+          "[&_button]:pointer-events-none [&_button]:select-none [&_input]:pointer-events-none [&_select]:pointer-events-none [&_textarea]:pointer-events-none [&_[data-view-tab]]:pointer-events-auto",
+      )}
+      aria-readonly={readOnly}
+      onKeyDownCapture={(event) => {
+        if (!readOnly) return;
+        const target = event.target;
+        if (
+          target instanceof HTMLInputElement ||
+          target instanceof HTMLSelectElement ||
+          target instanceof HTMLTextAreaElement ||
+          (target instanceof HTMLButtonElement &&
+            !target.hasAttribute("data-view-tab"))
+        ) {
+          event.preventDefault();
+        }
+      }}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/40 pb-1">
+        <div className="flex items-center gap-0.5">
+          {database.views.map((view) => {
+            const Icon = VIEW_ICONS[view.type];
+            const isActive = view.id === activeView?.id;
+            return (
+              <button
+                key={view.id}
+                type="button"
+                data-view-tab
+                className={cn(
+                  "text-muted-foreground/70 hover:text-foreground flex items-center gap-1.5 border-b-2 border-transparent px-2.5 py-1.5 text-xs font-medium transition-colors",
+                  isActive &&
+                    "border-foreground text-foreground font-semibold",
+                )}
+                onClick={() => setSelectedViewId(view.id)}
+              >
+                <Icon className="size-3.5" />
+                {view.name}
+              </button>
+            );
+          })}
+        </div>
+        {!readOnly ? (
+          <div className="flex items-center gap-1.5 pb-1">
+            {activeView ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground/80 hover:text-foreground h-7 px-2 text-xs font-normal"
+                onClick={() => setIsConfiguringView(true)}
+              >
+                <SlidersHorizontal className="size-3.5" /> View settings
+              </Button>
+            ) : null}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground/80 hover:text-foreground h-7 px-2 text-xs font-normal"
+                >
+                  <Plus className="size-3.5" /> View
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="text-xs text-muted-foreground/70">Add a view</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {(
+                  [
+                    ["table", "Table", Table2],
+                    ["board", "Pipeline", Workflow],
+                    ["calendar", "Calendar", CalendarDays],
+                    ["timeline", "Timeline", ListFilter],
+                  ] as const
+                ).map(([type, label, Icon]) => (
+                  <DropdownMenuItem
+                    key={type}
+                    className="text-xs cursor-pointer"
+                    onSelect={async () => {
+                      const viewId = await databaseState.createView({
+                        dataSourceId: database.dataSource.id,
+                        name: label,
+                        type,
+                      });
+                      if (viewId) setSelectedViewId(viewId);
+                    }}
+                  >
+                    <Icon className="size-3.5 mr-1.5" /> {label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground/80 hover:text-foreground h-7 px-2 text-xs font-normal"
+              onClick={() => setIsAddingProperty(true)}
+            >
+              <Plus className="size-3.5" /> Property
+            </Button>
+            <Button
+              size="sm"
+              className="bg-[#2383E2] hover:bg-[#1d73c9] text-white h-7 px-2.5 text-xs font-medium shadow-none rounded-md"
+              onClick={() => databaseState.addRow(database.dataSource.id)}
+            >
+              <Plus className="size-3.5" /> New
+            </Button>
+          </div>
+        ) : null}
+      </div>
+
+      {activeView?.type === "board" ? (
+        <DatabaseBoard
+          database={database}
+          onSetValue={databaseState.setValue}
+          onAddRow={() => databaseState.addRow(database.dataSource.id)}
+        />
+      ) : activeView?.type === "calendar" ? (
+        <DatabaseCalendar
+          database={database}
+          onSetValue={databaseState.setValue}
+          onAddRow={(dateStart?: number) => {
+            const dateProp = database.properties.find((p) => p.type === "date");
+            void databaseState.addRow(
+              database.dataSource.id,
+              dateProp?.id,
+              dateStart,
+            );
+          }}
+          readOnly={readOnly}
+        />
+      ) : activeView?.type === "timeline" ? (
+        <DatabaseTimeline database={database} />
+      ) : (
+        <DatabaseGrid
+          database={database}
+          visibleProperties={visibleProperties}
+          onSetValue={databaseState.setValue}
+          onSetRelation={databaseState.setRelation}
+          onUpdateRowTitle={databaseState.updateRowTitle}
+          onEditProperty={(property) => setEditingPropertyId(property.id)}
+        />
+      )}
+      {!readOnly ? (
+        <button
+          type="button"
+          className="text-muted-foreground/70 hover:text-foreground hover:bg-muted/30 flex items-center gap-1.5 px-2 py-1 text-xs font-medium transition-colors rounded-md mt-1"
+          onClick={() => databaseState.addRow(database.dataSource.id)}
+        >
+          <Plus className="size-3.5" /> New page
+        </button>
+      ) : null}
+
+      {!readOnly ? (
+        <AddPropertyDialog
+          open={isAddingProperty}
+          onOpenChange={setIsAddingProperty}
+          dataSourceId={database.dataSource.id}
+          onAdd={(input) =>
+            databaseState.addProperty({
+              dataSourceId: database.dataSource.id,
+              ...input,
+            })
+          }
+        />
+      ) : null}
+      {!readOnly && editingProperty ? (
+        <PropertySettingsDialog
+          key={`${editingProperty.id}:${editingProperty.name}:${editingProperty.formulaExpression ?? ""}`}
+          property={editingProperty}
+          open
+          onOpenChange={(open) => {
+            if (!open) setEditingPropertyId(undefined);
+          }}
+          onSave={databaseState.updateProperty}
+        />
+      ) : null}
+      {!readOnly && activeView ? (
+        <ViewSettingsDialog
+          key={`${activeView.id}:${activeView.filterJson ?? ""}:${activeView.sorts.length}`}
+          open={isConfiguringView}
+          onOpenChange={setIsConfiguringView}
+          database={database}
+          view={activeView}
+          onSave={databaseState.updateView}
+        />
+      ) : null}
+    </div>
+  );
+}

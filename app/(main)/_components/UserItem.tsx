@@ -1,6 +1,5 @@
 "use client";
 
-import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,30 +9,59 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useNavDrawer } from "@/hooks/useNavDrawer";
 import { cn } from "@/lib/utils";
-import { ChevronsLeftRight, LogOut, Settings } from "lucide-react";
+import {
+  ArrowUpCircle,
+  Check,
+  ChevronsLeftRight,
+  LogOut,
+  Plus,
+  Settings,
+  UserPlus,
+  UserRoundPlus,
+} from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useSettings } from "@/hooks/useSettingsModal";
 import { useRouter } from "next/navigation";
+import { useOrganizationContext } from "@/features/organizations/OrganizationProvider";
+import { WorkspaceAvatar } from "@/features/organizations/WorkspaceAvatar";
+import { useBilling } from "@/features/billing/use-billing";
 
 export const UserItem = ({ navDrawer }: { navDrawer?: boolean }) => {
   const { data: session } = authClient.useSession();
   const settings = useSettings();
   const router = useRouter();
+  const { organizations, activeOrganization, setActiveOrganization } =
+    useOrganizationContext();
+  const workspaceName =
+    activeOrganization?.name ?? session?.user.name ?? "My workspace";
 
   const { setInnerPopoverOpen } = useNavDrawer();
+  const billing = useBilling();
 
   const onOpenChange = (open: boolean) => {
     if (!navDrawer) return;
     setInnerPopoverOpen(open);
   };
 
+  const handleOpenSettings = (
+    tab: "account" | "organization" | "billing" | "preferences" | "api" | "mcp",
+  ) => {
+    setInnerPopoverOpen(false);
+    settings.onOpen(tab);
+  };
+
   return (
     <DropdownMenu onOpenChange={navDrawer ? onOpenChange : undefined}>
-      <DropdownMenuTrigger className={navDrawer ? "w-full" : ""}>
+      <DropdownMenuTrigger
+        className={cn(
+          "focus:outline-none focus-visible:outline-none",
+          navDrawer ? "w-full" : "",
+        )}
+      >
         <div
           role="button"
           className={cn(
-            "hover:bg-primary/5 flex w-full items-center p-3 text-sm",
+            "hover:bg-primary/5 flex w-full items-center p-3 text-sm transition-colors",
             navDrawer ? "justify-between rounded-full" : "rounded-none",
           )}
         >
@@ -43,72 +71,164 @@ export const UserItem = ({ navDrawer }: { navDrawer?: boolean }) => {
               navDrawer ? "w-full" : "max-w-39",
             )}
           >
-            <Avatar className="h-5 w-5">
-              <AvatarImage src={session?.user.image ?? undefined} />
-            </Avatar>
-            <span className="line-clamp-1 text-start font-medium">
-              {session?.user.name ?? "My workspace"}
+            <WorkspaceAvatar
+              name={workspaceName}
+              image={activeOrganization?.logo ?? session?.user.image}
+              className="size-5 rounded-[6px] [&_[data-slot=avatar-fallback]]:rounded-[5px] [&_[data-slot=avatar-fallback]]:text-[10px]"
+            />
+            <span className="text-foreground line-clamp-1 text-start font-semibold">
+              {workspaceName}
             </span>
           </div>
-          <ChevronsLeftRight className="text-muted-foreground ml-2 h-4 w-4 rotate-90" />
+          <ChevronsLeftRight className="text-muted-foreground ml-2 h-4 w-4 shrink-0 rotate-90" />
         </div>
       </DropdownMenuTrigger>
+
       <DropdownMenuContent
-        className="w-80"
+        className="bg-popover text-popover-foreground border-border w-72 rounded-xl border p-1.5 shadow-xl"
         align="start"
         alignOffset={11}
         forceMount
       >
-        <div className="flex flex-col space-y-4 p-2">
-          <p className="text-muted-foreground text-xs leading-none font-medium">
-            {session?.user.email}
-          </p>
-          <div className="flex items-center gap-x-2">
-            <div className="bg-secondary rounded-md p-1">
-              <Avatar>
-                <AvatarImage src={session?.user.image ?? undefined} />
-              </Avatar>
-            </div>
-            <div className="space-y-1">
-              <p className="line-clamp-1 text-sm">
-                {session?.user.name ?? "My workspace"}
-              </p>
-            </div>
+        {/* Active Workspace Header Info */}
+        <div className="flex items-center gap-x-3 p-2">
+          <WorkspaceAvatar
+            name={workspaceName}
+            image={activeOrganization?.logo ?? session?.user.image}
+            className="border-border/50 size-9 rounded-lg border [&_[data-slot=avatar-fallback]]:rounded-md [&_[data-slot=avatar-fallback]]:text-xs"
+          />
+          <div className="flex min-w-0 flex-col">
+            <p className="text-foreground line-clamp-1 text-sm font-semibold">
+              {workspaceName}
+            </p>
+            <p className="text-muted-foreground line-clamp-1 text-xs">
+              {billing.subscription?.hasPro
+                ? `Pro · ${billing.subscription.quantity} ${billing.subscription.quantity === 1 ? "seat" : "seats"}`
+                : "Free · 1 member"}
+            </p>
           </div>
         </div>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          asChild
-          className="text-muted-foreground w-full cursor-pointer"
-        >
-          <button
-            onClick={() => {
-              setInnerPopoverOpen(false);
-              settings.onOpen("account");
-            }}
+
+        {/* Quick Menu Items */}
+        <div className="space-y-0.5 py-1">
+          {!billing.subscription?.hasPro ? (
+            <DropdownMenuItem
+              onClick={() => handleOpenSettings("billing")}
+              className="cursor-pointer font-medium text-[#2383E2] hover:text-[#2383E2] focus:text-[#2383E2]"
+            >
+              <ArrowUpCircle className="size-4 text-[#2383E2]" />
+              Upgrade
+            </DropdownMenuItem>
+          ) : null}
+
+          <DropdownMenuItem
+            onClick={() => handleOpenSettings("account")}
+            className="cursor-pointer"
           >
             <Settings className="text-muted-foreground size-4" />
-            Workspace settings
-          </button>
-        </DropdownMenuItem>
+            Settings
+          </DropdownMenuItem>
 
-        <DropdownMenuItem
-          asChild
-          className="group w-full cursor-pointer hover:text-black dark:hover:text-white!"
-        >
-          <button
-            onClick={async () => {
-              setInnerPopoverOpen(false);
-              await authClient.signOut();
-              router.push("/");
-              router.refresh();
-            }}
+          <DropdownMenuItem
+            onClick={() => handleOpenSettings("organization")}
+            className="cursor-pointer"
           >
-            <LogOut className="text-muted-foreground size-4" />
-            <span className="text-muted-foreground transition-colors group-hover:text-black dark:group-hover:text-white">
-              Log Out
-            </span>
-          </button>
+            <UserPlus className="text-muted-foreground size-4" />
+            Invite members
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onClick={() => handleOpenSettings("organization")}
+            className="cursor-pointer"
+          >
+            <UserRoundPlus className="text-muted-foreground size-4" />
+            Add account
+          </DropdownMenuItem>
+        </div>
+
+        <DropdownMenuSeparator className="bg-border/60 my-1" />
+
+        {/* Email Label */}
+        <div className="px-2 py-1">
+          <p className="text-muted-foreground/80 truncate text-[11px] font-normal">
+            {session?.user.email}
+          </p>
+        </div>
+
+        {/* Workspace Switcher Section */}
+        <div className="space-y-0.5 py-0.5">
+          {/* Default Personal Space / Workspace */}
+          <DropdownMenuItem
+            onClick={() => setActiveOrganization(null)}
+            className="flex cursor-pointer items-center justify-between"
+          >
+            <div className="flex min-w-0 items-center gap-x-2">
+              <WorkspaceAvatar
+                name={session?.user.name ?? "Personal"}
+                image={session?.user.image}
+                className="size-5 rounded-[5px]"
+              />
+              <span className="truncate text-sm font-medium">
+                {session?.user.name
+                  ? `${session.user.name}'s Space`
+                  : "Personal Space"}
+              </span>
+            </div>
+            {!activeOrganization && (
+              <Check className="text-foreground ml-2 size-4 shrink-0" />
+            )}
+          </DropdownMenuItem>
+
+          {/* Organization Workspaces */}
+          {organizations.map((org) => {
+            const isActive = activeOrganization?.id === org.id;
+            return (
+              <DropdownMenuItem
+                key={org.id}
+                onClick={() => setActiveOrganization(org.id)}
+                className="flex cursor-pointer items-center justify-between"
+              >
+                <div className="flex min-w-0 items-center gap-x-2">
+                  <WorkspaceAvatar
+                    name={org.name}
+                    image={org.logo}
+                    className="size-5 rounded-[5px]"
+                  />
+                  <span className="truncate text-sm font-medium">
+                    {org.name}
+                  </span>
+                </div>
+                {isActive && (
+                  <Check className="text-foreground ml-2 size-4 shrink-0" />
+                )}
+              </DropdownMenuItem>
+            );
+          })}
+
+          {/* Add / New Workspace */}
+          <DropdownMenuItem
+            onClick={() => handleOpenSettings("organization")}
+            className="cursor-pointer font-medium text-[#2383E2] hover:text-[#2383E2] focus:text-[#2383E2]"
+          >
+            <Plus className="size-4 text-[#2383E2]" />
+            New workspace
+          </DropdownMenuItem>
+        </div>
+
+        <DropdownMenuSeparator className="bg-border/60 my-1" />
+
+        {/* Log Out */}
+        <DropdownMenuItem
+          onClick={async () => {
+            setInnerPopoverOpen(false);
+            await authClient.signOut();
+            router.push("/");
+            router.refresh();
+          }}
+          className="text-muted-foreground hover:text-foreground cursor-pointer"
+        >
+          <LogOut className="text-muted-foreground size-4" />
+          <span>Log out</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

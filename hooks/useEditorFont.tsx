@@ -10,7 +10,7 @@ interface UseEditorFontOptions {
 
 export const useEditorFont = ({ enabled = true }: UseEditorFontOptions) => {
   const [cachedFont, setCachedFont] = useLocalStorage<EditorFont>(
-    "zotion-editor-font",
+    "nexfiy-editor-font",
     "default",
   );
 

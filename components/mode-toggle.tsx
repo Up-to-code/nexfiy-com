@@ -1,16 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Computer, MoonIcon, SunIcon } from "lucide-react";
 import { useTheme } from "next-themes";
-
-import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function ModeToggle() {
   const [isMounted, setIsMounted] = useState(false);
@@ -21,35 +19,21 @@ export function ModeToggle() {
   }, []);
 
   if (!isMounted) {
-    return null;
+    return (
+      <div className="bg-background/50 border-border h-8 w-44 animate-pulse rounded-md border" />
+    );
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon">
-          {theme === "light" ? (
-            <SunIcon className="size-[1.2rem]" />
-          ) : theme === "dark" ? (
-            <MoonIcon className="size-[1.2rem]" />
-          ) : (
-            <Computer className="size-[1.2rem]" />
-          )}
-
-          <span className="sr-only">Toggle theme</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme("light")}>
-          Light
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>
-          Dark
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")}>
-          System
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Select value={theme} onValueChange={(val) => setTheme(val)}>
+      <SelectTrigger className="bg-background/50 border-border/80 focus:ring-primary/50 h-8 w-44 text-xs font-normal focus:ring-1">
+        <SelectValue placeholder="Use system setting" />
+      </SelectTrigger>
+      <SelectContent align="end" className="text-xs">
+        <SelectItem value="system">Use system setting</SelectItem>
+        <SelectItem value="light">Light</SelectItem>
+        <SelectItem value="dark">Dark</SelectItem>
+      </SelectContent>
+    </Select>
   );
 }
