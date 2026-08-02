@@ -28,24 +28,24 @@ Use the property type, not only the displayed value, to choose a component. Keep
 
 Normalized blocks preserve their order, type, content, properties, and nested children. The available structural types are:
 
-| Block type                            | Rendering suggestion                           |
-| ------------------------------------- | ---------------------------------------------- |
-| `paragraph`                           | Paragraph with rich text                       |
-| `heading_1`, `heading_2`, `heading_3` | Semantic heading                               |
-| `bulleted_list`, `numbered_list`      | List item or grouped list                      |
-| `checklist`                           | Checkbox plus label                            |
-| `quote`                               | Blockquote                                     |
-| `callout`                             | Emphasized panel with optional icon            |
-| `toggle`                              | Expandable disclosure                          |
-| `divider`                             | Horizontal rule                                |
-| `image`                               | Responsive image with alt text/caption         |
-| `file`                                | Downloadable file link                         |
-| `bookmark`                            | Link preview or labeled link                   |
-| `database_view`                       | Embedded database reference                    |
-| `child_page`                          | Link to a nested page                          |
-| `columns`, `column`                   | Responsive column layout                       |
-| `synced_reference`                    | Referenced synchronized content                |
-| `blocknote`                           | Rich BlockNote content or a custom embed block |
+| Block type                            | Rendering suggestion                                                   |
+| ------------------------------------- | ---------------------------------------------------------------------- |
+| `paragraph`                           | Paragraph with rich text                                               |
+| `heading_1`, `heading_2`, `heading_3` | Semantic heading                                                       |
+| `bulleted_list`, `numbered_list`      | List item or grouped list                                              |
+| `checklist`                           | Checkbox plus label                                                    |
+| `quote`                               | Blockquote                                                             |
+| `callout`                             | Emphasized panel with optional icon                                    |
+| `toggle`                              | Expandable disclosure                                                  |
+| `divider`                             | Horizontal rule                                                        |
+| `image`                               | Responsive image; `url` is the asset and `text` is accessible alt text |
+| `file`                                | Downloadable file link                                                 |
+| `bookmark`                            | Link preview or labeled link                                           |
+| `database_view`                       | Embedded database reference                                            |
+| `child_page`                          | Link to a nested page                                                  |
+| `columns`, `column`                   | Responsive column layout                                               |
+| `synced_reference`                    | Referenced synchronized content                                        |
+| `blocknote`                           | Rich BlockNote content or a custom embed block                         |
 
 Render `children` recursively. For narrow screens, columns should collapse into a readable vertical flow.
 

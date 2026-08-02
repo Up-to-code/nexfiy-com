@@ -1,6 +1,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { ConvexHttpClient } from "convex/browser";
+import path from "node:path";
+import sharp from "sharp";
+import { UTApi, UTFile } from "uploadthing/server";
 import { z } from "zod";
 
 import { api } from "@/convex/_generated/api";
@@ -87,6 +90,52 @@ const databaseSortSchema = z.object({
   direction: z.enum(["asc", "desc"]),
 });
 
+const MAX_MCP_IMAGE_BYTES = 3 * 1024 * 1024;
+
+async function uploadMcpImage(
+  dataBase64: string,
+  fileName: string,
+  workspaceId: string,
+) {
+  const source = Buffer.from(dataBase64, "base64");
+  if (!source.length || source.length > MAX_MCP_IMAGE_BYTES) {
+    throw new Error("Image must decode to between 1 byte and 3 MB");
+  }
+  const image = sharp(source, { failOn: "error" });
+  const metadata = await image.metadata();
+  if (!metadata.width || !metadata.height) {
+    throw new Error("The uploaded data is not a supported image");
+  }
+  const output = await image
+    .rotate()
+    .resize({
+      width: 2400,
+      height: 2400,
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .webp({ quality: 86 })
+    .toBuffer();
+  const baseName = path.basename(fileName, path.extname(fileName)).slice(0, 80);
+  const customId = `${workspaceId}--${crypto.randomUUID()}`;
+  const uploaded = await new UTApi().uploadFiles(
+    new UTFile([output], `${baseName || "image"}.webp`, {
+      type: "image/webp",
+      customId,
+    }),
+  );
+  if (uploaded.error) throw new Error(uploaded.error.message);
+  const url = new URL(uploaded.data.ufsUrl);
+  url.pathname = `/f/${encodeURIComponent(customId)}`;
+  return {
+    url: url.toString(),
+    width: metadata.width,
+    height: metadata.height,
+    size: output.length,
+    mimeType: "image/webp",
+  };
+}
+
 function jsonRpcError(status: number, message: string) {
   return Response.json(
     {
@@ -139,6 +188,58 @@ async function handleMcpRequest(request: Request, context: RouteContext) {
     version: "1.0.0",
     websiteUrl: new URL(request.url).origin,
   });
+
+  server.registerTool(
+    "upload_image",
+    {
+      title: "Upload an image to Nexfiy",
+      description:
+        "Upload base64 image data into workspace-owned Nexfiy storage. Optionally append the uploaded asset as a normalized image block on a dynamic page. Use the returned URL for covers, database properties, or later image blocks.",
+      inputSchema: {
+        dataBase64: z.string().min(1).max(4_200_000),
+        fileName: z.string().min(1).max(120),
+        altText: z.string().max(500).optional(),
+        pageId: z.string().min(1).optional(),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: true,
+      },
+    },
+    async ({ dataBase64, fileName, altText, pageId }) => {
+      const image = await uploadMcpImage(
+        dataBase64,
+        fileName,
+        access.workspaceId,
+      );
+      const blocks = pageId
+        ? await convex.mutation(api.mcpEnvironments.createPageBlocks, {
+            tokenHash,
+            pageId: pageId as Id<"documents">,
+            blocks: [
+              {
+                key: `uploaded-image-${crypto.randomUUID()}`,
+                type: "image",
+                text: altText,
+                url: image.url,
+              },
+            ],
+          })
+        : [];
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: pageId
+              ? `Image uploaded and appended to the page.\n${image.url}`
+              : `Image uploaded.\n${image.url}`,
+          },
+        ],
+        structuredContent: { image, block: blocks[0] ?? null },
+      };
+    },
+  );
 
   server.registerTool(
     "list_documents",

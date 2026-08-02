@@ -166,8 +166,7 @@ export async function updateDatabaseProperty(
     }
   }
 
-  let compiledFormula:
-    ReturnType<typeof compileFormulaExpression> | undefined;
+  let compiledFormula: ReturnType<typeof compileFormulaExpression> | undefined;
   if (args.formulaExpression !== undefined) {
     if (property.type !== "formula") {
       throw databaseError(
@@ -360,7 +359,9 @@ export async function setDatabaseRelationTargets(
             .eq("propertyId", reciprocal._id),
         )
         .take(100);
-      if (!mirrors.some((candidate) => candidate.targetDocumentId === row._id)) {
+      if (
+        !mirrors.some((candidate) => candidate.targetDocumentId === row._id)
+      ) {
         await ctx.db.insert("databaseRelations", {
           workspaceId,
           dataSourceId: reciprocal.dataSourceId,
@@ -602,12 +603,13 @@ export async function addDatabaseRow(
     )
     .take(500);
   const now = Date.now();
-  return await ctx.db.insert("documents", {
+  const documentId = await ctx.db.insert("documents", {
     title,
     userId: workspaceId,
     parentDocument: dataSource.databaseDocumentId,
     dataSourceId: args.dataSourceId,
     kind: "page",
+    contentModel: "page_blocks",
     fullWidth: true,
     showToc: true,
     isArchived: false,
@@ -615,6 +617,16 @@ export async function addDatabaseRow(
     order: existingRows.length,
     updatedAt: now,
   });
+  await ctx.db.insert("pageBlocks", {
+    workspaceId,
+    pageId: documentId,
+    type: "paragraph",
+    order: 0,
+    text: "",
+    createdAt: now,
+    updatedAt: now,
+  });
+  return documentId;
 }
 
 export async function setDatabasePropertyValue(

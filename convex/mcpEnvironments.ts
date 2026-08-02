@@ -879,10 +879,21 @@ export const createPageBlocks = mutation({
         "A block blueprint must contain 1 to 250 blocks",
       );
     }
-    const existing = await ctx.db
+    let existing = await ctx.db
       .query("pageBlocks")
       .withIndex("by_page", (q) => q.eq("pageId", args.pageId))
       .take(2_000);
+    const placeholder =
+      existing.length === 1 &&
+      existing[0].type === "paragraph" &&
+      existing[0].parentBlockId === undefined &&
+      !(existing[0].text ?? "").trim()
+        ? existing[0]
+        : null;
+    if (placeholder) {
+      await ctx.db.delete(placeholder._id);
+      existing = [];
+    }
     if (existing.length + args.blocks.length > 2_000) {
       throw mcpError("BLOCK_LIMIT", "This page has reached its block limit");
     }

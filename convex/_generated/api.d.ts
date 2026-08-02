@@ -10,7 +10,6 @@
 
 import type * as auth from "../auth.js";
 import type * as billing from "../billing.js";
-import type * as blogSeed from "../blogSeed.js";
 import type * as contentApi from "../contentApi.js";
 import type * as databases from "../databases.js";
 import type * as documents from "../documents.js";
@@ -41,7 +40,6 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   billing: typeof billing;
-  blogSeed: typeof blogSeed;
   contentApi: typeof contentApi;
   databases: typeof databases;
   documents: typeof documents;

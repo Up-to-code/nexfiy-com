@@ -49,6 +49,12 @@ export const docsManifest: DocsEntry[] = [
     section: "MCP",
   },
   {
+    slug: "mcp/images",
+    title: "Upload images with MCP",
+    description: "Upload workspace-owned assets and create image blocks.",
+    section: "MCP",
+  },
+  {
     slug: "guides/nextjs",
     title: "Use Nexfiy with Next.js",
     description: "Fetch content securely and render a content collection.",

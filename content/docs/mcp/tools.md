@@ -30,14 +30,17 @@ These tools are advertised to clients as read-only.
 
 ## Page blocks
 
-| Tool                 | Purpose                                      |
-| -------------------- | -------------------------------------------- |
-| `create_page_blocks` | Add up to 250 normalized blocks in one call. |
-| `update_page_block`  | Change an existing page block.               |
-| `split_page_block`   | Split a block at a requested position.       |
-| `move_page_block`    | Reorder or reparent a block.                 |
+| Tool                 | Purpose                                            |
+| -------------------- | -------------------------------------------------- |
+| `create_page_blocks` | Add up to 250 normalized blocks in one call.       |
+| `update_page_block`  | Change an existing page block.                     |
+| `split_page_block`   | Split a block at a requested position.             |
+| `move_page_block`    | Reorder or reparent a block.                       |
+| `upload_image`       | Upload an asset and optionally add an image block. |
 
 Supported block families include paragraphs, headings, lists, checklists, quotes, callouts, toggles, dividers, media, bookmarks, child pages, columns, database views, synchronized references, and BlockNote custom blocks.
+
+See [Upload images with MCP](/docs/mcp/images) for the complete binary upload and image-block workflow.
 
 ## Templates
 
