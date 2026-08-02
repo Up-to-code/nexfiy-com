@@ -12,6 +12,7 @@ import { useOrganizationContext } from "./OrganizationProvider";
 import { WorkspaceAvatar } from "./WorkspaceAvatar";
 import { useBilling } from "@/features/billing/use-billing";
 import { ProUpgradePrompt } from "@/features/billing/ProUpgradePrompt";
+import posthog from "posthog-js";
 
 function toSlug(value: string) {
   return value
@@ -53,6 +54,7 @@ export function OrganizationSettings() {
       }
 
       await setActiveOrganization(data.id);
+      posthog.capture("workspace_created");
       setName("");
       toast.success("Workspace created.");
     } catch (error) {

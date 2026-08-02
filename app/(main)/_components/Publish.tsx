@@ -14,6 +14,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Check, Copy, Divide, Globe } from "lucide-react";
+import posthog from "posthog-js";
 
 interface PublishProps {
   initialData: Doc<"documents">;
@@ -36,6 +37,10 @@ export const Publish = ({ initialData }: PublishProps) => {
       isPublished: true,
     }).finally(() => setIsSubmitting(false));
 
+    void promise.then(() => {
+      posthog.capture("document_published");
+    }).catch(() => undefined);
+
     toast.promise(promise, {
       loading: "Publishing...",
       success: "Note published!",
@@ -50,6 +55,10 @@ export const Publish = ({ initialData }: PublishProps) => {
       id: initialData._id,
       isPublished: false,
     }).finally(() => setIsSubmitting(false));
+
+    void promise.then(() => {
+      posthog.capture("document_unpublished");
+    }).catch(() => undefined);
 
     toast.promise(promise, {
       loading: "Unpublishing...",

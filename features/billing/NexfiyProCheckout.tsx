@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useBilling } from "./use-billing";
 import { NEXFIY_PRO_PLAN } from "./plan-content";
+import posthog from "posthog-js";
 
 type NexfiyProCheckoutProps = {
   compact?: boolean;
@@ -32,8 +33,10 @@ export function NexfiyProCheckout({
     try {
       if (hasPaidAccess && subscription?.canManage) {
         await openPortal();
+        posthog.capture("billing_portal_opened");
       } else if (!hasPaidAccess) {
         await startCheckout(seats);
+        posthog.capture("pro_checkout_started", { seat_count: seats });
       }
     } finally {
       setIsSubmitting(false);

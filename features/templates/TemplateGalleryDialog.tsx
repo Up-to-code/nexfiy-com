@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { logger } from "@/lib/logger";
+import posthog from "posthog-js";
 
 export function TemplateGalleryDialog({
   open,
@@ -38,6 +39,7 @@ export function TemplateGalleryDialog({
     setCreatingTemplateId(templateId);
     try {
       const created = await instantiate({ templateId, parentDocument });
+      posthog.capture("template_instantiated");
       onOpenChange(false);
       toast.success("Template added to your workspace");
       router.push(`/documents/${created.rootDocumentId}`);

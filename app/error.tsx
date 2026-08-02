@@ -1,11 +1,16 @@
 "use client";
 
+import { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import posthog from "../instrumentation-client";
 
-const Error = () => {
+const Error = ({ error }: { error: Error & { digest?: string } }) => {
+  useEffect(() => {
+    posthog.captureException(error);
+  }, [error]);
   return (
     <div className="dark:bg-dark flex h-full flex-col items-center justify-center space-y-4">
       <Image

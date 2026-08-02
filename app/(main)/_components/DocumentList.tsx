@@ -27,6 +27,7 @@ import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { BLOCK_DRAG_MIME } from "@/features/blocks/drag";
 import { optimisticallyMoveBlock } from "@/features/blocks/optimisticBlockMove";
 import { usePageTreeMutations } from "@/features/documents/usePageTreeMutations";
+import posthog from "posthog-js";
 
 import { Item } from "./Item";
 
@@ -252,7 +253,11 @@ export function DocumentList({
   };
 
   const onFavorite = (id: Id<"documents">) => {
-    toast.promise(toggleFavorite({ id }), {
+    const promise = toggleFavorite({ id });
+    void promise.then(() => {
+      posthog.capture("document_favorite_toggled");
+    }).catch(() => undefined);
+    toast.promise(promise, {
       loading: "Updating favorites...",
       success: "Favorites updated!",
       error: "Failed to update favorites.",
@@ -279,6 +284,9 @@ export function DocumentList({
       targetId: over.id as Id<"documents">,
       placement,
     });
+    void promise.then(() => {
+      posthog.capture("page_reordered", { placement });
+    }).catch(() => undefined);
     toast.promise(promise, {
       loading: "Moving page...",
       success:

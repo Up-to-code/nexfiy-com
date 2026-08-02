@@ -37,6 +37,7 @@ import { NexfiyProCheckout } from "@/features/billing/NexfiyProCheckout";
 import { OrganizationSettings } from "@/features/organizations/OrganizationSettings";
 import { ContentApiSettings } from "@/features/content-api/ContentApiSettings";
 import { NEXFIY_PRO_PLAN } from "@/features/billing/plan-content";
+import posthog from "posthog-js";
 
 const FONTS: { label: string; value: EditorFont }[] = [
   { label: "Default", value: "default" },
@@ -174,6 +175,7 @@ export const SettingsModal = () => {
                     className="h-8 shrink-0 rounded-md"
                     onClick={async () => {
                       await authClient.signOut();
+                      posthog.reset();
                       settings.onClose();
                       router.push("/");
                       router.refresh();
