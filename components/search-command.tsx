@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { File } from "lucide-react";
 import { useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
@@ -18,25 +18,27 @@ import {
 import { useSearch } from "@/hooks/useSearch";
 import { api } from "@/convex/_generated/api";
 import { DialogTitle } from "./ui/dialog";
+import { captureEvent } from "@/lib/analytics";
 
 export const SearchCommand = () => {
   const { data: session } = authClient.useSession();
   const router = useRouter();
   const documents = useQuery(api.documents.getSearch);
-  const [isMounted, setIsMounted] = useState(false);
+  const isMounted = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
 
   const toggle = useSearch((store) => store.toggle);
   const isOpen = useSearch((store) => store.isOpen);
   const onClose = useSearch((store) => store.onClose);
 
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
+        captureEvent("workspace_search_opened", { source: "keyboard" });
         toggle();
       }
     };
@@ -46,6 +48,7 @@ export const SearchCommand = () => {
   }, [toggle]);
 
   const onSelect = (id: string) => {
+    captureEvent("workspace_search_result_selected", {});
     router.push(`/documents/${id}`);
     onClose();
   };

@@ -16,6 +16,7 @@ import { TableOfContents } from "@/components/table-of-contents";
 import { useEditorFont } from "@/hooks/useEditorFont";
 import { DatabasePage } from "@/features/databases/DatabasePage";
 import { NormalizedBlockNoteEditor } from "@/features/blocks/NormalizedBlockNoteEditor";
+import { captureEvent } from "@/lib/analytics";
 
 interface DocumentIdPageProps {
   params: Promise<{
@@ -41,6 +42,11 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
   const update = useMutation(api.documents.update);
   const documentTitle = doc?.title;
   const documentIcon = doc?.icon;
+  const trackedDocumentKind = doc
+    ? doc.kind === "database"
+      ? "database"
+      : "document"
+    : undefined;
 
   useEffect(() => {
     if (documentTitle === undefined) return;
@@ -64,6 +70,13 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
       if (link) link.href = defaultFavicon;
     };
   }, [documentTitle, documentIcon, resolvedTheme]);
+
+  useEffect(() => {
+    if (!trackedDocumentKind) return;
+    captureEvent("document_viewed", {
+      kind: trackedDocumentKind,
+    });
+  }, [documentId, trackedDocumentKind]);
 
   useEffect(() => {
     if (!doc) return;

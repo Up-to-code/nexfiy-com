@@ -8,6 +8,7 @@ import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRef } from "react";
+import { captureEvent } from "@/lib/analytics";
 
 gsap.registerPlugin(useGSAP);
 
@@ -155,7 +156,16 @@ export const Hero = () => {
                 className="h-11 w-full rounded-xl bg-[#2383e2] px-7 text-base font-medium text-white shadow-xs hover:bg-[#1d6fc2] sm:w-auto"
                 asChild
               >
-                <Link href="/pricing">View early-access pricing</Link>
+                <Link
+                  href="/pricing"
+                  onClick={() =>
+                    captureEvent("landing_cta_clicked", {
+                      destination: "pricing",
+                    })
+                  }
+                >
+                  View early-access pricing
+                </Link>
               </Button>
               <Button
                 size="lg"
@@ -163,7 +173,16 @@ export const Hero = () => {
                 className="border-border/70 h-11 w-full rounded-xl px-7 text-base font-medium sm:w-auto"
                 asChild
               >
-                <Link href="#ai">Explore Features</Link>
+                <Link
+                  href="#ai"
+                  onClick={() =>
+                    captureEvent("landing_cta_clicked", {
+                      destination: "features",
+                    })
+                  }
+                >
+                  Explore Features
+                </Link>
               </Button>
             </>
           )}
@@ -174,7 +193,14 @@ export const Hero = () => {
               className="h-11 rounded-xl bg-[#2383e2] px-8 text-base font-medium text-white shadow-xs hover:bg-[#1d6fc2]"
               asChild
             >
-              <Link href="/documents">
+              <Link
+                href="/documents"
+                onClick={() =>
+                  captureEvent("landing_cta_clicked", {
+                    destination: "workspace",
+                  })
+                }
+              >
                 Enter Nexfiy
                 <ArrowRight className="ml-2 size-4" />
               </Link>

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { captureEvent } from "@/lib/analytics";
 
 export const AuthForm = ({ mode }: { mode: "sign-in" | "sign-up" }) => {
   const router = useRouter();
@@ -22,6 +23,7 @@ export const AuthForm = ({ mode }: { mode: "sign-in" | "sign-up" }) => {
   const isSignUp = mode === "sign-up";
 
   const handleSocialSignIn = async (provider: "apple" | "google") => {
+    captureEvent("auth_started", { method: provider, mode });
     setSocialProvider(provider);
     setErrorMessage(null);
 
@@ -33,6 +35,7 @@ export const AuthForm = ({ mode }: { mode: "sign-in" | "sign-up" }) => {
       });
 
       if (result.error) {
+        captureEvent("auth_failed", { method: provider, mode });
         const message =
           result.error.message || `Could not continue with ${provider}.`;
         setErrorMessage(message);
@@ -46,6 +49,7 @@ export const AuthForm = ({ mode }: { mode: "sign-in" | "sign-up" }) => {
 
       window.location.assign(result.data.url);
     } catch {
+      captureEvent("auth_failed", { method: provider, mode });
       const message = `We couldn't connect to ${provider}. Please try again.`;
       setErrorMessage(message);
       toast.error(message);
@@ -62,6 +66,7 @@ export const AuthForm = ({ mode }: { mode: "sign-in" | "sign-up" }) => {
     const email = String(data.get("email") ?? "");
     const password = String(data.get("password") ?? "");
     const name = String(data.get("name") ?? "");
+    captureEvent("auth_started", { method: "email", mode });
 
     try {
       const result = isSignUp
@@ -69,15 +74,18 @@ export const AuthForm = ({ mode }: { mode: "sign-in" | "sign-up" }) => {
         : await authClient.signIn.email({ email, password });
 
       if (result.error) {
+        captureEvent("auth_failed", { method: "email", mode });
         const message = result.error.message || "Authentication failed";
         setErrorMessage(message);
         toast.error(message);
         return;
       }
 
+      captureEvent("auth_succeeded", { method: "email", mode });
       router.push("/documents");
       router.refresh();
     } catch {
+      captureEvent("auth_failed", { method: "email", mode });
       const message = "We couldn't reach the server. Please try again.";
       setErrorMessage(message);
       toast.error(message);
