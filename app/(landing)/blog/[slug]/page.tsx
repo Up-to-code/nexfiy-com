@@ -43,29 +43,43 @@ export default async function BlogPostPage({ params }: Props) {
   if (!post?.blocks) notFound();
   return (
     <>
-      <article className="mx-auto max-w-3xl px-4 py-20 sm:px-6">
-        <Link href="/blog" className="text-sm font-semibold text-[#2383e2]">
-          ← Nexfiy Journal
+      <article className="mx-auto max-w-5xl px-5 py-12 sm:px-8 sm:py-20">
+        <Link
+          href="/blog"
+          className="text-sm text-zinc-500 transition-colors hover:text-[#2383e2]"
+        >
+          Journal / All notes
         </Link>
-        <header className="mt-10 border-b pb-10">
-          <p className="text-sm tracking-[0.16em] text-zinc-500 uppercase">
-            {post.tags.join(" · ")}
-          </p>
-          <h1 className="mt-4 text-4xl font-semibold tracking-[-0.04em] sm:text-6xl">
-            {post.title}
-          </h1>
-          <p className="mt-5 text-xl leading-8 text-zinc-600 dark:text-white/60">
-            {post.excerpt}
-          </p>
-          <p className="mt-6 text-sm text-zinc-500">
-            {post.author}
-            {post.publishedAt
-              ? ` · ${new Date(post.publishedAt).toLocaleDateString("en", { month: "long", day: "numeric", year: "numeric" })}`
-              : ""}
-          </p>
+        <header className="mt-8 border-y py-10 sm:py-14">
+          <div className="grid gap-8 md:grid-cols-[8rem_minmax(0,1fr)] md:gap-12">
+            <div className="space-y-3 text-xs leading-5 text-zinc-400">
+              {post.publishedAt ? (
+                <p>
+                  {new Date(post.publishedAt).toLocaleDateString("en", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </p>
+              ) : null}
+              <p>{post.author}</p>
+              {post.tags.length ? <p>{post.tags.join(" / ")}</p> : null}
+            </div>
+            <div>
+              <h1 className="max-w-3xl text-4xl font-semibold tracking-[-0.045em] sm:text-5xl lg:text-6xl">
+                {post.title}
+              </h1>
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-zinc-500 dark:text-white/50">
+                {post.excerpt}
+              </p>
+            </div>
+          </div>
         </header>
-        <div className="mt-12">
-          <BlogBlocks blocks={post.blocks} />
+        <div className="grid md:grid-cols-[8rem_minmax(0,42rem)] md:gap-12">
+          <div aria-hidden="true" />
+          <div className="pt-10 sm:pt-14">
+            <BlogBlocks blocks={post.blocks} />
+          </div>
         </div>
       </article>
       <Footer />

@@ -14,67 +14,70 @@ export default async function BlogPage() {
   const { available, posts } = await getPublishedPosts();
   return (
     <>
-      <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:px-8">
-        <p className="text-sm font-semibold tracking-[0.18em] text-[#2383e2] uppercase">
-          Nexfiy Journal
-        </p>
-        <h1 className="mt-4 max-w-3xl text-5xl font-semibold tracking-[-0.04em] sm:text-6xl">
-          Ideas for connected work.
-        </h1>
-        <p className="mt-5 max-w-2xl text-lg text-zinc-600 dark:text-white/60">
-          Product notes, practical guides, and the thinking behind a workspace
-          made for people and tools.
-        </p>
+      <section className="mx-auto max-w-5xl px-5 py-16 sm:px-8 sm:py-24">
+        <header className="grid gap-8 border-b pb-12 md:grid-cols-[minmax(0,1fr)_15rem] md:items-end">
+          <div>
+            <p className="text-sm font-medium text-zinc-500">Nexfiy journal</p>
+            <h1 className="mt-5 max-w-2xl text-4xl font-semibold tracking-[-0.045em] sm:text-5xl">
+              Notes from the work.
+            </h1>
+          </div>
+          <p className="text-sm leading-6 text-zinc-500 dark:text-white/50">
+            Product decisions, practical guides, and clear thinking about
+            connected knowledge.
+          </p>
+        </header>
         {!available ? (
-          <p className="mt-16 rounded-xl border border-dashed p-8 text-zinc-500">
+          <p className="border-b py-8 text-sm text-zinc-500">
             The journal is temporarily unavailable. Please check back shortly.
           </p>
         ) : null}
         {available && posts.length === 0 ? (
-          <p className="mt-16 border-t pt-8 text-zinc-500">
+          <p className="border-b py-8 text-sm text-zinc-500">
             The first story is being prepared.
           </p>
         ) : null}
-        <div className="mt-16 divide-y border-y">
+        <div className="divide-y">
           {posts.map((post) => (
             <article
               key={post.id}
-              className="grid gap-5 py-8 md:grid-cols-[1fr_2fr_auto] md:items-start"
+              className="group grid gap-4 py-8 sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-8"
             >
-              <p className="text-sm text-zinc-500">
+              <p className="pt-1 text-xs tabular-nums text-zinc-400">
                 {post.publishedAt
                   ? new Date(post.publishedAt).toLocaleDateString("en", {
-                      month: "short",
+                      month: "2-digit",
                       day: "numeric",
-                      year: "numeric",
+                      year: "2-digit",
                     })
-                  : "Journal"}
+                  : "—"}
               </p>
-              <div>
-                <h2 className="text-2xl font-semibold tracking-tight">
+              <div className="min-w-0">
+                <h2 className="text-xl font-semibold tracking-[-0.02em] sm:text-2xl">
                   <Link
                     href={`/blog/${post.slug}`}
-                    className="hover:text-[#2383e2]"
+                    className="outline-none transition-colors group-hover:text-[#2383e2] focus-visible:text-[#2383e2]"
                   >
                     {post.title}
                   </Link>
                 </h2>
-                <p className="mt-2 text-zinc-600 dark:text-white/60">
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500 dark:text-white/50">
                   {post.excerpt}
                 </p>
-                <p className="mt-3 text-xs font-medium tracking-wider text-zinc-500 uppercase">
-                  {post.tags.join(" · ")}
-                </p>
+                {post.tags.length ? (
+                  <p className="mt-4 text-xs text-zinc-400">
+                    {post.tags.join(" / ")}
+                  </p>
+                ) : null}
               </div>
-              <Link
-                href={`/blog/${post.slug}`}
-                className="text-sm font-semibold text-[#2383e2]"
-              >
-                Read story →
-              </Link>
             </article>
           ))}
         </div>
+        {available && posts.length ? (
+          <p className="border-t pt-5 text-xs text-zinc-400">
+            {posts.length} {posts.length === 1 ? "note" : "notes"}
+          </p>
+        ) : null}
       </section>
       <Footer />
     </>

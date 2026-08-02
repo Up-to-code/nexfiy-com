@@ -61,7 +61,7 @@ export function BlogBlocks({ blocks }: { blocks: BlogBlock[] }) {
                 height={630}
                 sizes="(max-width: 768px) 100vw, 768px"
                 unoptimized
-                className="h-auto w-full rounded-2xl border"
+                className="h-auto w-full rounded-md border"
               />
             </BlockShell>
           );
@@ -74,7 +74,7 @@ export function BlogBlocks({ blocks }: { blocks: BlogBlock[] }) {
                 <iframe
                   src={video}
                   title={text || "YouTube video"}
-                  className="aspect-video w-full rounded-2xl border"
+                  className="aspect-video w-full rounded-md border"
                   allowFullScreen
                 />
               </BlockShell>
@@ -85,7 +85,7 @@ export function BlogBlocks({ blocks }: { blocks: BlogBlock[] }) {
               href={block.url}
               target="_blank"
               rel="noreferrer"
-              className="my-4 block rounded-xl border p-4 font-medium hover:bg-zinc-50 dark:hover:bg-white/5"
+              className="blog-link-row my-5 block border-y py-4 font-medium"
             >
               {text || block.url}
               <span className="mt-1 block text-sm font-normal text-zinc-500">
