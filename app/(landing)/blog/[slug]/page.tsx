@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BlogBlocks } from "@/features/blog/BlogBlocks";
@@ -77,8 +78,22 @@ export default async function BlogPostPage({ params }: Props) {
         </header>
         <div className="grid md:grid-cols-[8rem_minmax(0,42rem)] md:gap-12">
           <div aria-hidden="true" />
-          <div className="pt-10 sm:pt-14">
+          <div>
+            <div className="mt-10 aspect-[16/9] overflow-hidden bg-zinc-100 sm:mt-14 dark:bg-white/5">
+              <Image
+                src={post.coverImage || "/social/opengraph.png"}
+                alt=""
+                width={1200}
+                height={675}
+                sizes="(max-width: 768px) 100vw, 672px"
+                unoptimized
+                className="h-full w-full object-cover"
+                priority
+              />
+            </div>
+            <div className="pt-10 sm:pt-14">
             <BlogBlocks blocks={post.blocks} />
+            </div>
           </div>
         </div>
       </article>
