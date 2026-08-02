@@ -73,7 +73,10 @@ function SortablePage({
     transition,
     isDragging,
     isOver,
-  } = useSortable({ id: document._id });
+  } = useSortable({
+    id: document._id,
+    disabled: Boolean(document.dataSourceId),
+  });
 
   return (
     <div
@@ -123,6 +126,7 @@ function SortablePage({
         expanded={expanded}
         isFavorite={document.isFavorite}
         onFavorite={() => onFavorite(document._id)}
+        showDragHandle={!document.dataSourceId}
         navDrawer={navDrawer}
         supportsCanvasSubPages={
           document.contentModel === "page_blocks" &&

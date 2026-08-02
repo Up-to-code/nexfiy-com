@@ -4,6 +4,31 @@ import { Doc, Id } from "./_generated/dataModel";
 import { getWorkspaceScope } from "./lib/workspace";
 import { syncDatabaseName } from "./lib/databaseDomain";
 
+const documentValidator = v.object({
+  _id: v.id("documents"),
+  _creationTime: v.number(),
+  title: v.string(),
+  userId: v.string(),
+  isArchived: v.boolean(),
+  parentDocument: v.optional(v.id("documents")),
+  content: v.optional(v.string()),
+  coverImage: v.optional(v.string()),
+  icon: v.optional(v.string()),
+  isPublished: v.boolean(),
+  order: v.optional(v.number()),
+  updatedAt: v.optional(v.number()),
+  isFavorite: v.optional(v.boolean()),
+  editorFont: v.optional(v.string()),
+  fullWidth: v.optional(v.boolean()),
+  smallText: v.optional(v.boolean()),
+  showToc: v.optional(v.boolean()),
+  kind: v.optional(v.union(v.literal("page"), v.literal("database"))),
+  dataSourceId: v.optional(v.id("dataSources")),
+  contentModel: v.optional(
+    v.union(v.literal("blocknote"), v.literal("page_blocks")),
+  ),
+});
+
 export const archive = mutation({
   args: { id: v.id("documents") },
   handler: async (ctx, args) => {
@@ -56,6 +81,7 @@ export const getSidebar = query({
   args: {
     parentDocument: v.optional(v.id("documents")),
   },
+  returns: v.array(documentValidator),
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
 
@@ -65,7 +91,7 @@ export const getSidebar = query({
 
     const userId = await getWorkspaceScope(ctx, identity.subject);
 
-    const documents = await ctx.db
+    const ordinaryChildren = await ctx.db
       .query("documents")
       .withIndex("by_user_parent_archived_data_source", (q) =>
         q
@@ -76,6 +102,50 @@ export const getSidebar = query({
       )
       .order("desc")
       .take(500);
+
+    const databaseRows: Doc<"documents">[] = [];
+
+    if (args.parentDocument) {
+      const parent = await ctx.db.get(args.parentDocument);
+
+      if (!parent || parent.userId !== userId || parent.isArchived) {
+        return [];
+      }
+
+      if (parent.kind === "database") {
+        const dataSource = await ctx.db
+          .query("dataSources")
+          .withIndex("by_database_document", (q) =>
+            q.eq("databaseDocumentId", parent._id),
+          )
+          .unique();
+
+        if (dataSource?.workspaceId === userId) {
+          const rows = await ctx.db
+            .query("documents")
+            .withIndex("by_user_and_data_source_and_archived", (q) =>
+              q
+                .eq("userId", userId)
+                .eq("dataSourceId", dataSource._id)
+                .eq("isArchived", false),
+            )
+            .take(500);
+
+          databaseRows.push(
+            ...rows.filter((row) => row.parentDocument === parent._id),
+          );
+        }
+      }
+    }
+
+    const documents = Array.from(
+      new Map(
+        [...ordinaryChildren, ...databaseRows].map((document) => [
+          document._id,
+          document,
+        ]),
+      ).values(),
+    );
 
     documents.sort((a, b) => {
       if (a.order === undefined && b.order === undefined) {
