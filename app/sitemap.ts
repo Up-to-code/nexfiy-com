@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { getPublishedPosts } from "@/features/blog/blog-api";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = "https://nexfiy.com";
+  const base = "https://www.nexfiy.com";
   const staticRoutes = [
     "",
     "/pricing",

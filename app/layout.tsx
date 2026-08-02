@@ -14,7 +14,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://nexfiy.com"),
+  metadataBase: new URL("https://www.nexfiy.com"),
   title: {
     default: "Nexfiy — The connected workspace",
     template: "%s | Nexfiy",

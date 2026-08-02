@@ -18,13 +18,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const post = await getPublishedPost(slug);
   if (!post) return {};
   return {
-    title: `${post.title} — Nexfiy`,
+    title: post.title,
     description: post.excerpt,
+    keywords: post.tags,
     alternates: { canonical: `/blog/${post.slug}` },
     openGraph: {
       title: post.title,
       description: post.excerpt,
       type: "article",
+      url: `/blog/${post.slug}`,
+      publishedTime: post.publishedAt
+        ? new Date(post.publishedAt).toISOString()
+        : undefined,
+      authors: [post.author],
+      tags: post.tags,
       images: post.coverImage ? [post.coverImage] : ["/social/opengraph.png"],
     },
     twitter: {
@@ -42,8 +49,40 @@ export default async function BlogPostPage({ params }: Props) {
   const { slug } = await params;
   const post = await getPublishedPost(slug);
   if (!post?.blocks) notFound();
+  const canonicalUrl = `https://www.nexfiy.com/blog/${post.slug}`;
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: post.title,
+    description: post.excerpt,
+    image: [post.coverImage || "https://www.nexfiy.com/social/opengraph.png"],
+    datePublished: post.publishedAt
+      ? new Date(post.publishedAt).toISOString()
+      : undefined,
+    dateModified: post.publishedAt
+      ? new Date(post.publishedAt).toISOString()
+      : undefined,
+    author: { "@type": "Person", name: post.author },
+    publisher: {
+      "@type": "Organization",
+      name: "Nexfiy",
+      url: "https://www.nexfiy.com",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://www.nexfiy.com/icon-512.png",
+      },
+    },
+    mainEntityOfPage: { "@type": "WebPage", "@id": canonicalUrl },
+    keywords: post.tags.join(", "),
+  };
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(structuredData).replace(/</g, "\\u003c"),
+        }}
+      />
       <article className="mx-auto max-w-5xl px-5 py-12 sm:px-8 sm:py-20">
         <Link
           href="/blog"
@@ -82,7 +121,7 @@ export default async function BlogPostPage({ params }: Props) {
             <div className="mt-10 aspect-[16/9] overflow-hidden bg-zinc-100 sm:mt-14 dark:bg-white/5">
               <Image
                 src={post.coverImage || "/social/opengraph.png"}
-                alt=""
+                alt={post.title}
                 width={1200}
                 height={675}
                 sizes="(max-width: 768px) 100vw, 672px"
@@ -92,7 +131,7 @@ export default async function BlogPostPage({ params }: Props) {
               />
             </div>
             <div className="pt-10 sm:pt-14">
-            <BlogBlocks blocks={post.blocks} />
+              <BlogBlocks blocks={post.blocks} />
             </div>
           </div>
         </div>

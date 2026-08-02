@@ -5,10 +5,17 @@ import { Footer } from "../_components/Footer";
 import { getPublishedPosts } from "@/features/blog/blog-api";
 
 export const metadata: Metadata = {
-  title: "Nexfiy Blog — Building connected workspaces",
+  title: "Blog — Building connected workspaces",
   description:
     "Notes on connected knowledge, databases, MCP, APIs, and calm collaboration from the Nexfiy team.",
   alternates: { canonical: "/blog" },
+  openGraph: {
+    title: "Nexfiy Blog — Building connected workspaces",
+    description:
+      "Notes on connected knowledge, databases, MCP, APIs, and calm collaboration from the Nexfiy team.",
+    type: "website",
+    url: "/blog",
+  },
 };
 
 export default async function BlogPage() {
@@ -40,15 +47,12 @@ export default async function BlogPage() {
         ) : null}
         <div className="grid gap-x-6 gap-y-12 py-10 sm:grid-cols-2 lg:grid-cols-3">
           {posts.map((post) => (
-            <article
-              key={post.id}
-              className="group min-w-0"
-            >
+            <article key={post.id} className="group min-w-0">
               <Link href={`/blog/${post.slug}`} className="block outline-none">
                 <div className="aspect-[4/3] overflow-hidden bg-zinc-100 dark:bg-white/5">
                   <Image
                     src={post.coverImage || "/social/opengraph.png"}
-                    alt=""
+                    alt={post.title}
                     width={1200}
                     height={900}
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -70,12 +74,12 @@ export default async function BlogPage() {
                 </p>
               </div>
               <h2 className="mt-3 text-xl font-semibold tracking-[-0.025em]">
-                  <Link
-                    href={`/blog/${post.slug}`}
-                    className="outline-none transition-colors group-hover:text-[#2383e2] focus-visible:text-[#2383e2]"
-                  >
-                    {post.title}
-                  </Link>
+                <Link
+                  href={`/blog/${post.slug}`}
+                  className="transition-colors outline-none group-hover:text-[#2383e2] focus-visible:text-[#2383e2]"
+                >
+                  {post.title}
+                </Link>
               </h2>
             </article>
           ))}
