@@ -22,18 +22,41 @@ export default async function BlogPage() {
   const { available, posts } = await getPublishedPosts();
   return (
     <>
-      <section className="mx-auto max-w-6xl px-5 py-14 sm:px-8 sm:py-20">
-        <header className="grid gap-6 border-b pb-10 md:grid-cols-[minmax(0,1fr)_15rem] md:items-end">
-          <div>
-            <p className="text-sm font-medium text-zinc-500">Nexfiy journal</p>
-            <h1 className="mt-4 max-w-2xl text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">
-              Notes, guides, and product thinking.
-            </h1>
+      <section className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-16">
+        <header className="relative overflow-hidden border-y border-zinc-200 bg-[#f7f7f5] px-6 py-10 sm:px-10 sm:py-14 dark:border-white/10 dark:bg-white/[0.035]">
+          <div
+            aria-hidden="true"
+            className="absolute -right-20 -top-24 size-64 rounded-full bg-[#2383e2]/10 blur-3xl"
+          />
+          <div className="relative grid gap-10 md:grid-cols-[minmax(0,1fr)_17rem] md:items-end">
+            <div>
+              <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#2383e2]">
+                <span className="size-1.5 rounded-full bg-[#2383e2]" />
+                Nexfiy journal
+              </p>
+              <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-[-0.05em] sm:text-5xl lg:text-[3.5rem] lg:leading-[1.04]">
+                Ideas for work that stays connected.
+              </h1>
+            </div>
+            <div>
+              <p className="text-sm leading-6 text-zinc-600 dark:text-white/60">
+                Product decisions, practical guides, and field notes on
+                building knowledge that people, products, and AI agents can
+                share.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2 text-xs text-zinc-500 dark:text-white/45">
+                <span className="border border-zinc-300 px-2.5 py-1 dark:border-white/15">
+                  Product
+                </span>
+                <span className="border border-zinc-300 px-2.5 py-1 dark:border-white/15">
+                  MCP
+                </span>
+                <span className="border border-zinc-300 px-2.5 py-1 dark:border-white/15">
+                  Content API
+                </span>
+              </div>
+            </div>
           </div>
-          <p className="text-sm leading-6 text-zinc-500 dark:text-white/50">
-            Product decisions, practical guides, and clear thinking about
-            connected knowledge.
-          </p>
         </header>
         {!available ? (
           <p className="border-b py-8 text-sm text-zinc-500">
