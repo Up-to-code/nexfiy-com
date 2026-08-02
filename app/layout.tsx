@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono, Lora } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 import { ThemeProvider } from "@/components/providers/theme-provider";
@@ -88,6 +89,7 @@ export default function RootLayout({
           >
             <ToasterProvider />
             {children}
+            <Analytics />
           </ThemeProvider>
         </ConvexClientProvider>
       </body>
