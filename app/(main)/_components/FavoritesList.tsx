@@ -9,6 +9,7 @@ import { Item } from "./Item";
 import { DocumentList } from "./DocumentList";
 import { FileIcon, Star } from "lucide-react";
 import { toast } from "sonner";
+import posthog from "posthog-js";
 
 export const FavoritesList = ({ navDrawer }: { navDrawer?: boolean }) => {
   const params = useParams();
@@ -19,6 +20,9 @@ export const FavoritesList = ({ navDrawer }: { navDrawer?: boolean }) => {
 
   const onToggleFavorite = (id: Id<"documents">) => {
     const promise = toggleFavorite({ id });
+    void promise.then(() => {
+      posthog.capture("document_favorite_toggled");
+    }).catch(() => undefined);
     toast.promise(promise, {
       loading: "Updating favorites...",
       success: "Favorites updated!",

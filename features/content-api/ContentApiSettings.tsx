@@ -27,6 +27,7 @@ import {
 } from "./useContentApi";
 import { useBilling } from "@/features/billing/use-billing";
 import { ProUpgradePrompt } from "@/features/billing/ProUpgradePrompt";
+import posthog from "posthog-js";
 
 type IntegrationKey = {
   _id: Id<"contentApiKeys">;
@@ -116,6 +117,9 @@ export function ContentApiSettings({ enabled }: { enabled: boolean }) {
     const result = await contentApi.create(trimmedName, selectedSources);
     setIsCreating(false);
     if (!result) return;
+    posthog.capture("content_api_key_created", {
+      database_count: selectedSources.length,
+    });
     setCreatedKey(result);
     setName("");
     setSelectedSources([]);

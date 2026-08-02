@@ -12,6 +12,7 @@ import { useState } from "react";
 import { TemplateGalleryDialog } from "@/features/templates/TemplateGalleryDialog";
 import { useBilling } from "@/features/billing/use-billing";
 import { useSettings } from "@/hooks/useSettingsModal";
+import posthog from "posthog-js";
 
 const DocumentsPage = () => {
   const { data: session } = authClient.useSession();
@@ -23,9 +24,10 @@ const DocumentsPage = () => {
   const settings = useSettings();
 
   const onCreate = () => {
-    const promise = create({ title: "Untitled" }).then((documentId) =>
-      router.push(`/documents/${documentId}`),
-    );
+    const promise = create({ title: "Untitled" }).then((documentId) => {
+      posthog.capture("document_created", { source: "empty_workspace" });
+      router.push(`/documents/${documentId}`);
+    });
 
     toast.promise(promise, {
       loading: "Creating a new note....",
@@ -40,7 +42,10 @@ const DocumentsPage = () => {
       return;
     }
     const promise = createDatabase({ title: "Untitled database" }).then(
-      ({ documentId }) => router.push(`/documents/${documentId}`),
+      ({ documentId }) => {
+        posthog.capture("database_created", { source: "empty_workspace" });
+        router.push(`/documents/${documentId}`);
+      },
     );
 
     toast.promise(promise, {

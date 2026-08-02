@@ -13,6 +13,7 @@ import { Coffee, Search, Trash, Trash2, Undo } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import posthog from "posthog-js";
 
 export const TrashBox = () => {
   const router = useRouter();
@@ -40,6 +41,10 @@ export const TrashBox = () => {
     event.stopPropagation();
     const promise = restore({ id: documentId });
 
+    void promise.then(() => {
+      posthog.capture("document_restored");
+    }).catch(() => undefined);
+
     toast.promise(promise, {
       loading: "Restoring note..",
       success: "Note restored!",
@@ -63,6 +68,10 @@ export const TrashBox = () => {
 
     const promise = remove({ id: documentId });
 
+    void promise.then(() => {
+      posthog.capture("document_deleted_permanently");
+    }).catch(() => undefined);
+
     toast.promise(promise, {
       loading: "Deleting note..",
       success: "Note deleted!",
@@ -81,6 +90,10 @@ export const TrashBox = () => {
     }
 
     const promise = removeAll();
+
+    void promise.then(() => {
+      posthog.capture("trash_emptied");
+    }).catch(() => undefined);
 
     toast.promise(promise, {
       loading: "Emptying trash..",

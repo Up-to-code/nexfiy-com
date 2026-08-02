@@ -41,6 +41,7 @@ import { FavoritesList } from "./FavoritesList";
 import { ActionTooltip } from "@/components/action-tooltip";
 import { useFocusMode } from "@/hooks/useFocusMode";
 import NavDrawer from "./NavDrawer";
+import posthog from "posthog-js";
 
 const Navigation = () => {
   const params = useParams();
@@ -214,9 +215,10 @@ const Navigation = () => {
   };
 
   const handleCreate = () => {
-    const promise = create({ title: "Untitled" }).then((documentId) =>
-      router.push(`/documents/${documentId}`),
-    );
+    const promise = create({ title: "Untitled" }).then((documentId) => {
+      posthog.capture("document_created", { source: "navigation" });
+      router.push(`/documents/${documentId}`);
+    });
 
     toast.promise(promise, {
       loading: "Creating a new note....",

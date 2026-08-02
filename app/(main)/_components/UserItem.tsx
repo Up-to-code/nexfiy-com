@@ -25,6 +25,7 @@ import { useRouter } from "next/navigation";
 import { useOrganizationContext } from "@/features/organizations/OrganizationProvider";
 import { WorkspaceAvatar } from "@/features/organizations/WorkspaceAvatar";
 import { useBilling } from "@/features/billing/use-billing";
+import posthog from "posthog-js";
 
 export const UserItem = ({ navDrawer }: { navDrawer?: boolean }) => {
   const { data: session } = authClient.useSession();
@@ -222,6 +223,7 @@ export const UserItem = ({ navDrawer }: { navDrawer?: boolean }) => {
           onClick={async () => {
             setInnerPopoverOpen(false);
             await authClient.signOut();
+            posthog.reset();
             router.push("/");
             router.refresh();
           }}

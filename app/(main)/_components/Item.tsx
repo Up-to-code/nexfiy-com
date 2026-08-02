@@ -28,6 +28,7 @@ import {
 
 import { ActionTooltip } from "@/components/action-tooltip";
 import { useNavDrawer } from "@/hooks/useNavDrawer";
+import posthog from "posthog-js";
 
 interface ItemProps {
   id?: Id<"documents">;
@@ -89,6 +90,10 @@ export const Item = ({
 
     const promise = archive({ id });
 
+    void promise.then(() => {
+      posthog.capture("document_archived");
+    }).catch(() => undefined);
+
     toast.promise(promise, {
       loading: "Moving to trash...",
       error: "Failed to archive note.",
@@ -123,11 +128,12 @@ export const Item = ({
         }).then((result) => result.pageId)
       : create({ title: "Untitled", parentDocument: id });
     const promise = creation.then((documentId) => {
-        if (!expanded) {
-          onExpand?.();
-        }
-        router.push(`/documents/${documentId}`);
-      });
+      posthog.capture("document_created", { source: "sub_page" });
+      if (!expanded) {
+        onExpand?.();
+      }
+      router.push(`/documents/${documentId}`);
+    });
 
     toast.promise(promise, {
       loading: "Creating new note",
