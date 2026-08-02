@@ -45,7 +45,14 @@ type ApiItem = {
   values: ApiValue[];
 };
 
-const siteUrl = () => process.env.SITE_URL ?? "https://nexfiy.com";
+// Authentication intentionally uses the apex domain because that is the
+// callback origin registered with OAuth providers. Server-to-server Content
+// API requests use the canonical www origin directly so their Authorization
+// header is not stripped by the apex -> www redirect.
+const siteUrl = () =>
+  process.env.NEXFIY_INTERNAL_SITE_URL ??
+  process.env.SITE_URL ??
+  "https://www.nexfiy.com";
 
 function blogConfig() {
   const token = process.env.NEXFIY_BLOG_CONTENT_API_KEY;
