@@ -5,6 +5,7 @@ const footerLinks = [
   { href: "/documents", label: "Workspace" },
   { href: "/pricing", label: "Pricing" },
   { href: "/docs", label: "Developers" },
+  { href: "/blog", label: "Blog" },
   { href: "/#faq", label: "FAQ" },
   { href: "/refund-policy", label: "Refunds" },
   { href: "/privacy", label: "Privacy" },

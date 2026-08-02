@@ -1,8 +1,9 @@
 import { v } from "convex/values";
+import { components } from "./_generated/api";
 import { internalMutation, internalQuery, query } from "./_generated/server";
 import {
   BILLING_GRACE_MS,
-  getLatestSubscriptionForUser,
+  getProEntitlementForUser,
   resolveProAccess,
 } from "./lib/billingDomain";
 import { getWorkspaceBillingScope } from "./lib/workspace";
@@ -17,13 +18,14 @@ const subscriptionStatus = v.union(
 );
 
 const subscriptionSummary = v.object({
+  source: v.union(v.literal("subscription"), v.literal("admin_grant")),
   planKey: v.string(),
   status: subscriptionStatus,
   quantity: v.number(),
   currency: v.string(),
   recurringPreTaxAmount: v.number(),
   trialPeriodDays: v.number(),
-  nextBillingAt: v.number(),
+  nextBillingAt: v.union(v.number(), v.null()),
   cancelAtNextBillingDate: v.boolean(),
   accessState: v.union(
     v.literal("free"),
@@ -39,6 +41,11 @@ const subscriptionSummary = v.object({
 });
 
 const entitlementSummary = v.object({
+  source: v.union(
+    v.literal("none"),
+    v.literal("subscription"),
+    v.literal("admin_grant"),
+  ),
   plan: v.union(v.literal("free"), v.literal("pro")),
   accessState: v.union(
     v.literal("free"),
@@ -55,6 +62,76 @@ const entitlementSummary = v.object({
   graceEndsAt: v.union(v.number(), v.null()),
   accessThrough: v.union(v.number(), v.null()),
   canManage: v.boolean(),
+});
+
+const ADMIN_EMAIL = "ahmedmansour20251@icloud.com";
+const ADMIN_SEAT_LIMIT = 25;
+
+type BetterAuthUser = {
+  _id: string;
+  email: string;
+  emailVerified: boolean;
+};
+
+type BetterAuthAccount = {
+  providerId: string;
+  userId: string;
+};
+
+export const seedVerifiedAppleAdminGrant = internalMutation({
+  args: { email: v.string() },
+  returns: v.id("entitlementGrants"),
+  handler: async (ctx, args) => {
+    const email = args.email.trim().toLowerCase();
+    if (email !== ADMIN_EMAIL) {
+      throw new Error("This email is not eligible for the Nexfiy admin grant");
+    }
+
+    const user = (await ctx.runQuery(components.betterAuth.adapter.findOne, {
+      model: "user",
+      where: [{ field: "email", value: email }],
+    })) as BetterAuthUser | null;
+    if (!user || user.email.toLowerCase() !== email || !user.emailVerified) {
+      throw new Error("The verified Apple account does not exist yet");
+    }
+
+    const appleAccount = (await ctx.runQuery(
+      components.betterAuth.adapter.findOne,
+      {
+        model: "account",
+        where: [
+          { field: "userId", value: user._id },
+          { field: "providerId", value: "apple" },
+        ],
+      },
+    )) as BetterAuthAccount | null;
+    if (!appleAccount || appleAccount.userId !== user._id) {
+      throw new Error("The account must be linked to Sign in with Apple");
+    }
+
+    const now = Date.now();
+    const existing = await ctx.db
+      .query("entitlementGrants")
+      .withIndex("by_owner_user_id", (q) => q.eq("ownerUserId", user._id))
+      .order("desc")
+      .first();
+    const values = {
+      ownerUserId: user._id,
+      email,
+      source: "admin_grant" as const,
+      status: "active" as const,
+      seatLimit: ADMIN_SEAT_LIMIT,
+      updatedAt: now,
+    };
+    if (existing) {
+      await ctx.db.patch(existing._id, values);
+      return existing._id;
+    }
+    return await ctx.db.insert("entitlementGrants", {
+      ...values,
+      createdAt: now,
+    });
+  },
 });
 
 export const syncSubscription = internalMutation({
@@ -123,29 +200,50 @@ export const getMySubscription = query({
     }
 
     const scope = await getWorkspaceBillingScope(ctx, identity.subject);
-    const subscription = await getLatestSubscriptionForUser(
+    const entitlement = await getProEntitlementForUser(
       ctx,
       scope.billingOwnerId,
     );
+    const subscription = entitlement.subscription;
 
-    if (!subscription) {
+    if (!subscription && !entitlement.grant) {
       return null;
     }
 
-    const access = resolveProAccess(subscription);
+    if (entitlement.grant) {
+      return {
+        source: "admin_grant" as const,
+        planKey: "admin_pro",
+        status: "active" as const,
+        quantity: entitlement.seatLimit,
+        currency: "USD",
+        recurringPreTaxAmount: 0,
+        trialPeriodDays: 0,
+        nextBillingAt: null,
+        cancelAtNextBillingDate: false,
+        accessState: "active" as const,
+        hasPro: true,
+        graceEndsAt: null,
+        accessThrough: null,
+        canManage: false,
+      };
+    }
+
+    const access = resolveProAccess(subscription!);
     return {
-      planKey: subscription.planKey,
-      status: subscription.status,
-      quantity: subscription.quantity,
-      currency: subscription.currency,
-      recurringPreTaxAmount: subscription.recurringPreTaxAmount,
-      trialPeriodDays: subscription.trialPeriodDays,
-      nextBillingAt: subscription.nextBillingAt,
-      cancelAtNextBillingDate: subscription.cancelAtNextBillingDate,
+      source: "subscription" as const,
+      planKey: subscription!.planKey,
+      status: subscription!.status,
+      quantity: subscription!.quantity,
+      currency: subscription!.currency,
+      recurringPreTaxAmount: subscription!.recurringPreTaxAmount,
+      trialPeriodDays: subscription!.trialPeriodDays,
+      nextBillingAt: subscription!.nextBillingAt,
+      cancelAtNextBillingDate: subscription!.cancelAtNextBillingDate,
       accessState: access.state,
       hasPro: access.hasPro,
-      graceEndsAt: subscription.graceEndsAt ?? null,
-      accessThrough: subscription.accessThrough ?? null,
+      graceEndsAt: subscription!.graceEndsAt ?? null,
+      accessThrough: subscription!.accessThrough ?? null,
       canManage: scope.billingOwnerId === identity.subject,
     };
   },
@@ -158,6 +256,7 @@ export const getMyEntitlement = query({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       return {
+        source: "none" as const,
         plan: "free" as const,
         accessState: "free" as const,
         hasPro: false,
@@ -171,23 +270,25 @@ export const getMyEntitlement = query({
       };
     }
     const scope = await getWorkspaceBillingScope(ctx, identity.subject);
-    const subscription = await getLatestSubscriptionForUser(
+    const entitlement = await getProEntitlementForUser(
       ctx,
       scope.billingOwnerId,
     );
-    const access = resolveProAccess(subscription);
+    const subscription = entitlement.subscription;
     return {
-      plan: access.hasPro ? ("pro" as const) : ("free" as const),
-      accessState: access.state,
-      hasPro: access.hasPro,
-      seatLimit: subscription?.quantity ?? 1,
+      source: entitlement.source,
+      plan: entitlement.hasPro ? ("pro" as const) : ("free" as const),
+      accessState: entitlement.state,
+      hasPro: entitlement.hasPro,
+      seatLimit: entitlement.seatLimit,
       seatUsage: 1,
       trialPeriodDays: subscription?.trialPeriodDays ?? 0,
       nextBillingAt: subscription?.nextBillingAt ?? null,
       graceEndsAt: subscription?.graceEndsAt ?? null,
       accessThrough: subscription?.accessThrough ?? null,
       canManage:
-        Boolean(subscription) && scope.billingOwnerId === identity.subject,
+        entitlement.source === "subscription" &&
+        scope.billingOwnerId === identity.subject,
     };
   },
 });
@@ -196,13 +297,10 @@ export const getProAccessForOwner = internalQuery({
   args: { ownerUserId: v.string() },
   returns: v.object({ hasPro: v.boolean(), seatLimit: v.number() }),
   handler: async (ctx, args) => {
-    const subscription = await getLatestSubscriptionForUser(
-      ctx,
-      args.ownerUserId,
-    );
+    const entitlement = await getProEntitlementForUser(ctx, args.ownerUserId);
     return {
-      hasPro: resolveProAccess(subscription).hasPro,
-      seatLimit: subscription?.quantity ?? 1,
+      hasPro: entitlement.hasPro,
+      seatLimit: entitlement.seatLimit,
     };
   },
 });

@@ -8,6 +8,7 @@ import { CtaSection } from "./_components/CtaSection";
 import { Footer } from "./_components/Footer";
 import { WorkflowSection } from "./_components/WorkflowSection";
 import { FaqSection } from "./_components/FaqSection";
+import { BlogPreview } from "./_components/BlogPreview";
 
 export default function LandingPage() {
   return (
@@ -19,6 +20,7 @@ export default function LandingPage() {
       <WhyNexfiy />
       <ComparisonSection />
       <PricingPreview />
+      <BlogPreview />
       <FaqSection />
       <CtaSection />
       <Footer />

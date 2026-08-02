@@ -19,6 +19,46 @@ export async function getLatestSubscriptionForUser(
     .first();
 }
 
+export async function getActiveEntitlementGrantForUser(
+  ctx: BillingCtx,
+  ownerUserId: string,
+) {
+  const grant = await ctx.db
+    .query("entitlementGrants")
+    .withIndex("by_owner_user_id", (q) => q.eq("ownerUserId", ownerUserId))
+    .order("desc")
+    .first();
+  return grant?.status === "active" ? grant : null;
+}
+
+export async function getProEntitlementForUser(
+  ctx: BillingCtx,
+  ownerUserId: string,
+) {
+  const grant = await getActiveEntitlementGrantForUser(ctx, ownerUserId);
+  if (grant) {
+    return {
+      source: "admin_grant" as const,
+      hasPro: true,
+      state: "active" as ProAccessState,
+      seatLimit: grant.seatLimit,
+      grant,
+      subscription: null,
+    };
+  }
+
+  const subscription = await getLatestSubscriptionForUser(ctx, ownerUserId);
+  const access = resolveProAccess(subscription);
+  return {
+    source: subscription ? ("subscription" as const) : ("none" as const),
+    hasPro: access.hasPro,
+    state: access.state,
+    seatLimit: subscription?.quantity ?? 1,
+    grant: null,
+    subscription,
+  };
+}
+
 export function resolveProAccess(
   subscription: Awaited<ReturnType<typeof getLatestSubscriptionForUser>>,
   now = Date.now(),
@@ -51,13 +91,12 @@ export function resolveProAccess(
 }
 
 export async function requireProForUser(ctx: BillingCtx, ownerUserId: string) {
-  const subscription = await getLatestSubscriptionForUser(ctx, ownerUserId);
-  const access = resolveProAccess(subscription);
-  if (!access.hasPro) {
+  const entitlement = await getProEntitlementForUser(ctx, ownerUserId);
+  if (!entitlement.hasPro) {
     throw new ConvexError({
       code: "PAYMENT_REQUIRED",
       message: "Nexfiy Pro is required for this feature",
     });
   }
-  return { subscription: subscription!, access };
+  return entitlement;
 }

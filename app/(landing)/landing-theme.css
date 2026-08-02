@@ -45,3 +45,68 @@
   background-color: var(--secondary) !important;
   color: var(--secondary-foreground) !important;
 }
+
+.blog-blocks {
+  color: inherit;
+  font-size: 1.0625rem;
+  line-height: 1.8;
+}
+
+.blog-blocks h2,
+.blog-blocks h3,
+.blog-blocks h4 {
+  margin-top: 2.2em;
+  margin-bottom: 0.65em;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+
+.blog-blocks h2 {
+  font-size: 2rem;
+}
+.blog-blocks h3 {
+  font-size: 1.5rem;
+}
+.blog-blocks h4 {
+  font-size: 1.2rem;
+}
+.blog-blocks p {
+  margin: 1em 0;
+}
+.blog-blocks ul,
+.blog-blocks ol {
+  margin: 1em 0;
+  padding-left: 1.5rem;
+}
+.blog-blocks ul {
+  list-style: disc;
+}
+.blog-blocks ol {
+  list-style: decimal;
+}
+.blog-blocks blockquote {
+  margin: 1.5rem 0;
+  border-left: 3px solid #2383e2;
+  padding-left: 1.25rem;
+  color: #52525b;
+}
+.blog-blocks aside {
+  margin: 1.5rem 0;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--secondary);
+  padding: 1rem 1.25rem;
+}
+.blog-blocks pre {
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  background: #191919;
+  padding: 1.25rem;
+  color: #f4f4f5;
+}
+.blog-blocks a {
+  color: #2383e2;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

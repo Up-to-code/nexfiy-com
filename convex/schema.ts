@@ -403,6 +403,18 @@ export default defineSchema({
     .index("by_workspace", ["workspaceId"])
     .index("by_token_hash", ["tokenHash"]),
 
+  entitlementGrants: defineTable({
+    ownerUserId: v.string(),
+    email: v.string(),
+    source: v.literal("admin_grant"),
+    status: v.union(v.literal("active"), v.literal("revoked")),
+    seatLimit: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_owner_user_id", ["ownerUserId"])
+    .index("by_email", ["email"]),
+
   billingSubscriptions: defineTable({
     subscriptionId: v.string(),
     productId: v.string(),

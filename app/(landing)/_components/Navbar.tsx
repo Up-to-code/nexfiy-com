@@ -50,6 +50,12 @@ export const Navbar = () => {
               Pricing
             </Link>
             <Link
+              href="/blog"
+              className="transition-colors hover:text-zinc-900 dark:hover:text-white"
+            >
+              Blog
+            </Link>
+            <Link
               href="/docs"
               className="transition-colors hover:text-zinc-900 dark:hover:text-white"
             >

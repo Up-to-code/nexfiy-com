@@ -21,6 +21,7 @@ export function NexfiyProCheckout({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { isLoading, subscription, startCheckout, openPortal } = useBilling();
   const hasPaidAccess = subscription?.hasPro ?? false;
+  const isAdminGrant = subscription?.source === "admin_grant";
 
   const updateSeats = (nextSeats: number) => {
     setSeats(Math.min(100, Math.max(1, Math.floor(nextSeats) || 1)));
@@ -86,43 +87,50 @@ export function NexfiyProCheckout({
       {hasPaidAccess && (
         <div className="bg-muted/50 rounded-md border p-3 text-sm">
           <p className="font-medium">
-            {subscription?.accessState === "grace"
-              ? "Pro payment needs attention"
-              : "Nexfiy Pro is active"}
+            {isAdminGrant
+              ? "Admin Pro is active"
+              : subscription?.accessState === "grace"
+                ? "Pro payment needs attention"
+                : "Nexfiy Pro is active"}
           </p>
           <p className="text-muted-foreground mt-1">
             {subscription!.quantity}{" "}
             {subscription!.quantity === 1 ? "seat" : "seats"}
-            {subscription?.accessState === "grace" && subscription.graceEndsAt
-              ? ` · Access through ${new Date(subscription.graceEndsAt).toLocaleDateString()}`
-              : subscription!.cancelAtNextBillingDate
-                ? " · Cancels at the next billing date"
-                : " · Monthly billing"}
+            {isAdminGrant
+              ? " · Permanent internal access"
+              : subscription?.accessState === "grace" &&
+                  subscription.graceEndsAt
+                ? ` · Access through ${new Date(subscription.graceEndsAt).toLocaleDateString()}`
+                : subscription!.cancelAtNextBillingDate
+                  ? " · Cancels at the next billing date"
+                  : " · Monthly billing"}
           </p>
         </div>
       )}
 
-      <Button
-        type="button"
-        size={compact ? "default" : "lg"}
-        className="w-full"
-        disabled={
-          isLoading ||
-          isSubmitting ||
-          (hasPaidAccess && !subscription?.canManage)
-        }
-        onClick={handleAction}
-      >
-        {hasPaidAccess ? <CreditCard /> : null}
-        {isSubmitting
-          ? "Opening…"
-          : hasPaidAccess
-            ? subscription?.canManage
-              ? "Manage billing"
-              : "Workspace owner manages billing"
-            : `Start ${NEXFIY_PRO_PLAN.trialLabel}`}
-        {!hasPaidAccess ? <ArrowRight /> : null}
-      </Button>
+      {!isAdminGrant ? (
+        <Button
+          type="button"
+          size={compact ? "default" : "lg"}
+          className="w-full"
+          disabled={
+            isLoading ||
+            isSubmitting ||
+            (hasPaidAccess && !subscription?.canManage)
+          }
+          onClick={handleAction}
+        >
+          {hasPaidAccess ? <CreditCard /> : null}
+          {isSubmitting
+            ? "Opening…"
+            : hasPaidAccess
+              ? subscription?.canManage
+                ? "Manage billing"
+                : "Workspace owner manages billing"
+              : `Start ${NEXFIY_PRO_PLAN.trialLabel}`}
+          {!hasPaidAccess ? <ArrowRight /> : null}
+        </Button>
+      ) : null}
     </div>
   );
 }

@@ -14,9 +14,37 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Nexfiy",
+  metadataBase: new URL("https://nexfiy.com"),
+  title: {
+    default: "Nexfiy — The connected workspace",
+    template: "%s | Nexfiy",
+  },
   description:
-    "The seamless platform where creative and productive work happens.",
+    "Write, structure, connect, and publish knowledge from one calm workspace built for people, APIs, and MCP tools.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: "Nexfiy",
+    title: "Nexfiy — The connected workspace",
+    description:
+      "Pages, databases, APIs, and MCP tools in one calm connected workspace.",
+    url: "/",
+    images: [
+      {
+        url: "/social/opengraph.png",
+        width: 1200,
+        height: 630,
+        alt: "Nexfiy connected workspace",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Nexfiy — The connected workspace",
+    description:
+      "Pages, databases, APIs, and MCP tools in one calm connected workspace.",
+    images: ["/social/twitter-banner.png"],
+  },
   icons: {
     icon: [
       {
