@@ -256,12 +256,18 @@ export function OrganizationSettings() {
           </div>
           <TabsList
             variant="line"
-            className="h-10 w-full justify-start gap-8 p-0"
+            className="border-border/40 flex !h-10 w-full !flex-row items-center justify-start gap-8 rounded-none border-b-0 bg-transparent p-0 group-data-[orientation=vertical]/tabs:!h-10 group-data-[orientation=vertical]/tabs:!flex-row"
           >
-            <TabsTrigger value="members" className="h-full px-0">
+            <TabsTrigger
+              value="members"
+              className="!h-full !w-auto flex-none justify-start rounded-none border-0 px-0 text-sm shadow-none group-data-[orientation=vertical]/tabs:!w-auto after:!inset-x-0 after:!top-auto after:!right-0 after:!bottom-[-1px] after:!left-0 after:!h-0.5 after:!w-auto after:!bg-[#2383E2] data-[state=active]:bg-transparent dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-transparent"
+            >
               Members ({memberCount})
             </TabsTrigger>
-            <TabsTrigger value="workspace" className="h-full px-0">
+            <TabsTrigger
+              value="workspace"
+              className="!h-full !w-auto flex-none justify-start rounded-none border-0 px-0 text-sm shadow-none group-data-[orientation=vertical]/tabs:!w-auto after:!inset-x-0 after:!top-auto after:!right-0 after:!bottom-[-1px] after:!left-0 after:!h-0.5 after:!w-auto after:!bg-[#2383E2] data-[state=active]:bg-transparent dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-transparent"
+            >
               Workspaces
             </TabsTrigger>
           </TabsList>
