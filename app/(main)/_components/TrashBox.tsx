@@ -2,7 +2,7 @@
 
 import { ActionTooltip } from "@/components/action-tooltip";
 import { ConfirmModal } from "@/components/modals/ConfirmModal";
-import { Spinner } from "@/components/spinner";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -114,11 +114,13 @@ export const TrashBox = () => {
   if (documents === undefined) {
     return (
       <div
-        className="flex h-full items-center justify-center p-4"
+        className="space-y-2 p-3"
         aria-busy="true"
-        aria-label="loading"
+        aria-label="Loading trash"
       >
-        <Spinner size="md" />
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-7 w-4/5" />
+        <Skeleton className="h-7 w-2/3" />
       </div>
     );
   }

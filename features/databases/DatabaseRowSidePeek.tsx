@@ -1,9 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { ExternalLink, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import type { Id } from "@/convex/_generated/dataModel";
 
 import type { useDatabase } from "./useDatabase";
@@ -28,6 +38,8 @@ export function DatabaseRowSidePeek({
   onAddSelectOption: ReturnType<typeof useDatabase>["addSelectOption"];
   onCreateTemplate: ReturnType<typeof useDatabase>["createRowTemplate"];
 }) {
+  const [isTemplateOpen, setIsTemplateOpen] = useState(false);
+  const [templateName, setTemplateName] = useState("");
   if (!rowId) return null;
   const row = database.rows.find((candidate) => candidate.id === rowId);
   if (!row) return null;
@@ -52,14 +64,8 @@ export function DatabaseRowSidePeek({
               variant="ghost"
               size="sm"
               onClick={() => {
-                const name = window.prompt("Template name", row.title)?.trim();
-                if (name) {
-                  void onCreateTemplate({
-                    dataSourceId: database.dataSource.id,
-                    documentId: row.id,
-                    name,
-                  });
-                }
+                setTemplateName(row.title);
+                setIsTemplateOpen(true);
               }}
             >
               Save as template
@@ -78,6 +84,41 @@ export function DatabaseRowSidePeek({
           onAddSelectOption={onAddSelectOption}
         />
       </section>
+      <Dialog open={isTemplateOpen} onOpenChange={setIsTemplateOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Save row as template</DialogTitle>
+            <DialogDescription>
+              Reuse this row&apos;s properties and page content in this database.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={templateName}
+            onChange={(event) => setTemplateName(event.target.value)}
+            placeholder="Template name"
+            maxLength={80}
+            autoFocus
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsTemplateOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={!templateName.trim()}
+              onClick={async () => {
+                const saved = await onCreateTemplate({
+                  dataSourceId: database.dataSource.id,
+                  documentId: row.id,
+                  name: templateName.trim(),
+                });
+                if (saved) setIsTemplateOpen(false);
+              }}
+            >
+              Save template
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

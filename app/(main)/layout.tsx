@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { Spinner } from "@/components/spinner";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useConvexAuth } from "convex/react";
 import { redirect } from "next/navigation";
 import Navigation from "./_components/Navigation";
@@ -20,8 +20,19 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
 
   if (isLoading) {
     return (
-      <div className="dark:bg-dark flex h-full items-center justify-center">
-        <Spinner size="md" />
+      <div className="bg-background flex h-full" aria-label="Loading workspace">
+        <aside className="border-border/50 hidden w-64 space-y-4 border-r p-4 md:block">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-4/5" />
+          <Skeleton className="h-8 w-3/4" />
+        </aside>
+        <main className="flex-1 space-y-6 p-8 md:p-14">
+          <Skeleton className="h-8 w-2/5" />
+          <Skeleton className="h-5 w-3/5" />
+          <Skeleton className="h-40 w-full max-w-3xl" />
+          <Skeleton className="h-24 w-full max-w-3xl" />
+        </main>
       </div>
     );
   }

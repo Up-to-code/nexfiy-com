@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import {
   DndContext,
   KeyboardSensor,
@@ -14,6 +16,25 @@ import { CSS } from "@dnd-kit/utilities";
 import { ExternalLink, MoreHorizontal, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -151,12 +172,16 @@ function PipelineColumn({
   onRemoveOption?: (optionId: Id<"databaseSelectOptions">) => Promise<boolean>;
   onHideOption?: (optionId: Id<"databaseSelectOptions">) => void;
 }) {
+  const [isRenameOpen, setIsRenameOpen] = useState(false);
+  const [renameDraft, setRenameDraft] = useState(name);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const { isOver, setNodeRef } = useDroppable({
     id: `${COLUMN_PREFIX}${id}`,
     data: { optionId: id },
   });
 
   return (
+    <>
     <div
       ref={setNodeRef}
       className={cn(
@@ -179,11 +204,8 @@ function PipelineColumn({
               <DropdownMenuContent align="start" className="w-44">
                 <DropdownMenuItem
                   onSelect={() => {
-                    const nextName = window.prompt("Group name", name)?.trim();
-                    if (nextName) void onUpdateOption({
-                      optionId: id as Id<"databaseSelectOptions">,
-                      name: nextName,
-                    });
+                    setRenameDraft(name);
+                    setIsRenameOpen(true);
                   }}
                 >
                   Rename group
@@ -213,11 +235,7 @@ function PipelineColumn({
                 ) : null}
                 <DropdownMenuItem
                   className="text-destructive"
-                  onSelect={() => {
-                    if (window.confirm(`Delete ${name}? Rows will move to No status.`)) {
-                      void onRemoveOption(id as Id<"databaseSelectOptions">);
-                    }
-                  }}
+                  onSelect={() => setIsDeleteOpen(true)}
                 >
                   Delete group
                 </DropdownMenuItem>
@@ -246,6 +264,64 @@ function PipelineColumn({
         </button>
       </div>
     </div>
+      <Dialog open={isRenameOpen} onOpenChange={setIsRenameOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Rename group</DialogTitle>
+            <DialogDescription>
+              This name updates everywhere this option is shown.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={renameDraft}
+            onChange={(event) => setRenameDraft(event.target.value)}
+            maxLength={80}
+            autoFocus
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsRenameOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={!renameDraft.trim()}
+              onClick={async () => {
+                const saved = await onUpdateOption?.({
+                  optionId: id as Id<"databaseSelectOptions">,
+                  name: renameDraft.trim(),
+                });
+                if (saved) setIsRenameOpen(false);
+              }}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete “{name}”?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Rows using this group will move to No status. This cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() =>
+                void onRemoveOption?.(
+                  id as Id<"databaseSelectOptions">,
+                )
+              }
+            >
+              Delete group
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
