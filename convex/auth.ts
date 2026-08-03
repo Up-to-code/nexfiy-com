@@ -98,7 +98,7 @@ const sendWorkspaceInvitation = async (
       from: process.env.RESEND_FROM_EMAIL ?? "Nexfiy <onboarding@resend.dev>",
       to: [data.email],
       subject: `Join ${data.organization.name} on Nexfiy`,
-      html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#18181b"><h1 style="font-size:24px">You're invited to ${organizationName}</h1><p style="line-height:1.6">${inviterName} invited you to collaborate in their Nexfiy workspace.</p><p style="margin:28px 0"><a href="${invitationUrl}" style="background:#2383e2;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600">Accept invitation</a></p><p style="font-size:12px;color:#71717a">This invitation expires in 48 hours.</p></div>`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#18181b"><h1 style="font-size:24px">You're invited to ${organizationName}</h1><p style="line-height:1.6">${inviterName} invited you to collaborate in their Nexfiy workspace.</p><p style="margin:28px 0"><a href="${invitationUrl}" style="background:#2383e2;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600">Accept invitation</a></p><p style="font-size:12px;color:#71717a">This invitation expires in 30 minutes.</p></div>`,
     }),
   });
 
@@ -171,6 +171,7 @@ export const createAuthOptions = (ctx: GenericCtx<DataModel>) => {
     },
     plugins: [
       organization({
+        invitationExpiresIn: 30 * 60,
         sendInvitationEmail: sendWorkspaceInvitation,
         allowUserToCreateOrganization: async (user) => {
           if (!("runQuery" in ctx)) return false;

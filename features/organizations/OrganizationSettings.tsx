@@ -46,6 +46,7 @@ import { ProUpgradePrompt } from "@/features/billing/ProUpgradePrompt";
 import { useBilling } from "@/features/billing/use-billing";
 import { authClient } from "@/lib/auth-client";
 import { logger } from "@/lib/logger";
+import { uploadFile } from "@/lib/uploadthing";
 import { WorkspaceInviteDialog } from "./WorkspaceInviteDialog";
 import { useOrganizationContext } from "./OrganizationProvider";
 import {
@@ -90,11 +91,13 @@ export function OrganizationSettings({
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [workspaceDraft, setWorkspaceDraft] = useState<{
-    organizationId: string;
+    workspaceId: string;
     name: string;
     logo: string;
   } | null>(null);
   const [isSavingWorkspace, setIsSavingWorkspace] = useState(false);
+  const [isUploadingWorkspaceImage, setIsUploadingWorkspaceImage] =
+    useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [memberToRemove, setMemberToRemove] = useState<{
@@ -129,17 +132,22 @@ export function OrganizationSettings({
       ),
   );
   const memberCount = activeOrganization ? members.length : 1;
+  const editableWorkspaceId = activeOrganization?.id ?? "personal";
 
   const workspaceName = activeOrganization
-    ? workspaceDraft && workspaceDraft.organizationId === activeOrganization.id
+    ? workspaceDraft && workspaceDraft.workspaceId === activeOrganization.id
       ? workspaceDraft.name
       : activeOrganization.name
-    : "Personal workspace";
+    : workspaceDraft?.workspaceId === "personal"
+      ? workspaceDraft.name
+      : (session?.user.name ?? "Personal workspace");
   const workspaceLogo = activeOrganization
-    ? workspaceDraft && workspaceDraft.organizationId === activeOrganization.id
+    ? workspaceDraft && workspaceDraft.workspaceId === activeOrganization.id
       ? workspaceDraft.logo
       : (activeOrganization.logo ?? "")
-    : "";
+    : workspaceDraft?.workspaceId === "personal"
+      ? workspaceDraft.logo
+      : (session?.user.image ?? "");
 
   const createOrganization = async () => {
     const slug = toSlug(name);
@@ -178,7 +186,6 @@ export function OrganizationSettings({
   };
 
   const saveWorkspace = async () => {
-    if (!activeOrganization) return;
     const trimmedName = workspaceName.trim();
     if (!trimmedName) {
       toast.error("Enter a workspace name.");
@@ -186,14 +193,19 @@ export function OrganizationSettings({
     }
     setIsSavingWorkspace(true);
     try {
-      const { error } = await authClient.organization.update({
-        organizationId: activeOrganization.id,
-        data: {
-          name: trimmedName,
-          slug: toSlug(trimmedName),
-          logo: workspaceLogo.trim() || undefined,
-        },
-      });
+      const { error } = activeOrganization
+        ? await authClient.organization.update({
+            organizationId: activeOrganization.id,
+            data: {
+              name: trimmedName,
+              slug: toSlug(trimmedName),
+              logo: workspaceLogo.trim() || undefined,
+            },
+          })
+        : await authClient.updateUser({
+            name: trimmedName,
+            image: workspaceLogo.trim() || undefined,
+          });
       if (error) throw new Error(error.message ?? "Workspace was not updated");
       await refreshActiveOrganization();
       setWorkspaceDraft(null);
@@ -205,6 +217,23 @@ export function OrganizationSettings({
       );
     } finally {
       setIsSavingWorkspace(false);
+    }
+  };
+
+  const uploadWorkspaceImage = async (file: File) => {
+    setIsUploadingWorkspaceImage(true);
+    try {
+      const logo = await uploadFile("avatarImage", file);
+      setWorkspaceDraft({
+        workspaceId: editableWorkspaceId,
+        name: workspaceName,
+        logo,
+      });
+    } catch (error) {
+      logger.error("Failed to upload workspace image", error);
+      toast.error("Could not upload workspace image.");
+    } finally {
+      setIsUploadingWorkspaceImage(false);
     }
   };
 
@@ -338,6 +367,15 @@ export function OrganizationSettings({
                 onClick={() => setIsInviteOpen(true)}
               >
                 <Plus className="size-3.5" /> Invite member
+              </Button>
+            ) : view === "people" && !activeOrganization ? (
+              <Button
+                size="sm"
+                className="h-8"
+                onClick={() => setIsCreateOpen(true)}
+                disabled={!billing.subscription?.hasPro}
+              >
+                <Plus className="size-3.5" /> Create workspace to invite
               </Button>
             ) : null}
           </div>
@@ -478,9 +516,7 @@ export function OrganizationSettings({
               <div className="flex items-center gap-3">
                 <WorkspaceAvatar
                   name={workspaceName}
-                  image={
-                    activeOrganization ? workspaceLogo : session?.user.image
-                  }
+                  image={workspaceLogo}
                   className="size-12"
                 />
                 <div className="min-w-0 flex-1">
@@ -496,51 +532,60 @@ export function OrganizationSettings({
                   </p>
                 </div>
               </div>
-              {activeOrganization ? (
-                <div className="space-y-3 rounded-lg border p-4">
-                  <label className="block space-y-1.5 text-xs font-medium">
-                    Workspace name
-                    <Input
-                      value={workspaceName}
-                      onChange={(event) =>
-                        setWorkspaceDraft({
-                          organizationId: activeOrganization.id,
-                          name: event.target.value,
-                          logo: workspaceLogo,
-                        })
-                      }
-                      maxLength={80}
+              <div className="space-y-3 rounded-lg border p-4">
+                <label className="block space-y-1.5 text-xs font-medium">
+                  Workspace name
+                  <Input
+                    value={workspaceName}
+                    onChange={(event) =>
+                      setWorkspaceDraft({
+                        workspaceId: editableWorkspaceId,
+                        name: event.target.value,
+                        logo: workspaceLogo,
+                      })
+                    }
+                    maxLength={80}
+                  />
+                </label>
+                <div className="space-y-1.5 text-xs font-medium">
+                  Workspace image
+                  <label className="border-border/60 hover:bg-muted/40 flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 transition-colors">
+                    <WorkspaceAvatar
+                      name={workspaceName}
+                      image={workspaceLogo}
+                      className="size-8"
+                    />
+                    <span className="text-sm font-medium">
+                      {isUploadingWorkspaceImage
+                        ? "Uploading…"
+                        : "Upload a new image"}
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      disabled={isUploadingWorkspaceImage}
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (file) void uploadWorkspaceImage(file);
+                        event.target.value = "";
+                      }}
                     />
                   </label>
-                  <label className="block space-y-1.5 text-xs font-medium">
-                    Workspace image URL
-                    <Input
-                      type="url"
-                      value={workspaceLogo}
-                      onChange={(event) =>
-                        setWorkspaceDraft({
-                          organizationId: activeOrganization.id,
-                          name: workspaceName,
-                          logo: event.target.value,
-                        })
-                      }
-                      placeholder="https://…"
-                    />
-                  </label>
-                  <div className="flex justify-end">
-                    <Button
-                      size="sm"
-                      onClick={() => void saveWorkspace()}
-                      disabled={isSavingWorkspace || !workspaceName.trim()}
-                    >
-                      {isSavingWorkspace ? (
-                        <LoaderCircle className="animate-spin" />
-                      ) : null}
-                      Save changes
-                    </Button>
-                  </div>
                 </div>
-              ) : null}
+                <div className="flex justify-end">
+                  <Button
+                    size="sm"
+                    onClick={() => void saveWorkspace()}
+                    disabled={isSavingWorkspace || !workspaceName.trim()}
+                  >
+                    {isSavingWorkspace ? (
+                      <LoaderCircle className="animate-spin" />
+                    ) : null}
+                    Save changes
+                  </Button>
+                </div>
+              </div>
             </section>
 
             <section className="space-y-3">

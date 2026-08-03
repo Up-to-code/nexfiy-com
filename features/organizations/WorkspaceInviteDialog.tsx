@@ -113,7 +113,7 @@ export function WorkspaceInviteDialog({
                 autoFocus
               />
               <p className="text-muted-foreground text-xs">
-                We&apos;ll send a secure invitation that expires in 48 hours.
+                We&apos;ll send a secure invitation that expires in 30 minutes.
               </p>
             </TabsContent>
 
