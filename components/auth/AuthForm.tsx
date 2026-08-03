@@ -13,7 +13,13 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { captureEvent } from "@/lib/analytics";
 
-export const AuthForm = ({ mode }: { mode: "sign-in" | "sign-up" }) => {
+export const AuthForm = ({
+  mode,
+  callbackUrl = "/documents",
+}: {
+  mode: "sign-in" | "sign-up";
+  callbackUrl?: string;
+}) => {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [socialProvider, setSocialProvider] = useState<
@@ -21,6 +27,10 @@ export const AuthForm = ({ mode }: { mode: "sign-in" | "sign-up" }) => {
   >(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const isSignUp = mode === "sign-up";
+  const safeCallbackUrl =
+    callbackUrl.startsWith("/") && !callbackUrl.startsWith("//")
+      ? callbackUrl
+      : "/documents";
 
   const handleSocialSignIn = async (provider: "apple" | "google") => {
     captureEvent("auth_started", { method: provider, mode });
@@ -30,7 +40,7 @@ export const AuthForm = ({ mode }: { mode: "sign-in" | "sign-up" }) => {
     try {
       const result = await authClient.signIn.social({
         provider,
-        callbackURL: "/documents",
+        callbackURL: safeCallbackUrl,
         disableRedirect: true,
       });
 
@@ -82,7 +92,7 @@ export const AuthForm = ({ mode }: { mode: "sign-in" | "sign-up" }) => {
       }
 
       captureEvent("auth_succeeded", { method: "email", mode });
-      router.push("/documents");
+      router.push(safeCallbackUrl);
       router.refresh();
     } catch {
       captureEvent("auth_failed", { method: "email", mode });

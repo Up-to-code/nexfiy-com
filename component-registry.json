@@ -1,6 +1,19 @@
 {
   "components": [
     {
+      "name": "DatabaseRowContent",
+      "path": "features/databases/DatabaseRowContent.tsx",
+      "kind": "domain-shared",
+      "summary": "Canonical editable database-row properties and page body shared by side peek and full-page row views.",
+      "usedIn": [
+        "features/databases/DatabaseRowSidePeek",
+        "app/(main)/(routes)/documents/[documentId]"
+      ],
+      "props": ["database", "rowId", "onUpdateTitle", "onSetValue"],
+      "createdAt": "2026-08-03",
+      "notes": "Reads reactive Convex database state and keeps property writes in the shared database domain commands."
+    },
+    {
       "name": "ProUpgradePrompt",
       "path": "features/billing/ProUpgradePrompt.tsx",
       "kind": "domain-shared",

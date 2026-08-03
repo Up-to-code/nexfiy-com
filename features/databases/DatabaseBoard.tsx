@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   DndContext,
   KeyboardSensor,
@@ -12,13 +11,22 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { ExternalLink, Plus } from "lucide-react";
+import { ExternalLink, MoreHorizontal, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { Id } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
 
 import type { useDatabase } from "./useDatabase";
+import { SELECT_OPTION_COLORS, selectOptionColor } from "./selectOptionColors";
 
 const EMPTY_COLUMN_ID = "__empty__";
 const ROW_PREFIX = "database-row:";
@@ -32,11 +40,13 @@ function PipelineCard({
   activeView,
   database,
   groupPropertyId,
+  onOpenRow,
 }: {
   row: DatabaseRow;
   activeView: DatabaseData["views"][number] | undefined;
   database: DatabaseData;
   groupPropertyId: Id<"databaseProperties">;
+  onOpenRow: (rowId: Id<"documents">) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
@@ -56,16 +66,22 @@ function PipelineCard({
       {...attributes}
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="text-sm font-medium leading-snug">{row.title || "Untitled"}</span>
+        <button
+          type="button"
+          className="text-left text-sm font-medium leading-snug hover:underline"
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={() => onOpenRow(row.id)}
+        >
+          {row.title || "Untitled"}
+        </button>
         <Button
           variant="ghost"
           size="icon-sm"
-          asChild
           className="size-6 opacity-0 transition-opacity group-hover:opacity-100"
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={() => onOpenRow(row.id)}
         >
-          <Link href={`/documents/${row.id}`} aria-label={`Open ${row.title}`}>
-            <ExternalLink className="size-3 text-muted-foreground hover:text-foreground" />
-          </Link>
+          <ExternalLink className="size-3 text-muted-foreground hover:text-foreground" />
         </Button>
       </div>
       {activeView?.visiblePropertyIds
@@ -107,19 +123,33 @@ function PipelineCard({
 function PipelineColumn({
   id,
   name,
+  color,
   rows,
   activeView,
   database,
   groupPropertyId,
   onAddRow,
+  onOpenRow,
+  onUpdateOption,
+  onRemoveOption,
+  onHideOption,
 }: {
   id: string;
   name: string;
+  color: string;
   rows: DatabaseRow[];
   activeView: DatabaseData["views"][number] | undefined;
   database: DatabaseData;
   groupPropertyId: Id<"databaseProperties">;
   onAddRow: () => void;
+  onOpenRow: (rowId: Id<"documents">) => void;
+  onUpdateOption?: (input: {
+    optionId: Id<"databaseSelectOptions">;
+    name?: string;
+    color?: string;
+  }) => Promise<boolean>;
+  onRemoveOption?: (optionId: Id<"databaseSelectOptions">) => Promise<boolean>;
+  onHideOption?: (optionId: Id<"databaseSelectOptions">) => void;
 }) {
   const { isOver, setNodeRef } = useDroppable({
     id: `${COLUMN_PREFIX}${id}`,
@@ -130,13 +160,71 @@ function PipelineColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        "w-72 shrink-0 rounded-xl bg-transparent p-1 transition-colors",
+        "w-72 shrink-0 rounded-xl border p-1 transition-colors",
+        selectOptionColor(color).column,
         isOver && "bg-primary/5 ring-primary/20 ring-1 rounded-xl",
       )}
     >
       <div className="mb-2 flex items-center justify-between px-1.5 py-1 text-xs font-semibold tracking-wide text-muted-foreground/80">
         <span className="truncate">{name}</span>
-        <span className="text-muted-foreground/60 font-mono text-[11px] font-normal">{rows.length}</span>
+        <div className="flex items-center gap-1">
+          <span className="text-muted-foreground/60 font-mono text-[11px] font-normal">{rows.length}</span>
+          {id !== EMPTY_COLUMN_ID && onUpdateOption && onRemoveOption ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon-sm" className="size-6">
+                  <MoreHorizontal className="size-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-44">
+                <DropdownMenuItem
+                  onSelect={() => {
+                    const nextName = window.prompt("Group name", name)?.trim();
+                    if (nextName) void onUpdateOption({
+                      optionId: id as Id<"databaseSelectOptions">,
+                      name: nextName,
+                    });
+                  }}
+                >
+                  Rename group
+                </DropdownMenuItem>
+                <DropdownMenuLabel>Color</DropdownMenuLabel>
+                {Object.keys(SELECT_OPTION_COLORS).map((optionColor) => (
+                  <DropdownMenuItem
+                    key={optionColor}
+                    onSelect={() => void onUpdateOption({
+                      optionId: id as Id<"databaseSelectOptions">,
+                      color: optionColor,
+                    })}
+                  >
+                    <span className={cn("mr-2 size-3 rounded-full", selectOptionColor(optionColor).pill)} />
+                    <span className="capitalize">{optionColor}</span>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                {onHideOption ? (
+                  <DropdownMenuItem
+                    onSelect={() =>
+                      onHideOption(id as Id<"databaseSelectOptions">)
+                    }
+                  >
+                    Hide group
+                  </DropdownMenuItem>
+                ) : null}
+                <DropdownMenuItem
+                  className="text-destructive"
+                  onSelect={() => {
+                    if (window.confirm(`Delete ${name}? Rows will move to No status.`)) {
+                      void onRemoveOption(id as Id<"databaseSelectOptions">);
+                    }
+                  }}
+                >
+                  Delete group
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
+        </div>
       </div>
       <div className="space-y-2">
         {rows.map((row) => (
@@ -146,6 +234,7 @@ function PipelineColumn({
             activeView={activeView}
             database={database}
             groupPropertyId={groupPropertyId}
+            onOpenRow={onOpenRow}
           />
         ))}
         <button
@@ -164,10 +253,18 @@ export function DatabaseBoard({
   database,
   onSetValue,
   onAddRow,
+  onOpenRow,
+  onUpdateOption,
+  onRemoveOption,
+  onUpdateView,
 }: {
   database: DatabaseData;
   onSetValue: ReturnType<typeof useDatabase>["setValue"];
-  onAddRow: () => void;
+  onAddRow: (optionId?: Id<"databaseSelectOptions">) => void;
+  onOpenRow: (rowId: Id<"documents">) => void;
+  onUpdateOption: ReturnType<typeof useDatabase>["updateSelectOption"];
+  onRemoveOption: ReturnType<typeof useDatabase>["removeSelectOption"];
+  onUpdateView: ReturnType<typeof useDatabase>["updateView"];
 }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -188,12 +285,19 @@ export function DatabaseBoard({
     );
   }
 
+  const hiddenOptionIds = activeView?.hiddenOptionIds ?? [];
   const options = database.options.filter(
-    (option) => option.propertyId === groupProperty.id,
+    (option) =>
+      option.propertyId === groupProperty.id &&
+      !hiddenOptionIds.includes(option.id),
   );
   const columns = [
-    { id: EMPTY_COLUMN_ID, name: "No status" },
-    ...options.map((option) => ({ id: option.id, name: option.name })),
+    { id: EMPTY_COLUMN_ID, name: "No status", color: "slate" },
+    ...options.map((option) => ({
+      id: option.id,
+      name: option.name,
+      color: option.color,
+    })),
   ];
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
     if (!over) return;
@@ -226,11 +330,28 @@ export function DatabaseBoard({
               key={column.id}
               id={column.id}
               name={column.name}
+              color={activeView?.colorColumns === false ? "slate" : column.color}
               rows={rows}
               activeView={activeView}
               database={database}
               groupPropertyId={groupProperty.id}
-              onAddRow={onAddRow}
+              onAddRow={() =>
+                onAddRow(
+                  column.id === EMPTY_COLUMN_ID
+                    ? undefined
+                    : (column.id as Id<"databaseSelectOptions">),
+                )
+              }
+              onOpenRow={onOpenRow}
+              onUpdateOption={onUpdateOption}
+              onRemoveOption={onRemoveOption}
+              onHideOption={(optionId) =>
+                activeView &&
+                void onUpdateView({
+                  viewId: activeView.id,
+                  hiddenOptionIds: [...hiddenOptionIds, optionId],
+                })
+              }
             />
           );
         })}

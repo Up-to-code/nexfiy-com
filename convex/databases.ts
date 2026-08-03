@@ -145,6 +145,8 @@ const viewValidator = v.object({
   filterJson: v.optional(v.string()),
   groupPropertyId: v.optional(v.id("databaseProperties")),
   datePropertyId: v.optional(v.id("databaseProperties")),
+  hiddenOptionIds: v.optional(v.array(v.id("databaseSelectOptions"))),
+  colorColumns: v.optional(v.boolean()),
 });
 
 const databaseViewValidator = v.union(
@@ -369,11 +371,177 @@ export const getRollupConfigurationOptions = query({
 });
 
 export const addRow = mutation({
-  args: { dataSourceId: v.id("dataSources"), title: v.string() },
+  args: {
+    dataSourceId: v.id("dataSources"),
+    title: v.string(),
+    templateId: v.optional(v.id("databaseRowTemplates")),
+    initialValues: v.optional(
+      v.array(
+        v.object({
+          propertyId: v.id("databaseProperties"),
+          textValue: v.optional(v.string()),
+          numberValue: v.optional(v.number()),
+          booleanValue: v.optional(v.boolean()),
+          dateStart: v.optional(v.number()),
+          dateEnd: v.optional(v.number()),
+          optionIds: v.optional(v.array(v.id("databaseSelectOptions"))),
+        }),
+      ),
+    ),
+  },
   returns: v.id("documents"),
   handler: async (ctx, args) => {
     const workspaceId = await requireProWorkspaceId(ctx);
     return await addDatabaseRow(ctx, workspaceId, args);
+  },
+});
+
+const rowTemplateValidator = v.object({
+  id: v.id("databaseRowTemplates"),
+  name: v.string(),
+  isDefault: v.boolean(),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+});
+
+export const listRowTemplates = query({
+  args: { dataSourceId: v.id("dataSources") },
+  returns: v.array(rowTemplateValidator),
+  handler: async (ctx, args) => {
+    const workspaceId = await requireWorkspaceId(ctx);
+    await requireDataSource(ctx, workspaceId, args.dataSourceId);
+    const templates = await ctx.db
+      .query("databaseRowTemplates")
+      .withIndex("by_data_source", (q) =>
+        q.eq("dataSourceId", args.dataSourceId),
+      )
+      .take(100);
+    return templates
+      .sort((left, right) => left.name.localeCompare(right.name))
+      .map((template) => ({
+        id: template._id,
+        name: template.name,
+        isDefault: template.isDefault,
+        createdAt: template.createdAt,
+        updatedAt: template.updatedAt,
+      }));
+  },
+});
+
+export const createRowTemplateFromRow = mutation({
+  args: {
+    dataSourceId: v.id("dataSources"),
+    documentId: v.id("documents"),
+    name: v.string(),
+  },
+  returns: v.id("databaseRowTemplates"),
+  handler: async (ctx, args) => {
+    const workspaceId = await requireProWorkspaceId(ctx);
+    await requireDataSource(ctx, workspaceId, args.dataSourceId);
+    const row = await requireDatabaseRow(ctx, workspaceId, args.documentId);
+    if (row.dataSourceId !== args.dataSourceId) {
+      throw databaseError("ROW_SOURCE_MISMATCH", "Row belongs to another database");
+    }
+    const name = args.name.trim();
+    if (!name || name.length > 100) {
+      throw databaseError("INVALID_TEMPLATE_NAME", "Template name is required");
+    }
+    const [values, blocks, existing] = await Promise.all([
+      ctx.db
+        .query("databasePropertyValues")
+        .withIndex("by_document", (q) => q.eq("documentId", row._id))
+        .take(100),
+      ctx.db
+        .query("pageBlocks")
+        .withIndex("by_page", (q) => q.eq("pageId", row._id))
+        .take(251),
+      ctx.db
+        .query("databaseRowTemplates")
+        .withIndex("by_data_source", (q) =>
+          q.eq("dataSourceId", args.dataSourceId),
+        )
+        .take(100),
+    ]);
+    if (blocks.length > 250) {
+      throw databaseError("TEMPLATE_TOO_LARGE", "Template exceeds 250 blocks");
+    }
+    const unsupported = blocks.find(
+      (block) =>
+        block.parentBlockId ||
+        [
+          "database_view",
+          "child_page",
+          "columns",
+          "column",
+          "synced_reference",
+          "blocknote",
+        ].includes(block.type),
+    );
+    if (unsupported) {
+      throw databaseError(
+        "UNSUPPORTED_TEMPLATE_BLOCK",
+        `Template cannot include ${unsupported.type} blocks yet`,
+      );
+    }
+    const now = Date.now();
+    return await ctx.db.insert("databaseRowTemplates", {
+      workspaceId,
+      dataSourceId: args.dataSourceId,
+      name,
+      isDefault: existing.length === 0,
+      initialValues: values.map((value) => ({
+        propertyId: value.propertyId,
+        textValue: value.textValue,
+        numberValue: value.numberValue,
+        booleanValue: value.booleanValue,
+        dateStart: value.dateStart,
+        dateEnd: value.dateEnd,
+        optionIds: value.optionIds,
+      })),
+      blocks: blocks.map((block) => ({
+        type: block.type,
+        order: block.order,
+        text: block.text,
+        checked: block.checked,
+        url: block.url,
+        alt: block.alt,
+        caption: block.caption,
+        color: block.color,
+      })),
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
+export const setDefaultRowTemplate = mutation({
+  args: {
+    dataSourceId: v.id("dataSources"),
+    templateId: v.optional(v.id("databaseRowTemplates")),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const workspaceId = await requireProWorkspaceId(ctx);
+    await requireDataSource(ctx, workspaceId, args.dataSourceId);
+    const templates = await ctx.db
+      .query("databaseRowTemplates")
+      .withIndex("by_data_source", (q) =>
+        q.eq("dataSourceId", args.dataSourceId),
+      )
+      .take(100);
+    if (
+      args.templateId &&
+      !templates.some((template) => template._id === args.templateId)
+    ) {
+      throw databaseError("TEMPLATE_NOT_FOUND", "Template not found");
+    }
+    for (const template of templates) {
+      const isDefault = template._id === args.templateId;
+      if (template.isDefault !== isDefault) {
+        await ctx.db.patch(template._id, { isDefault, updatedAt: Date.now() });
+      }
+    }
+    return null;
   },
 });
 
@@ -670,6 +838,60 @@ export const addSelectOption = mutation({
   },
 });
 
+export const updateSelectOption = mutation({
+  args: {
+    optionId: v.id("databaseSelectOptions"),
+    name: v.optional(v.string()),
+    color: v.optional(v.string()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const workspaceId = await requireProWorkspaceId(ctx);
+    const option = await ctx.db.get(args.optionId);
+    if (!option || option.workspaceId !== workspaceId) {
+      throw databaseError("OPTION_NOT_FOUND", "Select option not found");
+    }
+    const name = args.name?.trim();
+    if (args.name !== undefined && (!name || name.length > 100)) {
+      throw databaseError("INVALID_OPTION", "Option name is required");
+    }
+    await ctx.db.patch(option._id, {
+      ...(name ? { name } : {}),
+      ...(args.color !== undefined
+        ? { color: args.color.slice(0, 30) || "slate" }
+        : {}),
+    });
+    return null;
+  },
+});
+
+export const removeSelectOption = mutation({
+  args: { optionId: v.id("databaseSelectOptions") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const workspaceId = await requireProWorkspaceId(ctx);
+    const option = await ctx.db.get(args.optionId);
+    if (!option || option.workspaceId !== workspaceId) {
+      throw databaseError("OPTION_NOT_FOUND", "Select option not found");
+    }
+    const values = await ctx.db
+      .query("databasePropertyValues")
+      .withIndex("by_data_source", (q) =>
+        q.eq("dataSourceId", option.dataSourceId),
+      )
+      .take(2_000);
+    for (const value of values) {
+      if (!value.optionIds?.includes(option._id)) continue;
+      await ctx.db.patch(value._id, {
+        optionIds: value.optionIds.filter((id) => id !== option._id),
+        updatedAt: Date.now(),
+      });
+    }
+    await ctx.db.delete(option._id);
+    return null;
+  },
+});
+
 export const createView = mutation({
   args: {
     dataSourceId: v.id("dataSources"),
@@ -748,6 +970,8 @@ export const updateView = mutation({
     filters: v.optional(v.array(filterValidator)),
     groupPropertyId: v.optional(v.id("databaseProperties")),
     datePropertyId: v.optional(v.id("databaseProperties")),
+    hiddenOptionIds: v.optional(v.array(v.id("databaseSelectOptions"))),
+    colorColumns: v.optional(v.boolean()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -798,6 +1022,15 @@ export const updateView = mutation({
         "Calendar and timeline views require a date property",
       );
     }
+    for (const optionId of args.hiddenOptionIds ?? []) {
+      const option = await ctx.db.get(optionId);
+      if (!option || option.dataSourceId !== view.dataSourceId) {
+        throw databaseError(
+          "OPTION_SOURCE_MISMATCH",
+          "Every hidden group must belong to this database",
+        );
+      }
+    }
     const name = args.name?.trim();
     if (args.name !== undefined && (!name || name.length > 100)) {
       throw databaseError("INVALID_VIEW_NAME", "View name is required");
@@ -816,6 +1049,12 @@ export const updateView = mutation({
         : {}),
       ...(args.datePropertyId !== undefined
         ? { datePropertyId: args.datePropertyId }
+        : {}),
+      ...(args.hiddenOptionIds !== undefined
+        ? { hiddenOptionIds: args.hiddenOptionIds }
+        : {}),
+      ...(args.colorColumns !== undefined
+        ? { colorColumns: args.colorColumns }
         : {}),
       updatedAt: Date.now(),
     });

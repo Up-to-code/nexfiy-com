@@ -1,11 +1,8 @@
 import { getAllDocs } from "@/features/docs/docs";
 import { getPublishedPost, getPublishedPosts } from "@/features/blog/blog-api";
+import type { BlogBlock } from "@/features/blog/blog-api";
 
-function blockMarkdown(block: {
-  type: string;
-  text: string | null;
-  url: string | null;
-}) {
+function blockMarkdown(block: BlogBlock) {
   const text = block.text ?? "";
   if (block.type === "heading_1") return `## ${text}`;
   if (block.type === "heading_2") return `### ${text}`;
@@ -13,9 +10,12 @@ function blockMarkdown(block: {
   if (block.type === "bulleted_list") return `- ${text}`;
   if (block.type === "numbered_list") return `1. ${text}`;
   if (block.type === "quote") return `> ${text}`;
-  if (block.type === "image" && block.url)
-    return `![${text || "Article image"}](${block.url})`;
-  if (block.url) return `[${text || block.url}](${block.url})`;
+  if (block.type === "image" && block.src)
+    return `![${block.alt || "Article image"}](${block.src})`;
+  if (block.type === "link" && block.href)
+    return `[${block.label || block.href}](${block.href})`;
+  if (block.type === "file" && block.src)
+    return `[${block.label || block.src}](${block.src})`;
   return text;
 }
 

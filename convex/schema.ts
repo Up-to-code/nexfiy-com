@@ -74,6 +74,8 @@ export default defineSchema({
     text: v.optional(v.string()),
     checked: v.optional(v.boolean()),
     url: v.optional(v.string()),
+    alt: v.optional(v.string()),
+    caption: v.optional(v.string()),
     color: v.optional(v.string()),
     propsJson: v.optional(v.string()),
     dataSourceId: v.optional(v.id("dataSources")),
@@ -165,6 +167,8 @@ export default defineSchema({
     text: v.optional(v.string()),
     checked: v.optional(v.boolean()),
     url: v.optional(v.string()),
+    alt: v.optional(v.string()),
+    caption: v.optional(v.string()),
     color: v.optional(v.string()),
     propsJson: v.optional(v.string()),
     dataSourceId: v.optional(v.id("dataSources")),
@@ -174,6 +178,40 @@ export default defineSchema({
   })
     .index("by_template", ["templateId"])
     .index("by_template_page", ["templatePageId"])
+    .index("by_workspace", ["workspaceId"]),
+
+  databaseRowTemplates: defineTable({
+    workspaceId: v.string(),
+    dataSourceId: v.id("dataSources"),
+    name: v.string(),
+    isDefault: v.boolean(),
+    initialValues: v.array(
+      v.object({
+        propertyId: v.id("databaseProperties"),
+        textValue: v.optional(v.string()),
+        numberValue: v.optional(v.number()),
+        booleanValue: v.optional(v.boolean()),
+        dateStart: v.optional(v.number()),
+        dateEnd: v.optional(v.number()),
+        optionIds: v.optional(v.array(v.id("databaseSelectOptions"))),
+      }),
+    ),
+    blocks: v.array(
+      v.object({
+        type: v.string(),
+        order: v.number(),
+        text: v.optional(v.string()),
+        checked: v.optional(v.boolean()),
+        url: v.optional(v.string()),
+        alt: v.optional(v.string()),
+        caption: v.optional(v.string()),
+        color: v.optional(v.string()),
+      }),
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_data_source", ["dataSourceId"])
     .index("by_workspace", ["workspaceId"]),
 
   dataSources: defineTable({
@@ -307,6 +345,8 @@ export default defineSchema({
     filterJson: v.optional(v.string()),
     groupPropertyId: v.optional(v.id("databaseProperties")),
     datePropertyId: v.optional(v.id("databaseProperties")),
+    hiddenOptionIds: v.optional(v.array(v.id("databaseSelectOptions"))),
+    colorColumns: v.optional(v.boolean()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

@@ -31,22 +31,22 @@ The tool returns the normalized uploaded asset and, when `pageId` is present, th
   },
   "block": {
     "type": "image",
-    "url": "https://...ufs.sh/f/<workspace-owned-id>",
-    "text": "Product workflow from draft to published content"
+    "src": "https://...ufs.sh/f/<workspace-owned-id>",
+    "alt": "Product workflow from draft to published content",
+    "caption": null
   }
 }
 ```
 
-The server validates the image, removes embedded metadata, constrains large dimensions, and stores a WebP derivative. The decoded input limit is 3 MB. Supply meaningful `altText`; Nexfiy exposes it as the image block's `text` field so websites can render accessible alternative text.
+The server validates the image, removes embedded metadata, constrains large dimensions, and stores a WebP derivative. The decoded input limit is 3 MB. Supply meaningful `altText`; Nexfiy exposes it as the image block's editable `alt` field.
 
 ## Upload once, reuse the URL
 
 Omit `pageId` when the asset is intended for a cover or database property. Then pass the returned `image.url` to the appropriate write tool:
 
-- `update_document` for supported document metadata.
-- `set_database_value` for a text or URL property such as `Cover image`.
-- `create_page_blocks` with `type: "image"`, `url`, and accessible `text`.
-- `update_page_block` to replace an existing image block's URL or alternative text.
+- `update_document` with `cover` to use the asset as the page's canonical cover.
+- `create_page_blocks` with `type: "image"`, `url`, `alt`, and optional `caption`.
+- `update_page_block` to replace an existing image block's URL or visible metadata.
 
 ## Recommended agent workflow
 

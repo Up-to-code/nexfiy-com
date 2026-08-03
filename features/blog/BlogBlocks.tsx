@@ -51,23 +51,28 @@ export function BlogBlocks({ blocks }: { blocks: BlogBlock[] }) {
         if (block.type === "callout")
           return <aside key={block.id}>{text}</aside>;
         if (block.type === "divider") return <hr key={block.id} />;
-        if (block.type === "image" && block.url) {
+        if (block.type === "image" && block.src) {
           return (
             <BlockShell key={block.id}>
               <Image
-                src={block.url}
-                alt={text || "Article illustration"}
+                src={block.src}
+                alt={block.alt || "Article illustration"}
                 width={1200}
                 height={630}
                 sizes="(max-width: 768px) 100vw, 768px"
                 unoptimized
                 className="h-auto w-full rounded-md border"
               />
+              {block.caption ? (
+                <p className="mt-2 text-center text-sm text-zinc-500">
+                  {block.caption}
+                </p>
+              ) : null}
             </BlockShell>
           );
         }
-        if (block.type === "bookmark" && block.url) {
-          const video = embed(block.url);
+        if (block.type === "link" && block.href) {
+          const video = embed(block.href);
           if (video)
             return (
               <BlockShell key={block.id}>
@@ -82,22 +87,22 @@ export function BlogBlocks({ blocks }: { blocks: BlogBlock[] }) {
           return (
             <a
               key={block.id}
-              href={block.url}
+              href={block.href}
               target="_blank"
               rel="noreferrer"
               className="blog-link-row my-5 block border-y py-4 font-medium"
             >
-              {text || block.url}
+              {block.label || block.href}
               <span className="mt-1 block text-sm font-normal text-zinc-500">
-                {block.url}
+                {block.href}
               </span>
             </a>
           );
         }
-        if (block.type === "file" && block.url)
+        if (block.type === "file" && block.src)
           return (
             <p key={block.id}>
-              <a href={block.url}>{text || "Download file"}</a>
+              <a href={block.src}>{block.label || "Download file"}</a>
             </p>
           );
         if (block.type === "database_view")
@@ -110,24 +115,6 @@ export function BlogBlocks({ blocks }: { blocks: BlogBlock[] }) {
           return <aside key={block.id}>Linked page · {text}</aside>;
         if (block.type === "synced_reference")
           return <aside key={block.id}>Synced block · {text}</aside>;
-        if (block.type === "blocknote" && block.propsJson) {
-          try {
-            const value = JSON.parse(block.propsJson) as {
-              language?: string;
-              code?: string;
-              text?: string;
-            };
-            if (value.code)
-              return (
-                <pre key={block.id}>
-                  <code>{value.code}</code>
-                </pre>
-              );
-            return <p key={block.id}>{value.text ?? text}</p>;
-          } catch {
-            return <p key={block.id}>{text}</p>;
-          }
-        }
         return <p key={block.id}>{text}</p>;
       })}
     </div>

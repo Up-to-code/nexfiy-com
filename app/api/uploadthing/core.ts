@@ -32,6 +32,14 @@ const getOwnedFileUrl = (ufsUrl: string, customId: string | null) => {
 };
 
 export const uploadRouter = {
+  avatarImage: upload({
+    image: { maxFileSize: "4MB", maxFileCount: 1 },
+  })
+    .middleware(async ({ files }) => withAuthenticatedOwner(files))
+    .onUploadComplete(async ({ file }) => ({
+      url: getOwnedFileUrl(file.ufsUrl, file.customId),
+    })),
+
   coverImage: upload({
     image: { maxFileSize: "8MB", maxFileCount: 1 },
   })

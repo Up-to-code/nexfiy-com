@@ -78,6 +78,10 @@ export function ViewSettingsDialog({
   );
   const [groupPropertyId, setGroupPropertyId] = useState(view.groupPropertyId);
   const [datePropertyId, setDatePropertyId] = useState(view.datePropertyId);
+  const [hiddenOptionIds, setHiddenOptionIds] = useState(
+    view.hiddenOptionIds ?? [],
+  );
+  const [colorColumns, setColorColumns] = useState(view.colorColumns ?? true);
   const [isSaving, setIsSaving] = useState(false);
   const groupProperties = database.properties.filter((property) =>
     ["status", "select"].includes(property.type),
@@ -96,6 +100,8 @@ export function ViewSettingsDialog({
       filters,
       groupPropertyId,
       datePropertyId,
+      hiddenOptionIds,
+      colorColumns,
     });
     setIsSaving(false);
     if (saved) onOpenChange(false);
@@ -280,6 +286,40 @@ export function ViewSettingsDialog({
                 <SelectTrigger><SelectValue placeholder="Choose a status property" /></SelectTrigger>
                 <SelectContent>{groupProperties.map((property) => <SelectItem key={property.id} value={property.id}>{property.name}</SelectItem>)}</SelectContent>
               </Select>
+              <label className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                Color columns
+                <input
+                  type="checkbox"
+                  checked={colorColumns}
+                  onChange={(event) => setColorColumns(event.target.checked)}
+                />
+              </label>
+              {hiddenOptionIds.length ? (
+                <div className="rounded-md border p-3">
+                  <p className="text-muted-foreground mb-2 text-xs">
+                    Hidden groups
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {database.options
+                      .filter((option) => hiddenOptionIds.includes(option.id))
+                      .map((option) => (
+                        <Button
+                          key={option.id}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setHiddenOptionIds((current) =>
+                              current.filter((id) => id !== option.id),
+                            )
+                          }
+                        >
+                          Show {option.name}
+                        </Button>
+                      ))}
+                  </div>
+                </div>
+              ) : null}
             </section>
           ) : null}
 

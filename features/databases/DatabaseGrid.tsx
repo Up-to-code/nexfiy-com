@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo } from "react";
 import {
   createColumnHelper,
@@ -32,26 +31,15 @@ import { cn } from "@/lib/utils";
 
 import type { useDatabase } from "./useDatabase";
 import { DateTimePickerPopover } from "./DateTimePickerPopover";
+import { selectOptionColor } from "./selectOptionColors";
 
 const EMPTY_VALUE = "__empty__";
-
-const OPTION_STYLES: Record<string, string> = {
-  slate: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
-  blue: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-200",
-  green:
-    "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200",
-};
 
 type DatabaseData = NonNullable<ReturnType<typeof useDatabase>["database"]>;
 type DatabaseProperty = DatabaseData["properties"][number];
 type DatabaseRow = DatabaseData["rows"][number];
 
 const columnHelper = createColumnHelper<DatabaseRow>();
-
-function toDateInput(timestamp?: number) {
-  if (timestamp === undefined) return "";
-  return new Date(timestamp).toISOString().slice(0, 10);
-}
 
 function DatabaseCell({
   property,
@@ -183,7 +171,7 @@ function DatabaseCell({
               <span
                 className={cn(
                   "rounded-full px-2 py-0.5 text-xs",
-                  OPTION_STYLES[selected.color] ?? OPTION_STYLES.slate,
+                  selectOptionColor(selected.color).pill,
                 )}
               >
                 {selected.name}
@@ -279,6 +267,7 @@ export function DatabaseGrid({
   onSetRelation,
   onUpdateRowTitle,
   onEditProperty,
+  onOpenRow,
 }: {
   database: DatabaseData;
   visibleProperties: DatabaseProperty[];
@@ -286,6 +275,7 @@ export function DatabaseGrid({
   onSetRelation: ReturnType<typeof useDatabase>["setRelation"];
   onUpdateRowTitle: ReturnType<typeof useDatabase>["updateRowTitle"];
   onEditProperty: (property: DatabaseProperty) => void;
+  onOpenRow: (rowId: Id<"documents">) => void;
 }) {
   const columns = useMemo(
     () => [
@@ -328,13 +318,13 @@ export function DatabaseGrid({
         id: "open-page",
         header: () => null,
         cell: ({ row }) => (
-          <Button variant="ghost" size="icon-sm" asChild>
-            <Link
-              href={`/documents/${row.original.id}`}
+          <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => onOpenRow(row.original.id)}
               aria-label={`Open ${row.original.title}`}
             >
               <ExternalLink className="size-3.5" />
-            </Link>
           </Button>
         ),
       }),
@@ -345,6 +335,7 @@ export function DatabaseGrid({
       onSetRelation,
       onSetValue,
       onUpdateRowTitle,
+      onOpenRow,
       visibleProperties,
     ],
   );

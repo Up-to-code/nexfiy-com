@@ -12,6 +12,13 @@ import {
   getWorkspaceManagementScope,
 } from "./lib/workspace";
 import { requireProForUser } from "./lib/billingDomain";
+import {
+  canonicalBlockValidator,
+  canonicalPageSummaryValidator,
+  listCanonicalPropertyValues,
+  toCanonicalBlock,
+  toCanonicalPageSummary,
+} from "./lib/pageContentDomain";
 
 const contentApiError = (code: string, message: string) =>
   new ConvexError({ code, message });
@@ -100,42 +107,6 @@ const propertyValidator = v.object({
       order: v.number(),
     }),
   ),
-});
-
-const valueValidator = v.object({
-  propertyId: v.id("databaseProperties"),
-  type: v.string(),
-  text: v.union(v.string(), v.null()),
-  number: v.union(v.number(), v.null()),
-  boolean: v.union(v.boolean(), v.null()),
-  dateStart: v.union(v.number(), v.null()),
-  dateEnd: v.union(v.number(), v.null()),
-  optionIds: v.array(v.id("databaseSelectOptions")),
-});
-
-const contentItemValidator = v.object({
-  id: v.id("documents"),
-  title: v.string(),
-  icon: v.union(v.string(), v.null()),
-  updatedAt: v.union(v.number(), v.null()),
-  values: v.array(valueValidator),
-});
-
-const blockValidator = v.object({
-  id: v.id("pageBlocks"),
-  editorId: v.union(v.string(), v.null()),
-  parentBlockId: v.union(v.id("pageBlocks"), v.null()),
-  type: v.string(),
-  order: v.number(),
-  text: v.union(v.string(), v.null()),
-  checked: v.union(v.boolean(), v.null()),
-  url: v.union(v.string(), v.null()),
-  color: v.union(v.string(), v.null()),
-  propsJson: v.union(v.string(), v.null()),
-  dataSourceId: v.union(v.id("dataSources"), v.null()),
-  viewId: v.union(v.id("databaseViews"), v.null()),
-  linkedContentId: v.union(v.id("documents"), v.null()),
-  syncGroupId: v.union(v.id("syncedBlockGroups"), v.null()),
 });
 
 const uniqueSourceIds = (dataSourceIds: Id<"dataSources">[]) => [
@@ -371,7 +342,7 @@ export const getContent = query({
     v.object({
       source: sourceValidator,
       properties: v.array(propertyValidator),
-      items: paginationResultValidator(contentItemValidator),
+      items: paginationResultValidator(canonicalPageSummaryValidator),
     }),
   ),
   handler: async (ctx, args) => {
@@ -417,26 +388,8 @@ export const getContent = query({
 
     const itemsWithValues = await Promise.all(
       items.page.map(async (item) => {
-        const values = await ctx.db
-          .query("databasePropertyValues")
-          .withIndex("by_document", (q) => q.eq("documentId", item._id))
-          .take(100);
-        return {
-          id: item._id,
-          title: item.title,
-          icon: item.icon ?? null,
-          updatedAt: item.updatedAt ?? null,
-          values: values.map((value) => ({
-            propertyId: value.propertyId,
-            type: value.type,
-            text: value.textValue ?? null,
-            number: value.numberValue ?? null,
-            boolean: value.booleanValue ?? null,
-            dateStart: value.dateStart ?? null,
-            dateEnd: value.dateEnd ?? null,
-            optionIds: value.optionIds ?? [],
-          })),
-        };
+        const values = await listCanonicalPropertyValues(ctx, item._id);
+        return toCanonicalPageSummary(item, values);
       }),
     );
 
@@ -490,17 +443,8 @@ export const getContentItem = query({
     v.object({
       source: sourceValidator,
       item: v.object({
-        id: v.id("documents"),
-        title: v.string(),
-        icon: v.union(v.string(), v.null()),
-        updatedAt: v.union(v.number(), v.null()),
-        content: v.union(v.string(), v.null()),
-        contentModel: v.union(
-          v.literal("blocknote"),
-          v.literal("page_blocks"),
-          v.null(),
-        ),
-        blocks: v.array(blockValidator),
+        ...canonicalPageSummaryValidator.fields,
+        blocks: v.array(canonicalBlockValidator),
         blocksTruncated: v.boolean(),
       }),
     }),
@@ -534,10 +478,13 @@ export const getContentItem = query({
     ) {
       return null;
     }
-    const blocks = await ctx.db
-      .query("pageBlocks")
-      .withIndex("by_page", (q) => q.eq("pageId", item._id))
-      .take(1001);
+    const [blocks, values] = await Promise.all([
+      ctx.db
+        .query("pageBlocks")
+        .withIndex("by_page", (q) => q.eq("pageId", item._id))
+        .take(1001),
+      listCanonicalPropertyValues(ctx, item._id),
+    ]);
 
     return {
       source: {
@@ -548,28 +495,8 @@ export const getContentItem = query({
         updatedAt: source.updatedAt,
       },
       item: {
-        id: item._id,
-        title: item.title,
-        icon: item.icon ?? null,
-        updatedAt: item.updatedAt ?? null,
-        content: item.content ?? null,
-        contentModel: item.contentModel ?? null,
-        blocks: blocks.slice(0, 1000).map((block) => ({
-          id: block._id,
-          editorId: block.editorId ?? null,
-          parentBlockId: block.parentBlockId ?? null,
-          type: block.type,
-          order: block.order,
-          text: block.text ?? null,
-          checked: block.checked ?? null,
-          url: block.url ?? null,
-          color: block.color ?? null,
-          propsJson: block.propsJson ?? null,
-          dataSourceId: block.dataSourceId ?? null,
-          viewId: block.viewId ?? null,
-          linkedContentId: block.linkedPageId ?? null,
-          syncGroupId: block.syncGroupId ?? null,
-        })),
+        ...toCanonicalPageSummary(item, values),
+        blocks: blocks.slice(0, 1000).map(toCanonicalBlock),
         blocksTruncated: blocks.length > 1000,
       },
     };

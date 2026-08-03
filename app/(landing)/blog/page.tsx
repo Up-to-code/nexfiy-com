@@ -22,53 +22,40 @@ export default async function BlogPage() {
   const { available, posts } = await getPublishedPosts();
   return (
     <>
-      <section className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-16">
-        <header className="relative overflow-hidden border-y border-zinc-200 bg-[#f7f7f5] px-6 py-10 sm:px-10 sm:py-14 dark:border-white/10 dark:bg-white/[0.035]">
-          <div
-            aria-hidden="true"
-            className="absolute -right-20 -top-24 size-64 rounded-full bg-[#2383e2]/10 blur-3xl"
-          />
-          <div className="relative grid gap-10 md:grid-cols-[minmax(0,1fr)_17rem] md:items-end">
-            <div>
-              <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#2383e2]">
-                <span className="size-1.5 rounded-full bg-[#2383e2]" />
-                Nexfiy journal
-              </p>
-              <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-[-0.05em] sm:text-5xl lg:text-[3.5rem] lg:leading-[1.04]">
-                Ideas for work that stays connected.
-              </h1>
-            </div>
-            <div>
-              <p className="text-sm leading-6 text-zinc-600 dark:text-white/60">
-                Product decisions, practical guides, and field notes on
-                building knowledge that people, products, and AI agents can
-                share.
-              </p>
-              <div className="mt-5 flex flex-wrap gap-2 text-xs text-zinc-500 dark:text-white/45">
-                <span className="border border-zinc-300 px-2.5 py-1 dark:border-white/15">
-                  Product
-                </span>
-                <span className="border border-zinc-300 px-2.5 py-1 dark:border-white/15">
-                  MCP
-                </span>
-                <span className="border border-zinc-300 px-2.5 py-1 dark:border-white/15">
-                  Content API
-                </span>
-              </div>
-            </div>
+      <section className="mx-auto max-w-6xl px-5 pb-16 pt-12 sm:px-8 sm:pb-24 sm:pt-20">
+        <header className="border-b border-zinc-200 pb-10 sm:pb-14 dark:border-white/10">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#2383e2]">
+            Nexfiy Journal
+          </p>
+          <div className="mt-5 grid gap-6 md:grid-cols-[minmax(0,1fr)_20rem] md:items-end md:gap-12">
+            <h1 className="max-w-3xl text-4xl font-semibold leading-[1.06] tracking-[-0.045em] sm:text-5xl lg:text-[3.5rem]">
+              Ideas for work that stays connected.
+            </h1>
+            <p className="max-w-xl text-base leading-7 text-zinc-500 dark:text-white/55">
+              Practical notes on building connected knowledge for people,
+              products, and AI.
+            </p>
           </div>
         </header>
         {!available ? (
-          <p className="border-b py-8 text-sm text-zinc-500">
-            The journal is temporarily unavailable. Please check back shortly.
-          </p>
+          <div className="flex items-center gap-3 py-8 text-sm text-zinc-500 dark:text-white/45">
+            <span
+              aria-hidden="true"
+              className="size-2 rounded-full bg-amber-400"
+            />
+            <p>The journal is taking a short break. Check back soon.</p>
+          </div>
         ) : null}
         {available && posts.length === 0 ? (
-          <p className="border-b py-8 text-sm text-zinc-500">
-            The first story is being prepared.
-          </p>
+          <div className="flex items-center gap-3 py-8 text-sm text-zinc-500 dark:text-white/45">
+            <span
+              aria-hidden="true"
+              className="size-2 rounded-full bg-[#2383e2]"
+            />
+            <p>The first story is on its way.</p>
+          </div>
         ) : null}
-        <div className="grid gap-x-6 gap-y-12 py-10 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-x-6 gap-y-12 py-10 sm:grid-cols-2 lg:grid-cols-3 lg:py-12">
           {posts.map((post) => (
             <article key={post.id} className="group min-w-0">
               <Link href={`/blog/${post.slug}`} className="block outline-none">

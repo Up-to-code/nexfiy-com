@@ -15,6 +15,7 @@ import { BlockNoteEditor } from "@blocknote/core";
 import { TableOfContents } from "@/components/table-of-contents";
 import { useEditorFont } from "@/hooks/useEditorFont";
 import { DatabasePage } from "@/features/databases/DatabasePage";
+import { DatabaseRowContentBySource } from "@/features/databases/DatabaseRowContent";
 import { NormalizedBlockNoteEditor } from "@/features/blocks/NormalizedBlockNoteEditor";
 import { captureEvent } from "@/lib/analytics";
 
@@ -125,6 +126,18 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
       <div className="pt-13 pb-35">
         <Cover url={doc.coverImage} />
         <DatabasePage document={doc} />
+      </div>
+    );
+  }
+
+  if (doc.dataSourceId) {
+    return (
+      <div className="pt-13 pb-35">
+        <Cover url={doc.coverImage} />
+        <DatabaseRowContentBySource
+          dataSourceId={doc.dataSourceId}
+          rowId={doc._id}
+        />
       </div>
     );
   }

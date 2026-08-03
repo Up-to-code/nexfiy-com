@@ -6,15 +6,20 @@ import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { logger } from "@/lib/logger";
 
-type Organization = NonNullable<
+export type Organization = NonNullable<
   ReturnType<typeof authClient.useListOrganizations>["data"]
 >[number];
 
+export type ActiveOrganization = NonNullable<
+  ReturnType<typeof authClient.useActiveOrganization>["data"]
+>;
+
 type OrganizationContextValue = {
   organizations: Organization[];
-  activeOrganization: Organization | null;
+  activeOrganization: ActiveOrganization | null;
   isLoading: boolean;
   setActiveOrganization: (organizationId: string | null) => Promise<void>;
+  refreshActiveOrganization: () => Promise<void>;
 };
 
 const OrganizationContext = createContext<OrganizationContextValue | null>(
@@ -25,8 +30,11 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { data: organizations, isPending: isOrganizationsPending } =
     authClient.useListOrganizations();
-  const { data: activeOrganization, isPending: isActivePending } =
-    authClient.useActiveOrganization();
+  const {
+    data: activeOrganization,
+    isPending: isActivePending,
+    refetch: refetchActiveOrganization,
+  } = authClient.useActiveOrganization();
 
   const setActiveOrganization = async (organizationId: string | null) => {
     try {
@@ -53,6 +61,9 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
         activeOrganization: activeOrganization ?? null,
         isLoading: isOrganizationsPending || isActivePending,
         setActiveOrganization,
+        refreshActiveOrganization: async () => {
+          await refetchActiveOrganization();
+        },
       }}
     >
       {children}

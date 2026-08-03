@@ -582,13 +582,40 @@ export async function createDatabase(
 export async function addDatabaseRow(
   ctx: MutationCtx,
   workspaceId: string,
-  args: { dataSourceId: Id<"dataSources">; title: string },
+  args: {
+    dataSourceId: Id<"dataSources">;
+    title: string;
+    templateId?: Id<"databaseRowTemplates">;
+    initialValues?: Array<{
+      propertyId: Id<"databaseProperties">;
+      textValue?: string;
+      numberValue?: number;
+      booleanValue?: boolean;
+      dateStart?: number;
+      dateEnd?: number;
+      optionIds?: Id<"databaseSelectOptions">[];
+    }>;
+  },
 ) {
   const dataSource = await requireDataSource(
     ctx,
     workspaceId,
     args.dataSourceId,
   );
+  const template = args.templateId
+    ? await ctx.db.get(args.templateId)
+    : null;
+  if (
+    args.templateId &&
+    (!template ||
+      template.workspaceId !== workspaceId ||
+      template.dataSourceId !== dataSource._id)
+  ) {
+    throw databaseError(
+      "TEMPLATE_NOT_FOUND",
+      "Database row template is unavailable",
+    );
+  }
   const title = args.title.trim() || "Untitled";
   if (title.length > 200) {
     throw databaseError("INVALID_TITLE", "Row title is too long");
@@ -617,15 +644,70 @@ export async function addDatabaseRow(
     order: existingRows.length,
     updatedAt: now,
   });
-  await ctx.db.insert("pageBlocks", {
-    workspaceId,
-    pageId: documentId,
-    type: "paragraph",
-    order: 0,
-    text: "",
-    createdAt: now,
-    updatedAt: now,
-  });
+  const allowedBlockTypes = new Set<Doc<"pageBlocks">["type"]>([
+    "paragraph",
+    "heading_1",
+    "heading_2",
+    "heading_3",
+    "bulleted_list",
+    "numbered_list",
+    "checklist",
+    "quote",
+    "callout",
+    "toggle",
+    "divider",
+    "image",
+    "file",
+    "bookmark",
+  ]);
+  const templateBlocks = template?.blocks ?? [];
+  if (templateBlocks.length) {
+    for (const block of templateBlocks.slice(0, 250)) {
+      if (!allowedBlockTypes.has(block.type as Doc<"pageBlocks">["type"])) {
+        throw databaseError(
+          "INVALID_TEMPLATE_BLOCK",
+          `Unsupported template block type: ${block.type}`,
+        );
+      }
+      await ctx.db.insert("pageBlocks", {
+        workspaceId,
+        pageId: documentId,
+        type: block.type as Doc<"pageBlocks">["type"],
+        order: block.order,
+        text: block.text,
+        checked: block.checked,
+        url: block.url,
+        alt: block.alt,
+        caption: block.caption,
+        color: block.color,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+  } else {
+    await ctx.db.insert("pageBlocks", {
+      workspaceId,
+      pageId: documentId,
+      type: "paragraph",
+      order: 0,
+      text: "",
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+  const valuesByProperty = new Map(
+    (template?.initialValues ?? []).map((value) => [value.propertyId, value]),
+  );
+  for (const value of args.initialValues ?? []) {
+    valuesByProperty.set(value.propertyId, value);
+  }
+  for (const initialValue of valuesByProperty.values()) {
+    await setDatabasePropertyValue(ctx, workspaceId, {
+      documentId,
+      propertyId: initialValue.propertyId,
+      value: initialValue,
+    });
+  }
   return documentId;
 }
 
@@ -1097,6 +1179,8 @@ export async function getDatabaseSnapshot(
       filterJson: view.filterJson,
       groupPropertyId: view.groupPropertyId,
       datePropertyId: view.datePropertyId,
+      hiddenOptionIds: view.hiddenOptionIds,
+      colorColumns: view.colorColumns,
     })),
     relationOptions: relationProperties.map((property) => ({
       propertyId: property._id,

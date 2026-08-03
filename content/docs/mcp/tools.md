@@ -25,7 +25,7 @@ These tools are advertised to clients as read-only.
 | `create_document`   | Create a dynamic page-block document by default.                  |
 | `create_child_page` | Create a page below another page.                                 |
 | `create_workspace`  | Create a page hierarchy from an outline, up to 50 pages per call. |
-| `update_document`   | Update document metadata or page content.                         |
+| `update_document`   | Update page title, icon, canonical cover, or publication state.    |
 | `archive_document`  | Archive a document. This is a destructive operation.              |
 
 `create_document` and every page in `create_workspace` use the normalized `page_blocks` model when `contentModel` is omitted. Agents can therefore follow creation immediately with block or image tools without knowing an internal compatibility flag.
@@ -40,7 +40,9 @@ These tools are advertised to clients as read-only.
 | `move_page_block`    | Reorder or reparent a block.                       |
 | `upload_image`       | Upload an asset and optionally add an image block. |
 
-Supported block families include paragraphs, headings, lists, checklists, quotes, callouts, toggles, dividers, media, bookmarks, child pages, columns, database views, synchronized references, and BlockNote custom blocks.
+`get_document` returns the canonical page projection, including `cover`, database `properties`, and structured `blocks`. Links use `label` and `href`; images use `src`, `alt`, and `caption`. Raw editor JSON is not a public contract.
+
+Supported block families include paragraphs, headings, lists, checklists, quotes, callouts, toggles, dividers, media, links, child pages, columns, database views, and synchronized references.
 
 See [Upload images with MCP](/docs/mcp/images) for the complete binary upload and image-block workflow.
 

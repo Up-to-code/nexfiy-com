@@ -37,6 +37,13 @@ import {
 } from "./lib/syncedBlockDomain";
 import { getWorkspaceBillingScope } from "./lib/workspace";
 import { requireProForUser } from "./lib/billingDomain";
+import {
+  canonicalBlockValidator,
+  canonicalPageSummaryValidator,
+  listCanonicalPropertyValues,
+  toCanonicalBlock,
+  toCanonicalPageSummary,
+} from "./lib/pageContentDomain";
 
 const environmentViewValidator = v.object({
   _id: v.id("mcpEnvironments"),
@@ -48,23 +55,12 @@ const environmentViewValidator = v.object({
   lastClientName: v.optional(v.string()),
 });
 
-const documentSummaryValidator = v.object({
-  id: v.id("documents"),
-  title: v.string(),
-  icon: v.union(v.string(), v.null()),
-  parentId: v.union(v.id("documents"), v.null()),
-  isPublished: v.boolean(),
-  updatedAt: v.union(v.number(), v.null()),
-});
+const documentSummaryValidator = canonicalPageSummaryValidator;
 
 const documentDetailValidator = v.object({
-  id: v.id("documents"),
-  title: v.string(),
-  icon: v.union(v.string(), v.null()),
-  parentId: v.union(v.id("documents"), v.null()),
-  content: v.union(v.string(), v.null()),
-  isPublished: v.boolean(),
-  updatedAt: v.union(v.number(), v.null()),
+  ...canonicalPageSummaryValidator.fields,
+  blocks: v.array(canonicalBlockValidator),
+  blocksTruncated: v.boolean(),
 });
 
 const accessValidator = v.union(
@@ -117,15 +113,6 @@ const getEnvironmentByTokenHash = async (
   );
   return environment;
 };
-
-const toDocumentSummary = (document: Doc<"documents">) => ({
-  id: document._id,
-  title: document.title,
-  icon: document.icon ?? null,
-  parentId: document.parentDocument ?? null,
-  isPublished: document.isPublished,
-  updatedAt: document.updatedAt ?? null,
-});
 
 const workspacePageValidator = v.object({
   key: v.string(),
@@ -237,6 +224,8 @@ const pageBlockValidator = v.object({
   text: v.optional(v.string()),
   checked: v.optional(v.boolean()),
   url: v.optional(v.string()),
+  alt: v.optional(v.string()),
+  caption: v.optional(v.string()),
   color: v.optional(v.string()),
   propsJson: v.optional(v.string()),
   dataSourceId: v.optional(v.id("dataSources")),
@@ -261,6 +250,8 @@ const toPageBlock = (block: Doc<"pageBlocks">) => ({
   text: block.text,
   checked: block.checked,
   url: block.url,
+  alt: block.alt,
+  caption: block.caption,
   color: block.color,
   propsJson: block.propsJson,
   dataSourceId: block.dataSourceId,
@@ -428,7 +419,14 @@ export const listDocuments = query({
       )
       .order("desc")
       .take(limit);
-    return documents.map(toDocumentSummary);
+    return await Promise.all(
+      documents.map(async (document) =>
+        toCanonicalPageSummary(
+          document,
+          await listCanonicalPropertyValues(ctx, document._id),
+        ),
+      ),
+    );
   },
 });
 
@@ -456,7 +454,14 @@ export const searchDocuments = query({
           .eq("isArchived", false),
       )
       .take(limit);
-    return documents.map(toDocumentSummary);
+    return await Promise.all(
+      documents.map(async (document) =>
+        toCanonicalPageSummary(
+          document,
+          await listCanonicalPropertyValues(ctx, document._id),
+        ),
+      ),
+    );
   },
 });
 
@@ -476,9 +481,17 @@ export const getDocument = query({
     ) {
       return null;
     }
+    const [properties, blocks] = await Promise.all([
+      listCanonicalPropertyValues(ctx, document._id),
+      ctx.db
+        .query("pageBlocks")
+        .withIndex("by_page", (q) => q.eq("pageId", document._id))
+        .take(1_001),
+    ]);
     return {
-      ...toDocumentSummary(document),
-      content: document.content?.slice(0, 40_000) ?? null,
+      ...toCanonicalPageSummary(document, properties),
+      blocks: blocks.slice(0, 1_000).map(toCanonicalBlock),
+      blocksTruncated: blocks.length > 1_000,
     };
   },
 });
@@ -547,6 +560,7 @@ export const createDocument = mutation({
     parentId: v.optional(v.id("documents")),
     content: v.optional(v.string()),
     icon: v.optional(v.string()),
+    cover: v.optional(v.string()),
     isPublished: v.optional(v.boolean()),
     contentModel: v.optional(
       v.union(v.literal("blocknote"), v.literal("page_blocks")),
@@ -869,6 +883,8 @@ const blockBlueprintValidator = v.object({
   text: v.optional(v.string()),
   checked: v.optional(v.boolean()),
   url: v.optional(v.string()),
+  alt: v.optional(v.string()),
+  caption: v.optional(v.string()),
   color: v.optional(v.string()),
   propsJson: v.optional(v.string()),
   dataSourceId: v.optional(v.id("dataSources")),
@@ -1026,6 +1042,8 @@ export const createPageBlocks = mutation({
         text: blueprint.text?.slice(0, 50_000),
         checked: blueprint.checked,
         url: blueprint.url?.slice(0, 5_000),
+        alt: blueprint.alt?.slice(0, 1_000),
+        caption: blueprint.caption?.slice(0, 5_000),
         color: blueprint.color?.slice(0, 50),
         propsJson: blueprint.propsJson,
         dataSourceId: blueprint.dataSourceId,
@@ -1049,8 +1067,9 @@ export const updatePageBlock = mutation({
     text: v.optional(v.string()),
     checked: v.optional(v.boolean()),
     url: v.optional(v.string()),
+    alt: v.optional(v.string()),
+    caption: v.optional(v.string()),
     color: v.optional(v.string()),
-    propsJson: v.optional(v.string()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -1062,22 +1081,15 @@ export const updatePageBlock = mutation({
     if (!block || block.workspaceId !== environment.workspaceId) {
       throw mcpError("BLOCK_NOT_FOUND", "Block not found in this workspace");
     }
-    if (args.propsJson !== undefined) {
-      try {
-        JSON.parse(args.propsJson);
-      } catch {
-        throw mcpError(
-          "INVALID_BLOCK_PROPS",
-          "Block properties must be valid JSON",
-        );
-      }
-    }
     await ctx.db.patch(block._id, {
       ...(args.text !== undefined ? { text: args.text.slice(0, 50_000) } : {}),
       ...(args.checked !== undefined ? { checked: args.checked } : {}),
       ...(args.url !== undefined ? { url: args.url.slice(0, 5_000) } : {}),
+      ...(args.alt !== undefined ? { alt: args.alt.slice(0, 1_000) } : {}),
+      ...(args.caption !== undefined
+        ? { caption: args.caption.slice(0, 5_000) }
+        : {}),
       ...(args.color !== undefined ? { color: args.color.slice(0, 50) } : {}),
-      ...(args.propsJson !== undefined ? { propsJson: args.propsJson } : {}),
       updatedAt: Date.now(),
     });
     return null;
@@ -1260,6 +1272,7 @@ export const updateDocument = mutation({
     title: v.optional(v.string()),
     content: v.optional(v.string()),
     icon: v.optional(v.string()),
+    cover: v.optional(v.string()),
     isPublished: v.optional(v.boolean()),
   },
   returns: v.union(v.null(), documentDetailValidator),
@@ -1293,15 +1306,27 @@ export const updateDocument = mutation({
     if (title !== undefined) patch.title = title;
     if (args.content !== undefined) patch.content = args.content;
     if (args.icon !== undefined) patch.icon = args.icon.slice(0, 20);
+    if (args.cover !== undefined) {
+      patch.coverImage = args.cover.trim()
+        ? args.cover.trim().slice(0, 5_000)
+        : undefined;
+    }
     if (args.isPublished !== undefined) patch.isPublished = args.isPublished;
     await ctx.db.patch(args.documentId, patch);
     const updated = await ctx.db.get(args.documentId);
-    return updated
-      ? {
-          ...toDocumentSummary(updated),
-          content: updated.content?.slice(0, 40_000) ?? null,
-        }
-      : null;
+    if (!updated) return null;
+    const [properties, blocks] = await Promise.all([
+      listCanonicalPropertyValues(ctx, updated._id),
+      ctx.db
+        .query("pageBlocks")
+        .withIndex("by_page", (q) => q.eq("pageId", updated._id))
+        .take(1_001),
+    ]);
+    return {
+      ...toCanonicalPageSummary(updated, properties),
+      blocks: blocks.slice(0, 1_000).map(toCanonicalBlock),
+      blocksTruncated: blocks.length > 1_000,
+    };
   },
 });
 
@@ -1988,6 +2013,20 @@ export const addDatabaseRow = mutation({
     tokenHash: v.string(),
     dataSourceId: v.id("dataSources"),
     title: v.string(),
+    templateId: v.optional(v.id("databaseRowTemplates")),
+    initialValues: v.optional(
+      v.array(
+        v.object({
+          propertyId: v.id("databaseProperties"),
+          textValue: v.optional(v.string()),
+          numberValue: v.optional(v.number()),
+          booleanValue: v.optional(v.boolean()),
+          dateStart: v.optional(v.number()),
+          dateEnd: v.optional(v.number()),
+          optionIds: v.optional(v.array(v.id("databaseSelectOptions"))),
+        }),
+      ),
+    ),
   },
   returns: v.id("documents"),
   handler: async (ctx, args) => {

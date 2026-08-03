@@ -59,20 +59,12 @@ const DocumentsPage = () => {
     <div className="flex h-full flex-col items-center justify-center px-6 py-12 text-center">
       <div className="animate-in fade-in zoom-in-95 relative mb-2 duration-500">
         <Image
-          src="/empty-workspace-light.png"
-          alt="Empty workspace"
-          height={768}
-          width={768}
+          src="/empty-workspace-nexfiy.png"
+          alt="Nexfiy characters ready to create a new page"
+          height={1254}
+          width={1254}
           priority
-          className="relative size-60 object-contain sm:size-72 dark:hidden"
-        />
-        <Image
-          src="/empty-workspace-dark.png"
-          alt="Empty workspace"
-          height={768}
-          width={768}
-          priority
-          className="relative hidden size-60 object-contain sm:size-72 dark:block"
+          className="relative size-60 object-contain sm:size-72"
         />
       </div>
       <div className="animate-in fade-in slide-in-from-bottom-2 max-w-md space-y-1.5 duration-500">

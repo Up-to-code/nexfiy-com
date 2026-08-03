@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   DndContext,
@@ -37,9 +36,11 @@ function utcDay(timestamp: number) {
 function CalendarCard({
   row,
   draggable = true,
+  onOpenRow,
 }: {
   row: DatabaseRow;
   draggable?: boolean;
+  onOpenRow: (rowId: Id<"documents">) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
@@ -59,14 +60,23 @@ function CalendarCard({
       {...listeners}
       {...attributes}
     >
-      <span className="truncate pr-1">{row.title}</span>
-      <Link
-        href={`/documents/${row.id}`}
+      <button
+        type="button"
+        className="truncate pr-1 text-left"
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={() => onOpenRow(row.id)}
+      >
+        {row.title}
+      </button>
+      <button
+        type="button"
         aria-label={`Open ${row.title}`}
         className="shrink-0 text-muted-foreground hover:text-foreground"
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={() => onOpenRow(row.id)}
       >
         <ExternalLink className="size-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-      </Link>
+      </button>
     </article>
   );
 }
@@ -79,12 +89,14 @@ function CalendarDay({
   rows,
   readOnly,
   onAddRow,
+  onOpenRow,
 }: {
   day: Date;
   month: Date;
   rows: DatabaseRow[];
   readOnly: boolean;
   onAddRow?: (dateStart?: number) => void;
+  onOpenRow: (rowId: Id<"documents">) => void;
 }) {
   const timestamp = Date.UTC(
     day.getUTCFullYear(),
@@ -138,7 +150,12 @@ function CalendarDay({
       </div>
       <div className="space-y-1">
         {rows.map((row) => (
-          <CalendarCard key={row.id} row={row} draggable={!readOnly} />
+          <CalendarCard
+            key={row.id}
+            row={row}
+            draggable={!readOnly}
+            onOpenRow={onOpenRow}
+          />
         ))}
       </div>
     </div>
@@ -151,12 +168,14 @@ function CalendarHourSlot({
   rows,
   readOnly,
   onAddRow,
+  onOpenRow,
 }: {
   dayTimestamp: number;
   hour: number;
   rows: DatabaseRow[];
   readOnly: boolean;
   onAddRow?: (dateStart?: number) => void;
+  onOpenRow: (rowId: Id<"documents">) => void;
 }) {
   const slotTimestamp = dayTimestamp + hour * 3600 * 1000;
   const { isOver, setNodeRef } = useDroppable({
@@ -179,7 +198,12 @@ function CalendarHourSlot({
       )}
     >
       {rows.map((row) => (
-        <CalendarCard key={row.id} row={row} draggable={!readOnly} />
+        <CalendarCard
+          key={row.id}
+          row={row}
+          draggable={!readOnly}
+          onOpenRow={onOpenRow}
+        />
       ))}
       {!rows.length && !readOnly && onAddRow ? (
         <button
@@ -198,11 +222,13 @@ export function DatabaseCalendar({
   database,
   onSetValue,
   onAddRow,
+  onOpenRow,
   readOnly = false,
 }: {
   database: DatabaseData;
   onSetValue: ReturnType<typeof useDatabase>["setValue"];
   onAddRow?: (dateStart?: number) => void;
+  onOpenRow: (rowId: Id<"documents">) => void;
   readOnly?: boolean;
 }) {
   const now = new Date();
@@ -264,7 +290,12 @@ export function DatabaseCalendar({
         </div>
         <div className="flex flex-wrap gap-2">
           {database.rows.map((row) => (
-            <CalendarCard key={row.id} row={row} draggable={false} />
+            <CalendarCard
+              key={row.id}
+              row={row}
+              draggable={false}
+              onOpenRow={onOpenRow}
+            />
           ))}
           {!database.rows.length ? (
             <p className="text-muted-foreground text-sm">
@@ -501,6 +532,7 @@ export function DatabaseCalendar({
                             rows={matchingRows}
                             readOnly={readOnly}
                             onAddRow={onAddRow}
+                            onOpenRow={onOpenRow}
                           />
                         );
                       })}
@@ -543,6 +575,7 @@ export function DatabaseCalendar({
                   rows={rows}
                   readOnly={readOnly}
                   onAddRow={onAddRow}
+                  onOpenRow={onOpenRow}
                 />
               );
             })}
@@ -554,7 +587,12 @@ export function DatabaseCalendar({
             <p className="text-muted-foreground text-xs font-medium">No date</p>
             <div className="flex flex-wrap gap-2">
               {rowsWithoutDate.map((row) => (
-                <CalendarCard key={row.id} row={row} draggable={!readOnly} />
+                <CalendarCard
+                  key={row.id}
+                  row={row}
+                  draggable={!readOnly}
+                  onOpenRow={onOpenRow}
+                />
               ))}
             </div>
           </div>

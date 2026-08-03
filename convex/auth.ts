@@ -43,6 +43,7 @@ const resolveSiteUrl = () => {
 };
 
 const siteUrl = resolveSiteUrl();
+const resendApiUrl = "https://api.resend.com/emails";
 const nexfiyProProductId =
   process.env.DODO_NEXFIY_PRO_PRODUCT_ID ?? "pdt_schema_generation";
 const getProAccessForOwner = makeFunctionReference<
@@ -57,6 +58,57 @@ const trustedOrigins = [
     .map((origin) => origin.trim())
     .filter(Boolean),
 ];
+
+const escapeHtml = (value: string) =>
+  value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+const sendWorkspaceInvitation = async (
+  data: {
+    id: string;
+    email: string;
+    organization: { name: string };
+    inviter: { user: { name: string } };
+  },
+  request?: Request,
+) => {
+  if (request?.headers.get("x-nexfiy-invite-delivery") === "link") {
+    return;
+  }
+
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY is required to send workspace invitations");
+  }
+
+  const invitationUrl = `${siteUrl}/accept-invitation?id=${encodeURIComponent(data.id)}`;
+  const organizationName = escapeHtml(data.organization.name);
+  const inviterName = escapeHtml(data.inviter.user.name);
+  const response = await fetch(resendApiUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: process.env.RESEND_FROM_EMAIL ?? "Nexfiy <onboarding@resend.dev>",
+      to: [data.email],
+      subject: `Join ${data.organization.name} on Nexfiy`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#18181b"><h1 style="font-size:24px">You're invited to ${organizationName}</h1><p style="line-height:1.6">${inviterName} invited you to collaborate in their Nexfiy workspace.</p><p style="margin:28px 0"><a href="${invitationUrl}" style="background:#2383e2;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600">Accept invitation</a></p><p style="font-size:12px;color:#71717a">This invitation expires in 48 hours.</p></div>`,
+    }),
+  });
+
+  if (!response.ok) {
+    const details = await response.text();
+    throw new Error(
+      `Resend rejected the invitation email (${response.status}): ${details}`,
+    );
+  }
+};
 
 export const createAuthOptions = (ctx: GenericCtx<DataModel>) => {
   const dodoPayments = new DodoPayments({
@@ -119,6 +171,7 @@ export const createAuthOptions = (ctx: GenericCtx<DataModel>) => {
     },
     plugins: [
       organization({
+        sendInvitationEmail: sendWorkspaceInvitation,
         allowUserToCreateOrganization: async (user) => {
           if (!("runQuery" in ctx)) return false;
           return (

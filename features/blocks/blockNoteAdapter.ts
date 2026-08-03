@@ -33,6 +33,8 @@ export type NormalizedPageBlock = {
   text?: string;
   checked?: boolean;
   url?: string;
+  alt?: string;
+  caption?: string;
   color?: string;
   propsJson?: string;
   dataSourceId?: Id<"dataSources">;
@@ -59,6 +61,8 @@ export function editorBlockInputsSignature(blocks: EditorBlockInput[]) {
         text: block.text,
         checked: block.checked,
         url: block.url,
+        alt: block.alt,
+        caption: block.caption,
         color: block.color,
         propsJson: block.propsJson,
         dataSourceId: block.dataSourceId,
@@ -131,7 +135,11 @@ function parseStoredBlock(block: NormalizedPageBlock): NexfiyPartialBlock {
       return {
         id: block.editorId,
         type: "image",
-        props: { url: block.url ?? "" },
+        props: {
+          url: block.url ?? "",
+          name: block.alt ?? "",
+          caption: block.caption ?? "",
+        },
       };
     case "file":
       return {
@@ -142,8 +150,8 @@ function parseStoredBlock(block: NormalizedPageBlock): NexfiyPartialBlock {
     case "bookmark":
       return {
         id: block.editorId,
-        type: "bookmarkCard",
-        props: { url: block.url ?? "" },
+        type: "linkCard",
+        props: { label: block.text ?? "", url: block.url ?? "" },
       };
     case "database_view":
       return {
@@ -266,11 +274,27 @@ export function blockNoteToNormalizedBlocks(
           output.push({ ...common, type: "divider" });
           break;
         case "image":
+          output.push({
+            ...common,
+            type: "image",
+            url: block.props.url,
+            alt: block.props.name,
+            caption: block.props.caption,
+          });
+          break;
         case "file":
-          output.push({ ...common, type: block.type, url: block.props.url });
+          output.push({ ...common, type: "file", url: block.props.url });
           break;
         case "bookmarkCard":
           output.push({ ...common, type: "bookmark", url: block.props.url });
+          break;
+        case "linkCard":
+          output.push({
+            ...common,
+            type: "bookmark",
+            text: block.props.label,
+            url: block.props.url,
+          });
           break;
         case "databaseView":
           output.push({
@@ -336,6 +360,8 @@ export function normalizedBlocksToEditorInputs(
       text: block.text,
       checked: block.checked,
       url: block.url,
+      alt: block.alt,
+      caption: block.caption,
       color: block.color,
       propsJson: block.propsJson,
       dataSourceId: block.dataSourceId,

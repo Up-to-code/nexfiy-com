@@ -71,6 +71,13 @@ export function useDatabase(
     !isAuthLoading && !isAuthenticated
       ? null
       : normalizeDatabaseSnapshot(rawDatabase);
+  const resolvedDataSourceId = database?.dataSource.id ?? dataSourceId;
+  const rowTemplates = useQuery(
+    api.databases.listRowTemplates,
+    canQuery && resolvedDataSourceId
+      ? { dataSourceId: resolvedDataSourceId }
+      : "skip",
+  );
   const addRowMutation = useMutation(api.databases.addRow);
   const updateRowTitleMutation = useMutation(api.databases.updateRowTitle);
   const addPropertyMutation = useMutation(api.databases.addProperty);
@@ -81,20 +88,32 @@ export function useDatabase(
   const setRelationMutation = useMutation(api.databases.setRelation);
   const createViewMutation = useMutation(api.databases.createView);
   const updateViewMutation = useMutation(api.databases.updateView);
+  const updateSelectOptionMutation = useMutation(api.databases.updateSelectOption);
+  const removeSelectOptionMutation = useMutation(api.databases.removeSelectOption);
+  const createRowTemplateMutation = useMutation(
+    api.databases.createRowTemplateFromRow,
+  );
 
   const addRow = async (
     dataSourceId: Id<"dataSources">,
-    datePropertyId?: Id<"databaseProperties">,
-    dateStart?: number,
+    initialValues?: Array<{
+      propertyId: Id<"databaseProperties">;
+      textValue?: string;
+      numberValue?: number;
+      booleanValue?: boolean;
+      dateStart?: number;
+      dateEnd?: number;
+      optionIds?: Id<"databaseSelectOptions">[];
+    }>,
+    templateId?: Id<"databaseRowTemplates">,
   ) => {
     try {
-      const rowId = await addRowMutation({ dataSourceId, title: "Untitled" });
-      if (rowId && datePropertyId && dateStart !== undefined) {
-        await setValue(rowId, datePropertyId, {
-          dateStart,
-        });
-      }
-      return rowId;
+      return await addRowMutation({
+        dataSourceId,
+        title: "Untitled",
+        initialValues,
+        templateId,
+      });
     } catch (error) {
       logger.error("Failed to add database row", error);
       toast.error("Could not add the row");
@@ -178,6 +197,7 @@ export function useDatabase(
 
   return {
     database,
+    rowTemplates: rowTemplates ?? [],
     isLoading: isAuthLoading || (isAuthenticated && database === undefined),
     addRow,
     updateRowTitle,
@@ -199,6 +219,45 @@ export function useDatabase(
     },
     setValue,
     setRelation,
+    updateSelectOption: async (input: {
+      optionId: Id<"databaseSelectOptions">;
+      name?: string;
+      color?: string;
+    }) => {
+      try {
+        await updateSelectOptionMutation(input);
+        return true;
+      } catch (error) {
+        logger.error("Failed to update select option", error);
+        toast.error("Could not update that group");
+        return false;
+      }
+    },
+    removeSelectOption: async (optionId: Id<"databaseSelectOptions">) => {
+      try {
+        await removeSelectOptionMutation({ optionId });
+        return true;
+      } catch (error) {
+        logger.error("Failed to remove select option", error);
+        toast.error("Could not remove that group");
+        return false;
+      }
+    },
+    createRowTemplate: async (input: {
+      dataSourceId: Id<"dataSources">;
+      documentId: Id<"documents">;
+      name: string;
+    }) => {
+      try {
+        await createRowTemplateMutation(input);
+        toast.success("Template created");
+        return true;
+      } catch (error) {
+        logger.error("Failed to create row template", error);
+        toast.error("Could not create that template");
+        return false;
+      }
+    },
     createView: async (input: {
       dataSourceId: Id<"dataSources">;
       name: string;
@@ -230,6 +289,8 @@ export function useDatabase(
       }>;
       groupPropertyId?: Id<"databaseProperties">;
       datePropertyId?: Id<"databaseProperties">;
+      hiddenOptionIds?: Id<"databaseSelectOptions">[];
+      colorColumns?: boolean;
     }) => {
       try {
         await updateViewMutation(input);

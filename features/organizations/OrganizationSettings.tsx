@@ -1,18 +1,50 @@
 "use client";
 
 import { useState } from "react";
-import { Check, LoaderCircle, Plus } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  LoaderCircle,
+  Mail,
+  MoreHorizontal,
+  Plus,
+  X,
+} from "lucide-react";
+import posthog from "posthog-js";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ProUpgradePrompt } from "@/features/billing/ProUpgradePrompt";
+import { useBilling } from "@/features/billing/use-billing";
 import { authClient } from "@/lib/auth-client";
 import { logger } from "@/lib/logger";
-import { cn } from "@/lib/utils";
+import { WorkspaceInviteDialog } from "./WorkspaceInviteDialog";
 import { useOrganizationContext } from "./OrganizationProvider";
+import {
+  type WorkspaceInvitation,
+  useOrganizationManagement,
+} from "./useOrganizationManagement";
 import { WorkspaceAvatar } from "./WorkspaceAvatar";
-import { useBilling } from "@/features/billing/use-billing";
-import { ProUpgradePrompt } from "@/features/billing/ProUpgradePrompt";
-import posthog from "posthog-js";
 
 function toSlug(value: string) {
   return value
@@ -22,21 +54,63 @@ function toSlug(value: string) {
     .replace(/^-|-$/g, "");
 }
 
+function roleLabel(role: string) {
+  return role
+    .split(",")[0]
+    .trim()
+    .replace(/^./, (letter) => letter.toUpperCase());
+}
+
+type WorkspaceMember = {
+  id: string;
+  userId: string;
+  role: string;
+  user: {
+    name: string;
+    email: string;
+    image?: string | null;
+  };
+};
+
 export function OrganizationSettings() {
   const [name, setName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const {
     organizations,
     activeOrganization,
     isLoading,
     setActiveOrganization,
+    refreshActiveOrganization,
   } = useOrganizationContext();
   const { data: session } = authClient.useSession();
   const billing = useBilling();
+  const management = useOrganizationManagement(
+    activeOrganization?.id,
+    refreshActiveOrganization,
+  );
+  const members = (activeOrganization?.members ?? []) as WorkspaceMember[];
+  const invitations = (
+    (activeOrganization?.invitations ?? []) as WorkspaceInvitation[]
+  ).filter((invitation) => invitation.status === "pending");
+  const currentMember = members.find(
+    (member: WorkspaceMember) => member.userId === session?.user.id,
+  );
+  const canManageMembers = Boolean(
+    currentMember?.role
+      .split(",")
+      .some(
+        (role: string) => role.trim() === "owner" || role.trim() === "admin",
+      ),
+  );
+  const memberCount = activeOrganization ? members.length : 1;
 
   const createOrganization = async () => {
     const slug = toSlug(name);
-
     if (!slug) {
       toast.error("Enter a workspace name.");
       return;
@@ -48,7 +122,6 @@ export function OrganizationSettings() {
         name: name.trim(),
         slug,
       });
-
       if (error || !data) {
         throw new Error(error?.message ?? "Workspace was not created");
       }
@@ -65,132 +138,336 @@ export function OrganizationSettings() {
     }
   };
 
+  const removeSelectedMember = async () => {
+    if (!memberToRemove) return;
+    await management.removeMember(memberToRemove.id);
+    setMemberToRemove(null);
+  };
+
+  const selectedName = activeOrganization?.name ?? "Personal workspace";
+  const selectedImage = activeOrganization?.logo ?? session?.user.image;
+
   return (
-    <div className="space-y-8">
-      <div className="border-border/40 border-b pb-5">
-        <h2 className="text-lg font-bold">Workspaces</h2>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Switch between your personal workspace and the team organizations you
-          belong to.
+    <div className="space-y-6">
+      <div className="space-y-3">
+        <p className="text-muted-foreground text-[11px] font-semibold tracking-wider uppercase">
+          Current workspace
         </p>
-      </div>
-
-      <div className="border-border/40 space-y-3 border-b pb-6">
-        <h3 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
-          My Workspaces
-        </h3>
-
-        <div className="divide-border/30 divide-y">
-          <button
-            type="button"
-            onClick={() => setActiveOrganization(null)}
-            className={cn(
-              "hover:bg-muted/30 flex w-full items-center gap-3.5 rounded-lg px-2 py-3 text-left transition-colors",
-              !activeOrganization && "bg-muted/40 font-medium",
-            )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="border-border/60 hover:bg-muted/40 flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors"
+            >
+              <WorkspaceAvatar
+                name={selectedName}
+                image={selectedImage}
+                className="size-9"
+              />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold">
+                  {selectedName}
+                </span>
+                <span className="text-muted-foreground block text-xs">
+                  {activeOrganization
+                    ? `${memberCount} ${memberCount === 1 ? "member" : "members"}`
+                    : "Private · Only you"}
+                </span>
+              </span>
+              {isLoading ? (
+                <LoaderCircle className="size-4 animate-spin" />
+              ) : (
+                <ChevronDown className="text-muted-foreground size-4" />
+              )}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            className="w-[var(--radix-dropdown-menu-trigger-width)] rounded-lg p-1.5"
           >
-            <WorkspaceAvatar
-              name={session?.user.name ?? "Personal workspace"}
-              image={session?.user.image}
-            />
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-medium">
+            <DropdownMenuLabel className="text-muted-foreground text-xs">
+              Switch workspace
+            </DropdownMenuLabel>
+            <DropdownMenuItem
+              onSelect={() => setActiveOrganization(null)}
+              className="gap-3 py-2"
+            >
+              <WorkspaceAvatar
+                name="Personal workspace"
+                image={session?.user.image}
+                className="size-8 rounded-lg"
+              />
+              <span className="min-w-0 flex-1 truncate">
                 Personal workspace
               </span>
-              <span className="text-muted-foreground block truncate text-xs">
-                Private · Only you
-              </span>
-            </span>
-            {!activeOrganization ? (
-              <span className="flex size-5 items-center justify-center rounded-full bg-[#2383E2] text-white">
-                <Check className="size-3" strokeWidth={2.5} />
-              </span>
-            ) : null}
-          </button>
-
-          {organizations.map((organization) => {
-            const isActive = organization.id === activeOrganization?.id;
-
-            return (
-              <button
-                type="button"
+              {!activeOrganization ? (
+                <Check className="size-4 text-[#2383e2]" />
+              ) : null}
+            </DropdownMenuItem>
+            {organizations.map((organization) => (
+              <DropdownMenuItem
                 key={organization.id}
-                onClick={() => setActiveOrganization(organization.id)}
-                className={cn(
-                  "hover:bg-muted/30 flex w-full items-center gap-3.5 rounded-lg px-2 py-3 text-left transition-colors",
-                  isActive && "bg-muted/40 font-medium",
-                )}
+                onSelect={() => setActiveOrganization(organization.id)}
+                className="gap-3 py-2"
               >
                 <WorkspaceAvatar
                   name={organization.name}
                   image={organization.logo}
+                  className="size-8 rounded-lg"
                 />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">
-                    {organization.name}
-                  </span>
-                  <span className="text-muted-foreground block truncate text-xs">
-                    Team workspace · {organization.slug}
-                  </span>
+                <span className="min-w-0 flex-1 truncate">
+                  {organization.name}
                 </span>
-                {isActive ? (
-                  <span className="flex size-5 items-center justify-center rounded-full bg-[#2383E2] text-white">
-                    <Check className="size-3" strokeWidth={2.5} />
-                  </span>
+                {activeOrganization?.id === organization.id ? (
+                  <Check className="size-4 text-[#2383e2]" />
                 ) : null}
-              </button>
-            );
-          })}
-        </div>
-
-        {isLoading ? (
-          <div className="text-muted-foreground flex items-center gap-2 py-3 text-xs">
-            <LoaderCircle className="size-4 animate-spin" /> Loading workspaces…
-          </div>
-        ) : null}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={() =>
+                document.getElementById("organization-name")?.focus()
+              }
+            >
+              <Plus className="size-4" /> Create workspace
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      {!billing.isLoading && !billing.subscription?.hasPro ? (
-        <ProUpgradePrompt feature="Team workspaces" />
-      ) : (
-        <div className="space-y-3">
-          <div>
-            <h3 className="text-sm font-semibold">Create a team workspace</h3>
-            <p className="text-muted-foreground mt-0.5 text-xs">
-              Give your team a shared space for pages, databases, and billing.
-            </p>
+      <Tabs defaultValue="members" className="gap-0">
+        <div className="border-border/40 border-b">
+          <div className="flex items-start justify-between gap-4 pb-5">
+            <div>
+              <h2 className="text-lg font-bold">{selectedName}</h2>
+              <p className="text-muted-foreground mt-1 text-sm">
+                Manage people and workspace access.
+              </p>
+            </div>
+            {activeOrganization && canManageMembers ? (
+              <Button
+                size="sm"
+                className="h-8"
+                onClick={() => setIsInviteOpen(true)}
+              >
+                <Plus className="size-3.5" /> Invite member
+              </Button>
+            ) : null}
+          </div>
+          <TabsList
+            variant="line"
+            className="h-10 w-full justify-start gap-8 p-0"
+          >
+            <TabsTrigger value="members" className="h-full px-0">
+              Members ({memberCount})
+            </TabsTrigger>
+            <TabsTrigger value="workspace" className="h-full px-0">
+              Workspaces
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent value="members" className="mt-0 pt-3">
+          <div className="divide-border/40 divide-y">
+            {!activeOrganization && session?.user ? (
+              <div className="flex items-center gap-3 py-3">
+                <Avatar className="size-9">
+                  <AvatarImage src={session.user.image ?? undefined} />
+                  <AvatarFallback>
+                    {session.user.name.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">
+                    {session.user.name}
+                  </p>
+                  <p className="text-muted-foreground truncate text-xs">
+                    {session.user.email}
+                  </p>
+                </div>
+                <span className="text-muted-foreground text-xs">Owner</span>
+              </div>
+            ) : null}
+
+            {members.map((member: WorkspaceMember) => {
+              const isOwner = member.role.split(",").includes("owner");
+              const canRemove =
+                canManageMembers &&
+                !isOwner &&
+                member.userId !== session?.user.id;
+              return (
+                <div key={member.id} className="flex items-center gap-3 py-3">
+                  <Avatar className="size-9">
+                    <AvatarImage src={member.user.image ?? undefined} />
+                    <AvatarFallback>
+                      {member.user.name.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">
+                      {member.user.name}
+                    </p>
+                    <p className="text-muted-foreground truncate text-xs">
+                      {member.user.email}
+                    </p>
+                  </div>
+                  <span className="text-muted-foreground text-xs">
+                    {roleLabel(member.role)}
+                  </span>
+                  {canRemove ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="size-8">
+                          <MoreHorizontal />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onSelect={() =>
+                            setMemberToRemove({
+                              id: member.id,
+                              name: member.user.name,
+                            })
+                          }
+                        >
+                          <X /> Remove member
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
 
-          <div className="flex flex-col gap-2.5 sm:flex-row">
-            <Input
-              id="organization-name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="Workspace name"
-              className="border-border/60 h-9 rounded-md bg-transparent shadow-none focus-visible:ring-1 focus-visible:ring-[#2383E2]"
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  void createOrganization();
-                }
-              }}
-            />
-            <Button
-              type="button"
-              onClick={createOrganization}
-              disabled={isCreating || !name.trim()}
-              className="h-9 shrink-0 rounded-md bg-[#2383E2] px-4 font-medium text-white hover:bg-[#1d6fc2]"
-            >
-              {isCreating ? (
-                <LoaderCircle className="size-4 animate-spin" />
+          {activeOrganization && canManageMembers ? (
+            <div className="mt-6 space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                  Pending invitations
+                </h3>
+              </div>
+              {invitations.length ? (
+                <div className="divide-border/40 divide-y">
+                  {invitations.map((invitation) => (
+                    <div
+                      key={invitation.id}
+                      className="flex items-center gap-3 py-3"
+                    >
+                      <span className="bg-muted flex size-9 items-center justify-center rounded-full">
+                        <Mail className="text-muted-foreground size-4" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">
+                          {invitation.email}
+                        </p>
+                        <p className="text-muted-foreground text-xs">
+                          Invited · expires{" "}
+                          {new Date(invitation.expiresAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground h-8"
+                        disabled={management.isMutating}
+                        onClick={() =>
+                          management.cancelInvitation(invitation.id)
+                        }
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               ) : (
-                <Plus className="mr-1.5 size-4" />
+                <p className="text-muted-foreground rounded-md border border-dashed px-3 py-4 text-center text-xs">
+                  No pending invitations.
+                </p>
               )}
-              {isCreating ? "Creating…" : "Create workspace"}
-            </Button>
-          </div>
-        </div>
-      )}
+            </div>
+          ) : null}
+        </TabsContent>
+
+        <TabsContent value="workspace" className="mt-0 pt-5">
+          {!billing.isLoading && !billing.subscription?.hasPro ? (
+            <ProUpgradePrompt feature="Team workspaces" />
+          ) : (
+            <div className="space-y-3">
+              <div>
+                <h3 className="text-sm font-semibold">
+                  Create a team workspace
+                </h3>
+                <p className="text-muted-foreground mt-0.5 text-xs">
+                  Give your team a shared space for pages, databases, and
+                  billing.
+                </p>
+              </div>
+              <div className="flex flex-col gap-2.5 sm:flex-row">
+                <Input
+                  id="organization-name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="Workspace name"
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      void createOrganization();
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  onClick={createOrganization}
+                  disabled={isCreating || !name.trim()}
+                  className="shrink-0"
+                >
+                  {isCreating ? (
+                    <LoaderCircle className="animate-spin" />
+                  ) : (
+                    <Plus />
+                  )}
+                  {isCreating ? "Creating…" : "Create workspace"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {activeOrganization ? (
+        <WorkspaceInviteDialog
+          open={isInviteOpen}
+          onOpenChange={setIsInviteOpen}
+          workspaceName={activeOrganization.name}
+          isInviting={management.isMutating}
+          onInvite={management.inviteMember}
+        />
+      ) : null}
+
+      <AlertDialog
+        open={Boolean(memberToRemove)}
+        onOpenChange={(open) => !open && setMemberToRemove(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove {memberToRemove?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              They will immediately lose access to this workspace and its pages.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep member</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={removeSelectedMember}
+              disabled={management.isMutating}
+            >
+              Remove member
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

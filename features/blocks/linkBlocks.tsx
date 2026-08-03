@@ -230,24 +230,17 @@ function LinkCardContent({
 
   if (editing || !href) {
     return (
-      <form className="p-4" onSubmit={submit}>
-        <div className="flex items-start gap-3">
-          <span className="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-xl">
-            <Link2 className="size-4" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium">Add a labeled link</p>
-            <p className="text-muted-foreground mt-0.5 text-xs">
-              Give the link a readable name instead of showing a long URL.
-            </p>
-          </div>
-        </div>
-        <div className="mt-4 grid gap-2 sm:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)_auto]">
+      <form
+        className="flex w-full items-center gap-1.5 py-1"
+        onSubmit={submit}
+      >
+        <Link2 className="text-muted-foreground size-4 shrink-0" />
+        <div className="grid min-w-0 flex-1 gap-1.5 sm:grid-cols-[minmax(8rem,0.7fr)_minmax(12rem,1.3fr)]">
           <Input
             aria-label="Link label"
             value={draftLabel}
             placeholder="Link label"
-            className="h-9 rounded-lg shadow-none"
+            className="h-8 rounded-md shadow-none"
             readOnly={!editable}
             onChange={(event) => setDraftLabel(event.target.value)}
           />
@@ -256,21 +249,21 @@ function LinkCardContent({
             aria-invalid={error ? true : undefined}
             value={draftUrl}
             placeholder="https://example.com"
-            className="h-9 rounded-lg shadow-none"
+            className="h-8 rounded-md shadow-none"
             readOnly={!editable}
             onChange={(event) => {
               setDraftUrl(event.target.value);
               if (error) setError("");
             }}
           />
-          {editable ? (
-            <Button type="submit" size="sm" className="h-9 rounded-lg px-4">
-              Add link
-            </Button>
-          ) : null}
         </div>
+        {editable ? (
+          <Button type="submit" size="sm" className="h-8 rounded-md px-3">
+            Save
+          </Button>
+        ) : null}
         {error ? (
-          <p className="text-destructive mt-2 text-xs" role="alert">
+          <p className="text-destructive sr-only" role="alert">
             {error}
           </p>
         ) : null}
@@ -279,43 +272,27 @@ function LinkCardContent({
   }
 
   return (
-    <div className="flex items-center gap-3 p-3">
-      <span className="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-xl">
-        <Link2 className="size-4" />
-      </span>
+    <div className="group/link flex min-h-8 items-center gap-1.5 py-1">
+      <Link2 className="text-muted-foreground size-4 shrink-0" />
       <a
         href={href}
         target="_blank"
         rel="noreferrer"
-        className="group min-w-0 flex-1"
+        className="text-primary min-w-0 truncate text-sm font-medium underline underline-offset-2"
       >
-        <p className="group-hover:text-primary truncate text-sm font-medium transition-colors">
-          {label || new URL(href).hostname}
-        </p>
-        <p className="text-muted-foreground truncate text-xs">{href}</p>
+        {label || new URL(href).hostname}
       </a>
       {editable ? (
         <Button
           type="button"
           variant="ghost"
           size="sm"
-          className="rounded-lg"
+          className="h-7 px-2 opacity-0 group-hover/link:opacity-100"
           onClick={() => setEditing(true)}
         >
-          <Pencil className="size-3.5" />
-          Change
+          <Pencil className="size-3.5" /> Edit
         </Button>
       ) : null}
-      <Button asChild variant="ghost" size="icon-sm">
-        <a
-          href={href}
-          target="_blank"
-          rel="noreferrer"
-          aria-label={`Open ${label || "link"}`}
-        >
-          <ExternalLink className="size-4" />
-        </a>
-      </Button>
     </div>
   );
 }
@@ -446,7 +423,7 @@ export const linkCardBlock = createReactBlockSpec(
   {
     render: ({ block, editor }) => (
       <div
-        className="bg-card my-1 w-full overflow-hidden rounded-xl border shadow-xs"
+        className="my-1 w-full"
         contentEditable={false}
       >
         <LinkCardContent

@@ -32,6 +32,7 @@ import { DatabaseTimeline } from "./DatabaseTimeline";
 import { useDatabase } from "./useDatabase";
 import { ViewSettingsDialog } from "./ViewSettingsDialog";
 import { PropertySettingsDialog } from "./PropertySettingsDialog";
+import { DatabaseRowSidePeek } from "./DatabaseRowSidePeek";
 
 const VIEW_ICONS = {
   table: Table2,
@@ -62,6 +63,7 @@ export function DatabaseTable({
   const [editingPropertyId, setEditingPropertyId] = useState<
     Id<"databaseProperties"> | undefined
   >();
+  const [openRowId, setOpenRowId] = useState<Id<"documents">>();
   const database = databaseState.database;
   const activeView = database?.views.find(
     (view) => view.id === database.activeViewId,
@@ -75,6 +77,18 @@ export function DatabaseTable({
     const visible = new Set(activeView.visiblePropertyIds);
     return database.properties.filter((property) => visible.has(property.id));
   }, [activeView, database]);
+  const createAndOpenRow = async (
+    initialValues?: Parameters<typeof databaseState.addRow>[1],
+    templateId?: Id<"databaseRowTemplates">,
+  ) => {
+    if (!database) return;
+    const rowId = await databaseState.addRow(
+      database.dataSource.id,
+      initialValues,
+      templateId,
+    );
+    if (rowId) setOpenRowId(rowId);
+  };
 
   if (databaseState.isLoading) {
     return <Skeleton className="h-64 w-full" />;
@@ -191,13 +205,36 @@ export function DatabaseTable({
             >
               <Plus className="size-3.5" /> Property
             </Button>
-            <Button
-              size="sm"
-              className="bg-[#2383E2] hover:bg-[#1d73c9] text-white h-7 px-2.5 text-xs font-medium shadow-none rounded-md"
-              onClick={() => databaseState.addRow(database.dataSource.id)}
-            >
-              <Plus className="size-3.5" /> New
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  className="bg-[#2383E2] hover:bg-[#1d73c9] h-7 rounded-md px-2.5 text-xs font-medium text-white shadow-none"
+                >
+                  <Plus className="size-3.5" /> New
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Templates</DropdownMenuLabel>
+                {databaseState.rowTemplates.map((template) => (
+                  <DropdownMenuItem
+                    key={template.id}
+                    onSelect={() => void createAndOpenRow(undefined, template.id)}
+                  >
+                    {template.name}
+                    {template.isDefault ? (
+                      <span className="text-muted-foreground ml-auto text-[10px]">
+                        Default
+                      </span>
+                    ) : null}
+                  </DropdownMenuItem>
+                ))}
+                {databaseState.rowTemplates.length ? <DropdownMenuSeparator /> : null}
+                <DropdownMenuItem onSelect={() => void createAndOpenRow()}>
+                  Blank
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         ) : null}
       </div>
@@ -206,20 +243,39 @@ export function DatabaseTable({
         <DatabaseBoard
           database={database}
           onSetValue={databaseState.setValue}
-          onAddRow={() => databaseState.addRow(database.dataSource.id)}
+          onAddRow={(optionId) =>
+            void createAndOpenRow(
+              activeView?.groupPropertyId
+                ? [
+                    {
+                      propertyId: activeView.groupPropertyId,
+                      optionIds: optionId ? [optionId] : [],
+                    },
+                  ]
+                : undefined,
+            )
+          }
+          onOpenRow={setOpenRowId}
+          onUpdateOption={databaseState.updateSelectOption}
+          onRemoveOption={databaseState.removeSelectOption}
+          onUpdateView={databaseState.updateView}
         />
       ) : activeView?.type === "calendar" ? (
         <DatabaseCalendar
           database={database}
           onSetValue={databaseState.setValue}
           onAddRow={(dateStart?: number) => {
-            const dateProp = database.properties.find((p) => p.type === "date");
-            void databaseState.addRow(
-              database.dataSource.id,
-              dateProp?.id,
-              dateStart,
+            const dateProp =
+              database.properties.find(
+                (property) => property.id === activeView.datePropertyId,
+              ) ?? database.properties.find((property) => property.type === "date");
+            void createAndOpenRow(
+              dateProp && dateStart !== undefined
+                ? [{ propertyId: dateProp.id, dateStart }]
+                : undefined,
             );
           }}
+          onOpenRow={setOpenRowId}
           readOnly={readOnly}
         />
       ) : activeView?.type === "timeline" ? (
@@ -232,13 +288,14 @@ export function DatabaseTable({
           onSetRelation={databaseState.setRelation}
           onUpdateRowTitle={databaseState.updateRowTitle}
           onEditProperty={(property) => setEditingPropertyId(property.id)}
+          onOpenRow={setOpenRowId}
         />
       )}
       {!readOnly ? (
         <button
           type="button"
           className="text-muted-foreground/70 hover:text-foreground hover:bg-muted/30 flex items-center gap-1.5 px-2 py-1 text-xs font-medium transition-colors rounded-md mt-1"
-          onClick={() => databaseState.addRow(database.dataSource.id)}
+          onClick={() => void createAndOpenRow()}
         >
           <Plus className="size-3.5" /> New page
         </button>
@@ -276,6 +333,16 @@ export function DatabaseTable({
           database={database}
           view={activeView}
           onSave={databaseState.updateView}
+        />
+      ) : null}
+      {!readOnly ? (
+        <DatabaseRowSidePeek
+          database={database}
+          rowId={openRowId}
+          onClose={() => setOpenRowId(undefined)}
+          onUpdateTitle={databaseState.updateRowTitle}
+          onSetValue={databaseState.setValue}
+          onCreateTemplate={databaseState.createRowTemplate}
         />
       ) : null}
     </div>

@@ -304,7 +304,7 @@ async function handleMcpRequest(request: Request, context: RouteContext) {
     {
       title: "Read a Nexfiy document",
       description:
-        "Read one non-archived document by the id returned from a list or search.",
+        "Read one canonical Nexfiy page with its cover, database properties, and structured blocks.",
       inputSchema: {
         documentId: z.string().min(1),
       },
@@ -624,8 +624,9 @@ async function handleMcpRequest(request: Request, context: RouteContext) {
               text: z.string().max(50_000).optional(),
               checked: z.boolean().optional(),
               url: z.string().max(5_000).optional(),
+              alt: z.string().max(1_000).optional(),
+              caption: z.string().max(5_000).optional(),
               color: z.string().max(50).optional(),
-              propsJson: z.string().max(20_000).optional(),
               dataSourceId: z.string().min(1).optional(),
               viewId: z.string().min(1).optional(),
             }),
@@ -779,8 +780,9 @@ async function handleMcpRequest(request: Request, context: RouteContext) {
         text: z.string().max(50_000).optional(),
         checked: z.boolean().optional(),
         url: z.string().max(5_000).optional(),
+        alt: z.string().max(1_000).optional(),
+        caption: z.string().max(5_000).optional(),
         color: z.string().max(50).optional(),
-        propsJson: z.string().max(20_000).optional(),
       },
       annotations: {
         readOnlyHint: false,
@@ -788,15 +790,16 @@ async function handleMcpRequest(request: Request, context: RouteContext) {
         openWorldHint: false,
       },
     },
-    async ({ blockId, text, checked, url, color, propsJson }) => {
+    async ({ blockId, text, checked, url, alt, caption, color }) => {
       await convex.mutation(api.mcpEnvironments.updatePageBlock, {
         tokenHash,
         blockId: blockId as Id<"pageBlocks">,
         text,
         checked,
         url,
+        alt,
+        caption,
         color,
-        propsJson,
       });
       return {
         content: [{ type: "text" as const, text: "Block updated." }],
@@ -881,12 +884,12 @@ async function handleMcpRequest(request: Request, context: RouteContext) {
     {
       title: "Update a Nexfiy document",
       description:
-        "Update the title, content, icon, or publishing state of a document.",
+        "Update the title, icon, cover, or publishing state of a canonical page.",
       inputSchema: {
         documentId: z.string().min(1),
         title: z.string().min(1).max(200).optional(),
-        content: z.string().max(100_000).optional(),
         icon: z.string().max(20).optional(),
+        cover: z.string().url().max(5_000).or(z.literal("")).optional(),
         isPublished: z.boolean().optional(),
       },
       annotations: {
@@ -895,15 +898,15 @@ async function handleMcpRequest(request: Request, context: RouteContext) {
         openWorldHint: false,
       },
     },
-    async ({ documentId, title, content, icon, isPublished }) => {
+    async ({ documentId, title, icon, cover, isPublished }) => {
       const document = await convex.mutation(
         api.mcpEnvironments.updateDocument,
         {
           tokenHash,
           documentId: documentId as Id<"documents">,
           title,
-          content,
           icon,
+          cover,
           isPublished,
         },
       );
@@ -1193,10 +1196,25 @@ async function handleMcpRequest(request: Request, context: RouteContext) {
     {
       title: "Add a page to a Nexfiy database",
       description:
-        "Add a database row. The new row is also a full Nexfiy page with its own stable document ID and body.",
+        "Atomically add a database row with optional initial property values or a row template. The row is also a full Nexfiy page.",
       inputSchema: {
         dataSourceId: z.string().min(1),
         title: z.string().min(1).max(200),
+        templateId: z.string().min(1).optional(),
+        initialValues: z
+          .array(
+            z.object({
+              propertyId: z.string().min(1),
+              textValue: z.string().optional(),
+              numberValue: z.number().optional(),
+              booleanValue: z.boolean().optional(),
+              dateStart: z.number().optional(),
+              dateEnd: z.number().optional(),
+              optionIds: z.array(z.string().min(1)).optional(),
+            }),
+          )
+          .max(100)
+          .optional(),
       },
       annotations: {
         readOnlyHint: false,
@@ -1204,13 +1222,21 @@ async function handleMcpRequest(request: Request, context: RouteContext) {
         openWorldHint: false,
       },
     },
-    async ({ dataSourceId, title }) => {
+    async ({ dataSourceId, title, templateId, initialValues }) => {
       const documentId = await convex.mutation(
         api.mcpEnvironments.addDatabaseRow,
         {
           tokenHash,
           dataSourceId: dataSourceId as Id<"dataSources">,
           title,
+          templateId: templateId as Id<"databaseRowTemplates"> | undefined,
+          initialValues: initialValues?.map((value) => ({
+            ...value,
+            propertyId: value.propertyId as Id<"databaseProperties">,
+            optionIds: value.optionIds as
+              | Id<"databaseSelectOptions">[]
+              | undefined,
+          })),
         },
       );
       return {

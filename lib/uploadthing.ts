@@ -5,7 +5,7 @@ import { generateReactHelpers } from "@uploadthing/react";
 
 const { uploadFiles } = generateReactHelpers<UploadRouter>();
 
-export type UploadEndpoint = "coverImage" | "documentFile";
+export type UploadEndpoint = "avatarImage" | "coverImage" | "documentFile";
 
 export const uploadFile = async (endpoint: UploadEndpoint, file: File) => {
   const uploaded = await uploadFiles(endpoint, { files: [file] });

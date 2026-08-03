@@ -41,6 +41,8 @@ const syncedBlockValidator = v.object({
   text: v.optional(v.string()),
   checked: v.optional(v.boolean()),
   url: v.optional(v.string()),
+  alt: v.optional(v.string()),
+  caption: v.optional(v.string()),
   color: v.optional(v.string()),
   propsJson: v.optional(v.string()),
   dataSourceId: v.optional(v.id("dataSources")),

@@ -2,14 +2,17 @@ import "server-only";
 
 export type BlogBlock = {
   id: string;
-  parentBlockId: string | null;
+  parentId: string | null;
   type: string;
   order: number;
   text: string | null;
   checked: boolean | null;
-  url: string | null;
   color: string | null;
-  propsJson: string | null;
+  label: string | null;
+  href: string | null;
+  src: string | null;
+  alt: string | null;
+  caption: string | null;
 };
 
 export type BlogPost = {
@@ -42,7 +45,8 @@ type ApiValue = {
 type ApiItem = {
   id: string;
   title: string;
-  values: ApiValue[];
+  cover: string | null;
+  properties: ApiValue[];
 };
 
 // Authentication intentionally uses the apex domain because that is the
@@ -79,7 +83,7 @@ function fieldValue(item: ApiItem, properties: ApiProperty[], name: string) {
     (candidate) => candidate.name.toLowerCase() === name.toLowerCase(),
   );
   const value = property
-    ? item.values.find((candidate) => candidate.propertyId === property.id)
+    ? item.properties.find((candidate) => candidate.propertyId === property.id)
     : null;
   return { property, value };
 }
@@ -96,8 +100,6 @@ function mapPost(item: ApiItem, properties: ApiProperty[]): BlogPost {
   const slug = fieldValue(item, properties, "Slug").value?.text?.trim() ?? "";
   const excerpt =
     fieldValue(item, properties, "Excerpt").value?.text?.trim() ?? "";
-  const coverImage =
-    fieldValue(item, properties, "Cover image").value?.text?.trim() ?? null;
   const author =
     fieldValue(item, properties, "Author").value?.text?.trim() ?? "Nexfiy";
   const publishedAt =
@@ -109,7 +111,7 @@ function mapPost(item: ApiItem, properties: ApiProperty[]): BlogPost {
     title: item.title,
     slug,
     excerpt,
-    coverImage,
+    coverImage: item.cover,
     author,
     publishedAt,
     status:
