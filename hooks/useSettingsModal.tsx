@@ -2,7 +2,14 @@ import { create } from "zustand";
 
 type SettingsStore = {
   isOpen: boolean;
-  tab: "account" | "organization" | "billing" | "preferences" | "api" | "mcp";
+  tab:
+    | "account"
+    | "organization"
+    | "people"
+    | "billing"
+    | "preferences"
+    | "api"
+    | "mcp";
   setTab: (tab: SettingsStore["tab"]) => void;
   onOpen: (tab?: SettingsStore["tab"]) => void;
   onClose: () => void;

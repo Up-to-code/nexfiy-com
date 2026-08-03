@@ -25,6 +25,14 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -33,7 +41,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ProUpgradePrompt } from "@/features/billing/ProUpgradePrompt";
 import { useBilling } from "@/features/billing/use-billing";
 import { authClient } from "@/lib/auth-client";
@@ -72,10 +80,15 @@ type WorkspaceMember = {
   };
 };
 
-export function OrganizationSettings() {
+export function OrganizationSettings({
+  view,
+}: {
+  view: "workspace" | "people";
+}) {
   const [name, setName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<{
     id: string;
     name: string;
@@ -129,6 +142,7 @@ export function OrganizationSettings() {
       await setActiveOrganization(data.id);
       posthog.capture("workspace_created");
       setName("");
+      setIsCreateOpen(false);
       toast.success("Workspace created.");
     } catch (error) {
       logger.error("Failed to create organization", error);
@@ -224,27 +238,30 @@ export function OrganizationSettings() {
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onSelect={() =>
-                document.getElementById("organization-name")?.focus()
-              }
-            >
+            <DropdownMenuItem onSelect={() => setIsCreateOpen(true)}>
               <Plus className="size-4" /> Create workspace
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
 
-      <Tabs defaultValue="members" className="gap-0">
+      <Tabs
+        value={view === "people" ? "members" : "workspace"}
+        className="gap-0"
+      >
         <div className="border-border/40 border-b">
           <div className="flex items-start justify-between gap-4 pb-5">
             <div>
-              <h2 className="text-lg font-bold">{selectedName}</h2>
+              <h2 className="text-lg font-bold">
+                {view === "people" ? "People" : "Workspaces"}
+              </h2>
               <p className="text-muted-foreground mt-1 text-sm">
-                Manage people and workspace access.
+                {view === "people"
+                  ? `Manage people and invitations for ${selectedName}.`
+                  : "Switch workspaces or create a new team workspace."}
               </p>
             </div>
-            {activeOrganization && canManageMembers ? (
+            {view === "people" && activeOrganization && canManageMembers ? (
               <Button
                 size="sm"
                 className="h-8"
@@ -254,23 +271,6 @@ export function OrganizationSettings() {
               </Button>
             ) : null}
           </div>
-          <TabsList
-            variant="line"
-            className="border-border/40 flex !h-10 w-full !flex-row items-center justify-start gap-8 rounded-none border-b-0 bg-transparent p-0 group-data-[orientation=vertical]/tabs:!h-10 group-data-[orientation=vertical]/tabs:!flex-row"
-          >
-            <TabsTrigger
-              value="members"
-              className="!h-full !w-auto flex-none justify-start rounded-none border-0 px-0 text-sm shadow-none group-data-[orientation=vertical]/tabs:!w-auto after:!inset-x-0 after:!top-auto after:!right-0 after:!bottom-[-1px] after:!left-0 after:!h-0.5 after:!w-auto after:!bg-[#2383E2] data-[state=active]:bg-transparent dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-transparent"
-            >
-              Members ({memberCount})
-            </TabsTrigger>
-            <TabsTrigger
-              value="workspace"
-              className="!h-full !w-auto flex-none justify-start rounded-none border-0 px-0 text-sm shadow-none group-data-[orientation=vertical]/tabs:!w-auto after:!inset-x-0 after:!top-auto after:!right-0 after:!bottom-[-1px] after:!left-0 after:!h-0.5 after:!w-auto after:!bg-[#2383E2] data-[state=active]:bg-transparent dark:data-[state=active]:border-transparent dark:data-[state=active]:bg-transparent"
-            >
-              Workspaces
-            </TabsTrigger>
-          </TabsList>
         </div>
 
         <TabsContent value="members" className="mt-0 pt-3">
@@ -400,43 +400,50 @@ export function OrganizationSettings() {
           {!billing.isLoading && !billing.subscription?.hasPro ? (
             <ProUpgradePrompt feature="Team workspaces" />
           ) : (
-            <div className="space-y-3">
-              <div>
-                <h3 className="text-sm font-semibold">
-                  Create a team workspace
-                </h3>
-                <p className="text-muted-foreground mt-0.5 text-xs">
-                  Give your team a shared space for pages, databases, and
-                  billing.
-                </p>
+            <div className="space-y-4">
+              <div className="divide-border/40 divide-y rounded-lg border px-3">
+                <div className="flex items-center gap-3 py-3">
+                  <WorkspaceAvatar
+                    name="Personal workspace"
+                    image={session?.user.image}
+                    className="size-9"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">
+                      Personal workspace
+                    </p>
+                    <p className="text-muted-foreground text-xs">
+                      Private · Only you
+                    </p>
+                  </div>
+                  {!activeOrganization ? (
+                    <Check className="size-4 text-[#2383E2]" />
+                  ) : null}
+                </div>
+                {organizations.map((organization) => (
+                  <button
+                    key={organization.id}
+                    type="button"
+                    className="hover:bg-muted/40 flex w-full items-center gap-3 py-3 text-left"
+                    onClick={() => setActiveOrganization(organization.id)}
+                  >
+                    <WorkspaceAvatar
+                      name={organization.name}
+                      image={organization.logo}
+                      className="size-9"
+                    />
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                      {organization.name}
+                    </span>
+                    {activeOrganization?.id === organization.id ? (
+                      <Check className="size-4 text-[#2383E2]" />
+                    ) : null}
+                  </button>
+                ))}
               </div>
-              <div className="flex flex-col gap-2.5 sm:flex-row">
-                <Input
-                  id="organization-name"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="Workspace name"
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      void createOrganization();
-                    }
-                  }}
-                />
-                <Button
-                  type="button"
-                  onClick={createOrganization}
-                  disabled={isCreating || !name.trim()}
-                  className="shrink-0"
-                >
-                  {isCreating ? (
-                    <LoaderCircle className="animate-spin" />
-                  ) : (
-                    <Plus />
-                  )}
-                  {isCreating ? "Creating…" : "Create workspace"}
-                </Button>
-              </div>
+              <Button type="button" onClick={() => setIsCreateOpen(true)}>
+                <Plus /> Create new workspace
+              </Button>
             </div>
           )}
         </TabsContent>
@@ -451,6 +458,52 @@ export function OrganizationSettings() {
           onInvite={management.inviteMember}
         />
       ) : null}
+
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create a new workspace</DialogTitle>
+            <DialogDescription>
+              Give your team workspace a clear name. You can invite people after
+              it is created.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            id="organization-name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="Workspace name"
+            autoFocus
+            maxLength={80}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                void createOrganization();
+              }
+            }}
+          />
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setIsCreateOpen(false)}
+              disabled={isCreating}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void createOrganization()}
+              disabled={isCreating || !name.trim()}
+            >
+              {isCreating ? (
+                <LoaderCircle className="animate-spin" />
+              ) : (
+                <Plus />
+              )}
+              {isCreating ? "Creating…" : "Create workspace"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog
         open={Boolean(memberToRemove)}

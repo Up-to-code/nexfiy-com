@@ -23,6 +23,7 @@ import {
   CreditCard,
   Palette,
   PlugZap,
+  UsersRound,
   UserRound,
   X,
 } from "lucide-react";
@@ -94,6 +95,10 @@ export const SettingsModal = () => {
                   <Building2 className="size-4 shrink-0" />
                   <span className="truncate">Workspace</span>
                 </TabsTrigger>
+                <TabsTrigger value="people" className={tabTriggerClass}>
+                  <UsersRound className="size-4 shrink-0" />
+                  <span className="truncate">People</span>
+                </TabsTrigger>
               </div>
 
               {/* Features Group */}
@@ -137,7 +142,11 @@ export const SettingsModal = () => {
               </TabsContent>
 
               <TabsContent value="organization" className="mt-0">
-                <OrganizationSettings />
+                <OrganizationSettings view="workspace" />
+              </TabsContent>
+
+              <TabsContent value="people" className="mt-0">
+                <OrganizationSettings view="people" />
               </TabsContent>
 
               <TabsContent value="billing" className="mt-0">
