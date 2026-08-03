@@ -37,6 +37,12 @@ export const docsManifest: DocsEntry[] = [
     section: "Content API",
   },
   {
+    slug: "content-api/migration",
+    title: "Canonical content migration",
+    description: "Move legacy links and images to the canonical contract.",
+    section: "Content API",
+  },
+  {
     slug: "mcp/quickstart",
     title: "MCP quickstart",
     description: "Connect Codex, Claude Code, or another MCP client.",
