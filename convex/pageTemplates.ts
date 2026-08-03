@@ -70,6 +70,57 @@ export const instantiate = mutation({
   },
 });
 
+export const duplicatePage = mutation({
+  args: { sourcePageId: v.id("documents") },
+  returns: v.id("documents"),
+  handler: async (ctx, args) => {
+    const workspaceId = await requireWorkspaceId(ctx);
+    const source = await ctx.db.get(args.sourcePageId);
+    if (!source || source.userId !== workspaceId || source.isArchived) {
+      throw new ConvexError({
+        code: "PAGE_NOT_FOUND",
+        message: "Page not found in this workspace",
+      });
+    }
+
+    if (source.kind === "database") {
+      return await ctx.db.insert("documents", {
+        title: `${source.title} copy`,
+        userId: workspaceId,
+        isArchived: false,
+        parentDocument: source.parentDocument,
+        coverImage: source.coverImage,
+        icon: source.icon,
+        isPublished: false,
+        order: (source.order ?? 0) + 1,
+        updatedAt: Date.now(),
+        editorFont: source.editorFont,
+        fullWidth: source.fullWidth,
+        smallText: source.smallText,
+        showToc: source.showToc,
+        kind: "database",
+        dataSourceId: source.dataSourceId,
+        contentModel: source.contentModel,
+      });
+    }
+
+    const templateId = await createPageTemplateFromPage(ctx, workspaceId, {
+      sourcePageId: args.sourcePageId,
+      name: `${source.title} duplicate`,
+    });
+    try {
+      const duplicated = await instantiatePageTemplate(ctx, workspaceId, {
+        templateId,
+        parentDocument: source.parentDocument,
+        title: `${source.title} copy`,
+      });
+      return duplicated.rootDocumentId;
+    } finally {
+      await removePageTemplate(ctx, workspaceId, templateId);
+    }
+  },
+});
+
 export const remove = mutation({
   args: { templateId: v.id("pageTemplates") },
   returns: v.null(),

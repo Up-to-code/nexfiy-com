@@ -17,6 +17,7 @@ import {
   AArrowDown,
   BookTemplate,
   FilePlus2,
+  CopyPlus,
   Maximize2,
   MoreHorizontal,
   Settings,
@@ -48,6 +49,7 @@ export const Menu = ({ documentId }: MenuProps) => {
   const archive = useMutation(api.documents.archive);
   const update = useMutation(api.documents.update);
   const createTemplate = useMutation(api.pageTemplates.createFromPage);
+  const duplicatePage = useMutation(api.pageTemplates.duplicatePage);
   const [isTemplateGalleryOpen, setIsTemplateGalleryOpen] = useState(false);
 
   const isFullWidth = document?.fullWidth ?? true;
@@ -100,6 +102,17 @@ export const Menu = ({ documentId }: MenuProps) => {
     }
   };
 
+  const onDuplicate = async () => {
+    try {
+      const duplicatedId = await duplicatePage({ sourcePageId: documentId });
+      toast.success("Page duplicated");
+      router.push(`/documents/${duplicatedId}`);
+    } catch (error) {
+      logger.error("Failed to duplicate page", error);
+      toast.error("Could not duplicate this page");
+    }
+  };
+
   return (
     <>
       <DropdownMenu>
@@ -135,6 +148,10 @@ export const Menu = ({ documentId }: MenuProps) => {
             onChange={onTocChange}
           />
           <DropdownMenuSeparator className="mx-1.5" />
+          <DropdownMenuItem onClick={() => void onDuplicate()}>
+            <CopyPlus className="mr-2 h-4 w-4" />
+            Duplicate
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={onSaveAsTemplate}>
             <BookTemplate className="mr-2 h-4 w-4" />
             Save as template
