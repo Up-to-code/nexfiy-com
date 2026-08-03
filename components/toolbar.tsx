@@ -48,9 +48,9 @@ export const Toolbar = ({ initialData, preview, editorFont }: ToolbarProps) => {
 
   useEffect(() => {
     if (!isEditing) {
-      setValue(initialData.title);
+      queueMicrotask(() => setValue(initialData.title));
     }
-  }, [initialData.title]);
+  }, [initialData.title, isEditing]);
 
   useEffect(() => {
     if (value === initialData.title) return;

@@ -54,6 +54,41 @@ export const CoverImageModal = () => {
 
   const [isDragging, setIsDragging] = useState(false);
 
+  const onClose = () => {
+    setFile(undefined);
+    setIsSubmitting(false);
+    coverImage.onClose();
+  };
+
+  const onChange = async (nextFile?: File) => {
+    if (!nextFile) return;
+    setIsSubmitting(true);
+    setFile(nextFile);
+    let uploadedUrl: string | undefined;
+    try {
+      uploadedUrl = await uploadFile("coverImage", nextFile);
+      await update({
+        id: params.documentId as Id<"documents">,
+        coverImage: uploadedUrl,
+      });
+      if (coverImage.url) {
+        await deleteUploadedFiles([coverImage.url]).catch((deleteError) => {
+          logger.error("Failed to delete the previous cover image", deleteError);
+        });
+      }
+      onClose();
+    } catch (error) {
+      logger.error("Failed to upload cover image", error);
+      if (uploadedUrl) {
+        await deleteUploadedFiles([uploadedUrl]).catch((cleanupError) => {
+          logger.error("Failed to clean up uploaded cover image", cleanupError);
+        });
+      }
+      setIsSubmitting(false);
+      toast.error(error instanceof Error ? error.message : "Cover upload failed");
+    }
+  };
+
   useEffect(() => {
     if (!coverImage.isOpen) return;
 
@@ -93,51 +128,7 @@ export const CoverImageModal = () => {
       window.removeEventListener("dragleave", handleDragLeave);
       window.removeEventListener("drop", handleDrop);
     };
-  }, [coverImage.isOpen]);
-
-  const onClose = () => {
-    setFile(undefined);
-    setIsSubmitting(false);
-    coverImage.onClose();
-  };
-
-  const onChange = async (file?: File) => {
-    if (file) {
-      setIsSubmitting(true);
-      setFile(file);
-      let uploadedUrl: string | undefined;
-      try {
-        uploadedUrl = await uploadFile("coverImage", file);
-        await update({
-          id: params.documentId as Id<"documents">,
-          coverImage: uploadedUrl,
-        });
-        if (coverImage.url) {
-          await deleteUploadedFiles([coverImage.url]).catch((deleteError) => {
-            logger.error(
-              "Failed to delete the previous cover image",
-              deleteError,
-            );
-          });
-        }
-        onClose();
-      } catch (error) {
-        logger.error("Failed to upload cover image", error);
-        if (uploadedUrl) {
-          await deleteUploadedFiles([uploadedUrl]).catch((cleanupError) => {
-            logger.error(
-              "Failed to clean up uploaded cover image",
-              cleanupError,
-            );
-          });
-        }
-        setIsSubmitting(false);
-        toast.error(
-          error instanceof Error ? error.message : "Cover upload failed",
-        );
-      }
-    }
-  };
+  }, [coverImage.isOpen, onChange]);
 
   const onSelectColor = async (color: string) => {
     try {
