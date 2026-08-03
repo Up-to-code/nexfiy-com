@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { LoaderCircle, MailCheck } from "lucide-react";
+import { MailCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { authClient } from "@/lib/auth-client";
 import { logger } from "@/lib/logger";
 
@@ -26,11 +27,20 @@ export function AcceptInvitationClient({
 
     setIsAccepting(true);
     try {
-      const { error } = await authClient.organization.acceptInvitation({
+      const { data, error } = await authClient.organization.acceptInvitation({
         invitationId,
       });
-      if (error) {
-        throw new Error(error.message ?? "Invitation was not accepted");
+      if (error || !data) {
+        throw new Error(error?.message ?? "Invitation was not accepted");
+      }
+
+      const { error: activeError } = await authClient.organization.setActive({
+        organizationId: data.invitation.organizationId,
+      });
+      if (activeError) {
+        throw new Error(
+          activeError.message ?? "The invited workspace could not be opened",
+        );
       }
 
       toast.success("Welcome to the workspace.");
@@ -48,8 +58,11 @@ export function AcceptInvitationClient({
 
   if (isPending) {
     return (
-      <div className="flex justify-center py-12">
-        <LoaderCircle className="text-muted-foreground size-6 animate-spin" />
+      <div className="space-y-4 py-8">
+        <Skeleton className="mx-auto size-10 rounded-full" />
+        <Skeleton className="mx-auto h-7 w-52" />
+        <Skeleton className="mx-auto h-4 w-72 max-w-full" />
+        <Skeleton className="mt-6 h-11 w-full rounded-xl" />
       </div>
     );
   }
@@ -74,7 +87,6 @@ export function AcceptInvitationClient({
           onClick={acceptInvitation}
           disabled={isAccepting}
         >
-          {isAccepting ? <LoaderCircle className="animate-spin" /> : null}
           {isAccepting ? "Accepting…" : "Accept invitation"}
         </Button>
       ) : null}

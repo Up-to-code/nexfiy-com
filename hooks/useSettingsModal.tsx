@@ -26,5 +26,5 @@ export const useSettings = create<SettingsStore>((set) => ({
   setTab: (tab) => set({ tab }),
   onOpen: (tab = "preferences", action) => set({ isOpen: true, tab, action }),
   consumeAction: () => set({ action: undefined }),
-  onClose: () => set({ isOpen: false }),
+  onClose: () => set({ isOpen: false, action: undefined }),
 }));

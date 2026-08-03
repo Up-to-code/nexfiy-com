@@ -78,6 +78,24 @@ type BetterAuthAccount = {
   userId: string;
 };
 
+type BetterAuthMember = {
+  organizationId: string;
+  userId: string;
+  role: string;
+};
+
+async function organizationMembers(
+  ctx: Parameters<typeof getProEntitlementForUser>[0],
+  organizationId: string,
+) {
+  return (await ctx.runQuery(components.betterAuth.adapter.findMany, {
+    model: "member",
+    where: [{ field: "organizationId", value: organizationId }],
+    paginationOpts: { numItems: 500, cursor: null },
+    limit: 500,
+  })) as BetterAuthMember[];
+}
+
 export const seedVerifiedAppleAdminGrant = internalMutation({
   args: { email: v.string() },
   returns: v.id("entitlementGrants"),
@@ -275,13 +293,16 @@ export const getMyEntitlement = query({
       scope.billingOwnerId,
     );
     const subscription = entitlement.subscription;
+    const members = scope.organizationId
+      ? await organizationMembers(ctx, scope.organizationId)
+      : null;
     return {
       source: entitlement.source,
       plan: entitlement.hasPro ? ("pro" as const) : ("free" as const),
       accessState: entitlement.state,
       hasPro: entitlement.hasPro,
       seatLimit: entitlement.seatLimit,
-      seatUsage: 1,
+      seatUsage: members?.length ?? 1,
       trialPeriodDays: subscription?.trialPeriodDays ?? 0,
       nextBillingAt: subscription?.nextBillingAt ?? null,
       graceEndsAt: subscription?.graceEndsAt ?? null,
@@ -301,6 +322,39 @@ export const getProAccessForOwner = internalQuery({
     return {
       hasPro: entitlement.hasPro,
       seatLimit: entitlement.seatLimit,
+    };
+  },
+});
+
+export const getProAccessForOrganization = internalQuery({
+  args: { organizationId: v.string() },
+  returns: v.object({
+    hasPro: v.boolean(),
+    seatLimit: v.number(),
+    seatUsage: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const alias = await ctx.db
+      .query("workspaceAliases")
+      .withIndex("by_organization", (query) =>
+        query.eq("organizationId", args.organizationId),
+      )
+      .unique();
+    const members = await organizationMembers(ctx, args.organizationId);
+    const owner = members.find((member) =>
+      member.role
+        .split(",")
+        .some((role) => role.trim() === "owner"),
+    );
+    const ownerUserId = alias?.workspaceId ?? owner?.userId;
+    if (!ownerUserId) {
+      return { hasPro: false, seatLimit: 1, seatUsage: members.length };
+    }
+    const entitlement = await getProEntitlementForUser(ctx, ownerUserId);
+    return {
+      hasPro: entitlement.hasPro,
+      seatLimit: entitlement.seatLimit,
+      seatUsage: members.length,
     };
   },
 });

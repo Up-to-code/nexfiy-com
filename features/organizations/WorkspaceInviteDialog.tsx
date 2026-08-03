@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Copy, Link2, LoaderCircle, Mail } from "lucide-react";
+import { Check, Copy, Link2, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -75,7 +75,7 @@ export function WorkspaceInviteDialog({
         if (!nextOpen) reset();
       }}
     >
-      <DialogContent className="gap-0 overflow-hidden rounded-xl p-0 sm:max-w-md">
+      <DialogContent className="w-[calc(100vw-2rem)] gap-0 overflow-hidden rounded-xl p-0 sm:max-w-lg">
         <DialogHeader className="border-border/50 border-b px-6 py-5">
           <DialogTitle>Invite to {workspaceName}</DialogTitle>
           <DialogDescription>
@@ -89,7 +89,7 @@ export function WorkspaceInviteDialog({
         >
           <TabsList
             variant="line"
-            className="border-border/50 h-12 w-full justify-start gap-8 border-b px-6"
+            className="border-border/50 grid h-12 w-full grid-cols-2 border-b px-6"
           >
             <TabsTrigger value="email" className="h-full px-0">
               <Mail className="size-4" /> Email
@@ -150,7 +150,7 @@ export function WorkspaceInviteDialog({
           </div>
         </Tabs>
 
-        <DialogFooter className="border-border/50 border-t px-6 py-4">
+        <DialogFooter className="border-border/50 flex-wrap border-t px-6 py-4">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
@@ -158,13 +158,11 @@ export function WorkspaceInviteDialog({
             onClick={createInvitation}
             disabled={isInviting || !email.trim()}
           >
-            {isInviting ? (
-              <LoaderCircle className="animate-spin" />
-            ) : mode === "email" ? (
+            {!isInviting && mode === "email" ? (
               <Mail />
-            ) : (
+            ) : !isInviting ? (
               <Copy />
-            )}
+            ) : null}
             {isInviting
               ? "Creating…"
               : mode === "email"

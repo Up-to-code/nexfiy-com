@@ -51,6 +51,11 @@ const getProAccessForOwner = makeFunctionReference<
   { ownerUserId: string },
   { hasPro: boolean; seatLimit: number }
 >("billing:getProAccessForOwner");
+const getProAccessForOrganization = makeFunctionReference<
+  "query",
+  { organizationId: string },
+  { hasPro: boolean; seatLimit: number; seatUsage: number }
+>("billing:getProAccessForOrganization");
 const trustedOrigins = [
   siteUrl,
   ...(process.env.BETTER_AUTH_TRUSTED_ORIGINS ?? "")
@@ -179,19 +184,22 @@ export const createAuthOptions = (ctx: GenericCtx<DataModel>) => {
             await ctx.runQuery(getProAccessForOwner, { ownerUserId: user.id })
           ).hasPro;
         },
-        membershipLimit: async (user) => {
-          if (!("runQuery" in ctx)) return 1;
-          const access = await ctx.runQuery(getProAccessForOwner, {
-            ownerUserId: user.id,
-          });
-          return access.hasPro ? access.seatLimit : 1;
+        membershipLimit: async (_user, workspace) => {
+          if (!("runQuery" in ctx) || !workspace?.id) return 1;
+          const ownerAccess = await ctx.runQuery(
+            getProAccessForOrganization,
+            { organizationId: workspace.id },
+          );
+          return ownerAccess.hasPro ? ownerAccess.seatLimit : 1;
         },
-        invitationLimit: async ({ user }) => {
+        invitationLimit: async ({ organization: workspace }) => {
           if (!("runQuery" in ctx)) return 0;
-          const access = await ctx.runQuery(getProAccessForOwner, {
-            ownerUserId: user.id,
+          const access = await ctx.runQuery(getProAccessForOrganization, {
+            organizationId: workspace.id,
           });
-          return access.hasPro ? Math.max(0, access.seatLimit - 1) : 0;
+          return access.hasPro
+            ? Math.max(0, access.seatLimit - access.seatUsage)
+            : 0;
         },
       }),
       dodopayments({

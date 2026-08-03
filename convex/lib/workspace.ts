@@ -41,7 +41,11 @@ export async function getWorkspaceBillingScope(
   const activeOrganizationId = session?.session.activeOrganizationId;
 
   if (!activeOrganizationId) {
-    return { workspaceId: personalUserId, billingOwnerId: personalUserId };
+    return {
+      workspaceId: personalUserId,
+      billingOwnerId: personalUserId,
+      organizationId: undefined,
+    };
   }
 
   const alias = await ctx.db
@@ -69,6 +73,7 @@ export async function getWorkspaceBillingScope(
   return {
     workspaceId: alias?.workspaceId ?? `organization:${activeOrganizationId}`,
     billingOwnerId: owner.userId,
+    organizationId: activeOrganizationId,
   };
 }
 
