@@ -1,13 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Check, ExternalLink, Settings2 } from "lucide-react";
+import { Check, ExternalLink, Plus, Settings2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -20,9 +20,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -32,6 +42,10 @@ import { cn } from "@/lib/utils";
 import type { useDatabase } from "./useDatabase";
 import { DateTimePickerPopover } from "./DateTimePickerPopover";
 import { selectOptionColor } from "./selectOptionColors";
+import {
+  SELECT_OPTION_COLORS,
+  type SelectOptionColor,
+} from "./selectOptionColors";
 
 const EMPTY_VALUE = "__empty__";
 
@@ -47,12 +61,14 @@ function DatabaseCell({
   database,
   onSetValue,
   onSetRelation,
+  onRequestAddOption,
 }: {
   property: DatabaseProperty;
   row: DatabaseRow;
   database: DatabaseData;
   onSetValue: ReturnType<typeof useDatabase>["setValue"];
   onSetRelation: ReturnType<typeof useDatabase>["setRelation"];
+  onRequestAddOption: (property: DatabaseProperty, row: DatabaseRow) => void;
 }) {
   const value = row.values.find((item) => item.propertyId === property.id);
 
@@ -188,6 +204,15 @@ function DatabaseCell({
               {option.name}
             </SelectItem>
           ))}
+          <SelectSeparator />
+          <button
+            type="button"
+            className="hover:bg-accent flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm"
+            onClick={() => onRequestAddOption(property, row)}
+          >
+            <Plus className="size-4" /> Add new{" "}
+            {property.type === "status" ? "status" : "option"}
+          </button>
         </SelectContent>
       </Select>
     );
@@ -268,6 +293,7 @@ export function DatabaseGrid({
   onUpdateRowTitle,
   onEditProperty,
   onOpenRow,
+  onAddSelectOption,
 }: {
   database: DatabaseData;
   visibleProperties: DatabaseProperty[];
@@ -276,7 +302,35 @@ export function DatabaseGrid({
   onUpdateRowTitle: ReturnType<typeof useDatabase>["updateRowTitle"];
   onEditProperty: (property: DatabaseProperty) => void;
   onOpenRow: (rowId: Id<"documents">) => void;
+  onAddSelectOption: ReturnType<typeof useDatabase>["addSelectOption"];
 }) {
+  const [newOptionTarget, setNewOptionTarget] = useState<{
+    property: DatabaseProperty;
+    row: DatabaseRow;
+  } | null>(null);
+  const [newOptionName, setNewOptionName] = useState("");
+  const [newOptionColor, setNewOptionColor] =
+    useState<SelectOptionColor>("slate");
+  const [isAddingOption, setIsAddingOption] = useState(false);
+
+  const addOption = async () => {
+    if (!newOptionTarget || !newOptionName.trim()) return;
+    setIsAddingOption(true);
+    const optionId = await onAddSelectOption({
+      propertyId: newOptionTarget.property.id,
+      name: newOptionName.trim(),
+      color: newOptionColor,
+    });
+    if (optionId) {
+      await onSetValue(newOptionTarget.row.id, newOptionTarget.property.id, {
+        optionIds: [optionId],
+      });
+      setNewOptionTarget(null);
+      setNewOptionName("");
+      setNewOptionColor("slate");
+    }
+    setIsAddingOption(false);
+  };
   const columns = useMemo(
     () => [
       ...visibleProperties.map((property) =>
@@ -298,7 +352,7 @@ export function DatabaseGrid({
               <Input
                 aria-label={`Name for ${row.original.title}`}
                 defaultValue={row.original.title}
-                className="h-8 w-full min-w-0 border-0 bg-transparent font-medium shadow-none text-xs focus-visible:ring-1 focus-visible:ring-[#2383E2]"
+                className="h-8 w-full min-w-0 border-0 bg-transparent text-xs font-medium shadow-none focus-visible:ring-1 focus-visible:ring-[#2383E2]"
                 onBlur={(event) =>
                   onUpdateRowTitle(row.original.id, event.target.value)
                 }
@@ -310,6 +364,12 @@ export function DatabaseGrid({
                 database={database}
                 onSetValue={onSetValue}
                 onSetRelation={onSetRelation}
+                onRequestAddOption={(targetProperty, targetRow) =>
+                  setNewOptionTarget({
+                    property: targetProperty,
+                    row: targetRow,
+                  })
+                }
               />
             ),
         }),
@@ -319,12 +379,12 @@ export function DatabaseGrid({
         header: () => null,
         cell: ({ row }) => (
           <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => onOpenRow(row.original.id)}
-              aria-label={`Open ${row.original.title}`}
-            >
-              <ExternalLink className="size-3.5" />
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => onOpenRow(row.original.id)}
+            aria-label={`Open ${row.original.title}`}
+          >
+            <ExternalLink className="size-3.5" />
           </Button>
         ),
       }),
@@ -350,60 +410,133 @@ export function DatabaseGrid({
   });
 
   return (
-    <div className="w-full overflow-x-auto border-y border-border/40 my-2 scrollbar-thin">
-      <table className="min-w-full w-max border-collapse text-xs">
-        <thead className="text-muted-foreground/70 border-b border-border/40 bg-muted/20">
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map((header, index) => (
-                <th
-                  key={header.id}
-                  className={cn(
-                    "border-r border-border/30 px-3 py-2 text-left font-medium whitespace-nowrap last:border-r-0",
-                    index === 0 ? "min-w-72" : "min-w-36",
-                    header.id === "open-page" && "w-10 min-w-10 px-1 text-center",
-                  )}
-                >
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className="group hover:bg-muted/30 border-b border-border/30 transition-colors">
-              {row.getVisibleCells().map((cell, index) => (
-                <td
-                  key={cell.id}
-                  className={cn(
-                    "border-r border-border/30 p-1 whitespace-nowrap last:border-r-0",
-                    index === 0 ? "min-w-72" : "min-w-36",
-                    cell.column.id === "open-page" && "w-10 min-w-10 text-center",
-                  )}
-                >
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
-          {!table.getRowModel().rows.length ? (
-            <tr>
-              <td
-                colSpan={table.getAllLeafColumns().length}
-                className="text-muted-foreground/60 px-4 py-8 text-center text-xs"
+    <>
+      <div className="border-border/40 my-2 w-full scrollbar-thin overflow-x-auto border-y">
+        <table className="w-max min-w-full border-collapse text-xs">
+          <thead className="text-muted-foreground/70 border-border/40 bg-muted/20 border-b">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header, index) => (
+                  <th
+                    key={header.id}
+                    className={cn(
+                      "border-border/30 border-r px-3 py-2 text-left font-medium whitespace-nowrap last:border-r-0",
+                      index === 0 ? "min-w-72" : "min-w-36",
+                      header.id === "open-page" &&
+                        "w-10 min-w-10 px-1 text-center",
+                    )}
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.map((row) => (
+              <tr
+                key={row.id}
+                className="group hover:bg-muted/30 border-border/30 border-b transition-colors"
               >
-                Add the first page to this database.
-              </td>
-            </tr>
-          ) : null}
-        </tbody>
-      </table>
-    </div>
+                {row.getVisibleCells().map((cell, index) => (
+                  <td
+                    key={cell.id}
+                    className={cn(
+                      "border-border/30 border-r p-1 whitespace-nowrap last:border-r-0",
+                      index === 0 ? "min-w-72" : "min-w-36",
+                      cell.column.id === "open-page" &&
+                        "w-10 min-w-10 text-center",
+                    )}
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))}
+            {!table.getRowModel().rows.length ? (
+              <tr>
+                <td
+                  colSpan={table.getAllLeafColumns().length}
+                  className="text-muted-foreground/60 px-4 py-8 text-center text-xs"
+                >
+                  Add the first page to this database.
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
+      <Dialog
+        open={newOptionTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setNewOptionTarget(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              Add new{" "}
+              {newOptionTarget?.property.type === "status"
+                ? "status"
+                : "option"}
+            </DialogTitle>
+            <DialogDescription>
+              Create a reusable value for {newOptionTarget?.property.name}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-database-option-name">Name</Label>
+              <Input
+                id="new-database-option-name"
+                value={newOptionName}
+                onChange={(event) => setNewOptionName(event.target.value)}
+                maxLength={100}
+                autoFocus
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Color</Label>
+              <div className="flex flex-wrap gap-2">
+                {(Object.keys(SELECT_OPTION_COLORS) as SelectOptionColor[]).map(
+                  (color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      aria-label={color}
+                      aria-pressed={newOptionColor === color}
+                      className={cn(
+                        "size-7 rounded-full border-2",
+                        selectOptionColor(color).pill,
+                        newOptionColor === color
+                          ? "border-foreground"
+                          : "border-transparent",
+                      )}
+                      onClick={() => setNewOptionColor(color)}
+                    />
+                  ),
+                )}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setNewOptionTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void addOption()}
+              disabled={isAddingOption || !newOptionName.trim()}
+            >
+              {isAddingOption ? "Adding…" : "Add option"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

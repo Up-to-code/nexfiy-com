@@ -88,8 +88,13 @@ export function useDatabase(
   const setRelationMutation = useMutation(api.databases.setRelation);
   const createViewMutation = useMutation(api.databases.createView);
   const updateViewMutation = useMutation(api.databases.updateView);
-  const updateSelectOptionMutation = useMutation(api.databases.updateSelectOption);
-  const removeSelectOptionMutation = useMutation(api.databases.removeSelectOption);
+  const updateSelectOptionMutation = useMutation(
+    api.databases.updateSelectOption,
+  );
+  const addSelectOptionMutation = useMutation(api.databases.addSelectOption);
+  const removeSelectOptionMutation = useMutation(
+    api.databases.removeSelectOption,
+  );
   const createRowTemplateMutation = useMutation(
     api.databases.createRowTemplateFromRow,
   );
@@ -219,6 +224,19 @@ export function useDatabase(
     },
     setValue,
     setRelation,
+    addSelectOption: async (input: {
+      propertyId: Id<"databaseProperties">;
+      name: string;
+      color: string;
+    }) => {
+      try {
+        return await addSelectOptionMutation(input);
+      } catch (error) {
+        logger.error("Failed to add select option", error);
+        toast.error("Could not add that option");
+        return null;
+      }
+    },
     updateSelectOption: async (input: {
       optionId: Id<"databaseSelectOptions">;
       name?: string;

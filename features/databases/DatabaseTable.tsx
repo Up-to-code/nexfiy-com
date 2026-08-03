@@ -107,7 +107,7 @@ export function DatabaseTable({
         "space-y-3",
         embedded ? "pb-2" : "pb-16",
         readOnly &&
-          "[&_button]:pointer-events-none [&_button]:select-none [&_input]:pointer-events-none [&_select]:pointer-events-none [&_textarea]:pointer-events-none [&_[data-view-tab]]:pointer-events-auto",
+          "[&_[data-view-tab]]:pointer-events-auto [&_button]:pointer-events-none [&_button]:select-none [&_input]:pointer-events-none [&_select]:pointer-events-none [&_textarea]:pointer-events-none",
       )}
       aria-readonly={readOnly}
       onKeyDownCapture={(event) => {
@@ -124,7 +124,7 @@ export function DatabaseTable({
         }
       }}
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/40 pb-1">
+      <div className="border-border/40 flex flex-wrap items-center justify-between gap-3 border-b pb-1">
         <div className="flex items-center gap-0.5">
           {database.views.map((view) => {
             const Icon = VIEW_ICONS[view.type];
@@ -136,8 +136,7 @@ export function DatabaseTable({
                 data-view-tab
                 className={cn(
                   "text-muted-foreground/70 hover:text-foreground flex items-center gap-1.5 border-b-2 border-transparent px-2.5 py-1.5 text-xs font-medium transition-colors",
-                  isActive &&
-                    "border-foreground text-foreground font-semibold",
+                  isActive && "border-foreground text-foreground font-semibold",
                 )}
                 onClick={() => setSelectedViewId(view.id)}
               >
@@ -170,7 +169,9 @@ export function DatabaseTable({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel className="text-xs text-muted-foreground/70">Add a view</DropdownMenuLabel>
+                <DropdownMenuLabel className="text-muted-foreground/70 text-xs">
+                  Add a view
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {(
                   [
@@ -182,7 +183,7 @@ export function DatabaseTable({
                 ).map(([type, label, Icon]) => (
                   <DropdownMenuItem
                     key={type}
-                    className="text-xs cursor-pointer"
+                    className="cursor-pointer text-xs"
                     onSelect={async () => {
                       const viewId = await databaseState.createView({
                         dataSourceId: database.dataSource.id,
@@ -192,7 +193,7 @@ export function DatabaseTable({
                       if (viewId) setSelectedViewId(viewId);
                     }}
                   >
-                    <Icon className="size-3.5 mr-1.5" /> {label}
+                    <Icon className="mr-1.5 size-3.5" /> {label}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
@@ -209,7 +210,7 @@ export function DatabaseTable({
               <DropdownMenuTrigger asChild>
                 <Button
                   size="sm"
-                  className="bg-[#2383E2] hover:bg-[#1d73c9] h-7 rounded-md px-2.5 text-xs font-medium text-white shadow-none"
+                  className="h-7 rounded-md bg-[#2383E2] px-2.5 text-xs font-medium text-white shadow-none hover:bg-[#1d73c9]"
                 >
                   <Plus className="size-3.5" /> New
                 </Button>
@@ -219,7 +220,9 @@ export function DatabaseTable({
                 {databaseState.rowTemplates.map((template) => (
                   <DropdownMenuItem
                     key={template.id}
-                    onSelect={() => void createAndOpenRow(undefined, template.id)}
+                    onSelect={() =>
+                      void createAndOpenRow(undefined, template.id)
+                    }
                   >
                     {template.name}
                     {template.isDefault ? (
@@ -229,7 +232,9 @@ export function DatabaseTable({
                     ) : null}
                   </DropdownMenuItem>
                 ))}
-                {databaseState.rowTemplates.length ? <DropdownMenuSeparator /> : null}
+                {databaseState.rowTemplates.length ? (
+                  <DropdownMenuSeparator />
+                ) : null}
                 <DropdownMenuItem onSelect={() => void createAndOpenRow()}>
                   Blank
                 </DropdownMenuItem>
@@ -268,7 +273,8 @@ export function DatabaseTable({
             const dateProp =
               database.properties.find(
                 (property) => property.id === activeView.datePropertyId,
-              ) ?? database.properties.find((property) => property.type === "date");
+              ) ??
+              database.properties.find((property) => property.type === "date");
             void createAndOpenRow(
               dateProp && dateStart !== undefined
                 ? [{ propertyId: dateProp.id, dateStart }]
@@ -286,6 +292,7 @@ export function DatabaseTable({
           visibleProperties={visibleProperties}
           onSetValue={databaseState.setValue}
           onSetRelation={databaseState.setRelation}
+          onAddSelectOption={databaseState.addSelectOption}
           onUpdateRowTitle={databaseState.updateRowTitle}
           onEditProperty={(property) => setEditingPropertyId(property.id)}
           onOpenRow={setOpenRowId}
@@ -294,7 +301,7 @@ export function DatabaseTable({
       {!readOnly ? (
         <button
           type="button"
-          className="text-muted-foreground/70 hover:text-foreground hover:bg-muted/30 flex items-center gap-1.5 px-2 py-1 text-xs font-medium transition-colors rounded-md mt-1"
+          className="text-muted-foreground/70 hover:text-foreground hover:bg-muted/30 mt-1 flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-colors"
           onClick={() => void createAndOpenRow()}
         >
           <Plus className="size-3.5" /> New page
