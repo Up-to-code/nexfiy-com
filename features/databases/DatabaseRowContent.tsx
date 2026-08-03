@@ -103,6 +103,7 @@ export function DatabaseRowContent({
   onAddSelectOption,
   fullWidth = false,
   smallText = false,
+  layout = "sheet",
 }: {
   database: DatabaseData;
   rowId: Id<"documents">;
@@ -111,6 +112,7 @@ export function DatabaseRowContent({
   onAddSelectOption: ReturnType<typeof useDatabase>["addSelectOption"];
   fullWidth?: boolean;
   smallText?: boolean;
+  layout?: "sheet" | "full";
 }) {
   const row = database.rows.find((candidate) => candidate.id === rowId);
   if (!row) return null;
@@ -127,7 +129,14 @@ export function DatabaseRowContent({
         className="mb-6 h-auto border-0 bg-transparent px-0 text-3xl font-bold shadow-none focus-visible:ring-0 dark:bg-transparent"
         onBlur={(event) => onUpdateTitle(row.id, event.target.value)}
       />
-      <div className="mb-10 max-w-2xl space-y-0.5 border-b pb-8">
+      <div
+        className={cn(
+          "mb-10 border-b pb-8",
+          layout === "full"
+            ? "grid gap-x-10 gap-y-1 sm:grid-cols-2"
+            : "max-w-2xl space-y-0.5",
+        )}
+      >
         {database.properties
           .filter((property) => property.type !== "title")
           .map((property) => {
@@ -256,6 +265,7 @@ export function DatabaseRowContentBySource({
       onAddSelectOption={state.addSelectOption}
       fullWidth={fullWidth}
       smallText={smallText}
+      layout="full"
     />
   );
 }

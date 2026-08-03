@@ -9,7 +9,16 @@
         "features/databases/DatabaseRowSidePeek",
         "app/(main)/(routes)/documents/[documentId]"
       ],
-      "props": ["database", "rowId", "onUpdateTitle", "onSetValue"],
+      "props": [
+        "database",
+        "rowId",
+        "onUpdateTitle",
+        "onSetValue",
+        "onAddSelectOption",
+        "fullWidth",
+        "smallText",
+        "layout"
+      ],
       "createdAt": "2026-08-03",
       "notes": "Reads reactive Convex database state and keeps property writes in the shared database domain commands."
     },
