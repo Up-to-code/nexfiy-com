@@ -13,6 +13,32 @@ export type WorkspaceInvitation = {
   expiresAt: Date;
 };
 
+function invitationErrorMessage(error: {
+  code?: string;
+  message?: string;
+  statusText?: string;
+}) {
+  switch (error.code) {
+    case "INVITATION_LIMIT_REACHED":
+      return "This workspace has no invitation seats available.";
+    case "ORGANIZATION_MEMBERSHIP_LIMIT_REACHED":
+      return "This workspace has reached its member seat limit.";
+    case "USER_IS_ALREADY_INVITED_TO_THIS_ORGANIZATION":
+      return "This email already has a pending invitation.";
+    case "USER_IS_ALREADY_A_MEMBER_OF_THIS_ORGANIZATION":
+      return "This person is already a member of this workspace.";
+    case "YOU_ARE_NOT_ALLOWED_TO_INVITE_USER_WITH_THIS_ROLE":
+    case "YOU_ARE_NOT_ALLOWED_TO_INVITE_USERS_TO_THIS_ORGANIZATION":
+      return "You do not have permission to invite people to this workspace.";
+    default:
+      return (
+        error.message ??
+        error.statusText ??
+        "Invitation was not created. Please try again."
+      );
+  }
+}
+
 export function useOrganizationManagement(
   organizationId: string | undefined,
   refreshOrganization: () => Promise<void>,
@@ -36,7 +62,11 @@ export function useOrganizationManagement(
           },
         );
       if (requestError || !data) {
-        throw new Error(requestError?.message ?? "Invitation was not created");
+        throw new Error(
+          invitationErrorMessage(
+            requestError ?? { message: "Invitation was not created" },
+          ),
+        );
       }
 
       await refreshOrganization();

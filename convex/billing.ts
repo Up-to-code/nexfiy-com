@@ -88,12 +88,14 @@ async function organizationMembers(
   ctx: Parameters<typeof getProEntitlementForUser>[0],
   organizationId: string,
 ) {
-  return (await ctx.runQuery(components.betterAuth.adapter.findMany, {
+  const result = (await ctx.runQuery(components.betterAuth.adapter.findMany, {
     model: "member",
     where: [{ field: "organizationId", value: organizationId }],
     paginationOpts: { numItems: 500, cursor: null },
     limit: 500,
-  })) as BetterAuthMember[];
+  })) as { page: BetterAuthMember[] };
+
+  return result.page;
 }
 
 export const seedVerifiedAppleAdminGrant = internalMutation({
