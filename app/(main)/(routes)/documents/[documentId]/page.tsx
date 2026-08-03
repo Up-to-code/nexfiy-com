@@ -137,6 +137,8 @@ const DocumentIdPage = ({ params }: DocumentIdPageProps) => {
         <DatabaseRowContentBySource
           dataSourceId={doc.dataSourceId}
           rowId={doc._id}
+          fullWidth={isFullWidth}
+          smallText={isSmallText}
         />
       </div>
     );

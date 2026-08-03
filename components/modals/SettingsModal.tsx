@@ -226,13 +226,13 @@ export const SettingsModal = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="mcp" className="mt-0">
+              <TabsContent value="mcp" className="mt-0 w-full min-w-0">
                 <McpSettings
                   enabled={settings.isOpen && settings.tab === "mcp"}
                 />
               </TabsContent>
 
-              <TabsContent value="api" className="mt-0">
+              <TabsContent value="api" className="mt-0 w-full min-w-0">
                 <ContentApiSettings
                   enabled={settings.isOpen && settings.tab === "api"}
                 />

@@ -19,6 +19,16 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -72,6 +82,9 @@ export function McpSettings({ enabled }: { enabled: boolean }) {
   );
   const [syncingId, setSyncingId] = useState<Id<"mcpServers"> | null>(null);
   const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
+  const [serverToRemove, setServerToRemove] = useState<McpServerView | null>(
+    null,
+  );
   const mcp = useMcpServers(enabled, selectedServerId);
   const mcpEnvironments = useMcpEnvironments(enabled);
   const billing = useBilling();
@@ -111,14 +124,12 @@ export function McpSettings({ enabled }: { enabled: boolean }) {
   };
 
   const removeConnection = async (server: McpServerView) => {
-    if (!window.confirm(`Remove ${server.name} and its saved tool history?`)) {
-      return;
-    }
     const removed = await mcp.remove(server._id);
     if (removed && selectedServerId === server._id) {
       setSelectedServerId(undefined);
       setView("connections");
     }
+    if (removed) setServerToRemove(null);
   };
 
   const runTool = async (
@@ -140,7 +151,7 @@ export function McpSettings({ enabled }: { enabled: boolean }) {
   }
 
   return (
-    <section className="space-y-5">
+    <section className="w-full min-w-0 space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h3 className="font-medium">MCP tools</h3>
@@ -314,7 +325,7 @@ export function McpSettings({ enabled }: { enabled: boolean }) {
                 variant="ghost"
                 size="icon-sm"
                 className="text-destructive"
-                onClick={() => removeConnection(server)}
+                onClick={() => setServerToRemove(server)}
               >
                 <Trash2 />
                 <span className="sr-only">Remove {server.name}</span>
@@ -419,6 +430,35 @@ export function McpSettings({ enabled }: { enabled: boolean }) {
           ) : null}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={serverToRemove !== null}
+        onOpenChange={(open) => {
+          if (!open) setServerToRemove(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove MCP connection?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {serverToRemove
+                ? `${serverToRemove.name} and its saved tool history will be permanently removed.`
+                : "This connection and its saved tool history will be permanently removed."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                if (serverToRemove) void removeConnection(serverToRemove);
+              }}
+            >
+              Remove connection
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

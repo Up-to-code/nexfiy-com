@@ -1,7 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { Cable, CircleAlert, Clock3, Plus, Trash2 } from "lucide-react";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 
@@ -15,19 +26,14 @@ export function ClientAccess({
   onCreate: () => void;
 }) {
   const environments = useMcpEnvironments(enabled);
+  const [environmentToRemove, setEnvironmentToRemove] = useState<{
+    id: Parameters<typeof environments.remove>[0];
+    name: string;
+  } | null>(null);
 
-  const remove = async (
-    id: Parameters<typeof environments.remove>[0],
-    name: string,
-  ) => {
-    if (
-      !window.confirm(
-        `Revoke ${name}? Its MCP URL will stop working immediately.`,
-      )
-    ) {
-      return;
-    }
+  const remove = async (id: Parameters<typeof environments.remove>[0]) => {
     await environments.remove(id);
+    setEnvironmentToRemove(null);
   };
 
   if (environments.isLoading) {
@@ -100,7 +106,12 @@ export function ClientAccess({
             variant="ghost"
             size="icon-sm"
             className="text-destructive"
-            onClick={() => remove(environment._id, environment.name)}
+            onClick={() =>
+              setEnvironmentToRemove({
+                id: environment._id,
+                name: environment.name,
+              })
+            }
           >
             <Trash2 />
             <span className="sr-only">Revoke {environment.name}</span>
@@ -113,6 +124,37 @@ export function ClientAccess({
           <Plus /> Create another environment
         </Button>
       ) : null}
+
+      <AlertDialog
+        open={environmentToRemove !== null}
+        onOpenChange={(open) => {
+          if (!open) setEnvironmentToRemove(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revoke MCP environment?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {environmentToRemove?.name ?? "This environment"} will stop
+              working immediately. Any client using its private URL will lose
+              access.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                if (environmentToRemove) {
+                  void remove(environmentToRemove.id);
+                }
+              }}
+            >
+              Revoke access
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

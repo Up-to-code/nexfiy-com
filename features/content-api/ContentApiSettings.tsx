@@ -15,6 +15,16 @@ import {
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -96,6 +106,7 @@ export function ContentApiSettings({ enabled }: { enabled: boolean }) {
     null,
   );
   const [isCreating, setIsCreating] = useState(false);
+  const [keyToRevoke, setKeyToRevoke] = useState<IntegrationKey | null>(null);
   const endpoint = "/api/contents";
 
   const copy = async (value: string, message: string) => {
@@ -140,7 +151,7 @@ export function ContentApiSettings({ enabled }: { enabled: boolean }) {
   const sources = contentApi.sources ?? [];
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <div className="border-border/40 border-b pb-4">
         <div className="flex items-center gap-2.5">
           <Braces className="size-5 text-[#2383E2]" />
@@ -336,7 +347,7 @@ export function ContentApiSettings({ enabled }: { enabled: boolean }) {
                               variant="ghost"
                               size="icon-sm"
                               aria-label={`Revoke ${key.name}`}
-                              onClick={() => void contentApi.revoke(key._id)}
+                              onClick={() => setKeyToRevoke(key)}
                             >
                               <Trash2 className="text-destructive/80 hover:text-destructive size-4" />
                             </Button>
@@ -394,6 +405,36 @@ export function ContentApiSettings({ enabled }: { enabled: boolean }) {
           </div>
         </Tabs>
       )}
+      <AlertDialog
+        open={keyToRevoke !== null}
+        onOpenChange={(open) => {
+          if (!open) setKeyToRevoke(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revoke Content API key?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {keyToRevoke?.name ?? "This key"} will stop working immediately.
+              Applications using it will no longer be able to read workspace
+              content.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                if (!keyToRevoke) return;
+                void contentApi.revoke(keyToRevoke._id);
+                setKeyToRevoke(null);
+              }}
+            >
+              Revoke key
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
