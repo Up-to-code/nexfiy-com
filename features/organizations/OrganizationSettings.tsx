@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useMutation } from "convex/react";
 import {
   Check,
   ChevronDown,
@@ -41,12 +42,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ProUpgradePrompt } from "@/features/billing/ProUpgradePrompt";
 import { useBilling } from "@/features/billing/use-billing";
 import { authClient } from "@/lib/auth-client";
 import { logger } from "@/lib/logger";
 import { uploadFile } from "@/lib/uploadthing";
+import { useSettings } from "@/hooks/useSettingsModal";
+import { api } from "@/convex/_generated/api";
 import { WorkspaceInviteDialog } from "./WorkspaceInviteDialog";
 import { useOrganizationContext } from "./OrganizationProvider";
 import {
@@ -89,6 +93,7 @@ export function OrganizationSettings({
   const [name, setName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [isPreparingInvite, setIsPreparingInvite] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [workspaceDraft, setWorkspaceDraft] = useState<{
     workspaceId: string;
@@ -113,6 +118,10 @@ export function OrganizationSettings({
   } = useOrganizationContext();
   const { data: session } = authClient.useSession();
   const billing = useBilling();
+  const settings = useSettings();
+  const attachPersonalWorkspace = useMutation(
+    api.organizationWorkspaces.attachPersonalWorkspace,
+  );
   const management = useOrganizationManagement(
     activeOrganization?.id,
     refreshActiveOrganization,
@@ -170,12 +179,49 @@ export function OrganizationSettings({
       posthog.capture("workspace_created");
       setName("");
       setIsCreateOpen(false);
+      settings.consumeAction();
       toast.success("Workspace created.");
     } catch (error) {
       logger.error("Failed to create organization", error);
       toast.error("Could not create workspace. Try a different name.");
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const openInviteForSelectedWorkspace = async () => {
+    if (activeOrganization) {
+      setIsInviteOpen(true);
+      return;
+    }
+    if (!session?.user || isPreparingInvite) return;
+
+    setIsPreparingInvite(true);
+    try {
+      const workspaceName = `${session.user.name}'s workspace`;
+      const { data, error } = await authClient.organization.create({
+        name: workspaceName,
+        slug: `${toSlug(session.user.name)}-${Date.now().toString(36)}`,
+        logo: session.user.image ?? undefined,
+      });
+      if (error || !data) {
+        throw new Error(error?.message ?? "Workspace could not be shared");
+      }
+      const { error: activeError } = await authClient.organization.setActive({
+        organizationId: data.id,
+      });
+      if (activeError) throw new Error(activeError.message);
+      await attachPersonalWorkspace();
+      await refreshActiveOrganization();
+      setIsInviteOpen(true);
+      toast.success("This workspace is ready for collaborators.");
+    } catch (error) {
+      logger.error("Failed to prepare workspace invitation", error);
+      toast.error(
+        error instanceof Error ? error.message : "Could not open invitations.",
+      );
+    } finally {
+      setIsPreparingInvite(false);
     }
   };
 
@@ -360,22 +406,21 @@ export function OrganizationSettings({
                   : "Switch workspaces or create a new team workspace."}
               </p>
             </div>
-            {view === "people" && activeOrganization && canManageMembers ? (
+            {view === "people" && (canManageMembers || !activeOrganization) ? (
               <Button
                 size="sm"
                 className="h-8"
-                onClick={() => setIsInviteOpen(true)}
+                onClick={() => void openInviteForSelectedWorkspace()}
+                disabled={
+                  management.isMutating ||
+                  isPreparingInvite ||
+                  (!activeOrganization && !billing.subscription?.hasPro)
+                }
               >
-                <Plus className="size-3.5" /> Invite member
-              </Button>
-            ) : view === "people" && !activeOrganization ? (
-              <Button
-                size="sm"
-                className="h-8"
-                onClick={() => setIsCreateOpen(true)}
-                disabled={!billing.subscription?.hasPro}
-              >
-                <Plus className="size-3.5" /> Create workspace to invite
+                {!isPreparingInvite ? (
+                  <Plus className="size-3.5" />
+                ) : null}{" "}
+                {isPreparingInvite ? "Preparing invite…" : "Invite"}
               </Button>
             ) : null}
           </div>
@@ -532,9 +577,9 @@ export function OrganizationSettings({
                   </p>
                 </div>
               </div>
-              <div className="space-y-3 rounded-lg border p-4">
-                <label className="block space-y-1.5 text-xs font-medium">
-                  Workspace name
+              <div className="space-y-5">
+                <label className="block text-xs font-medium">
+                  <span className="mb-2 block">Workspace name</span>
                   <Input
                     value={workspaceName}
                     onChange={(event) =>
@@ -547,19 +592,26 @@ export function OrganizationSettings({
                     maxLength={80}
                   />
                 </label>
-                <div className="space-y-1.5 text-xs font-medium">
-                  Workspace image
+                <div className="text-xs font-medium">
+                  <span className="mb-2 block">Workspace image</span>
                   <label className="border-border/60 hover:bg-muted/40 flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 transition-colors">
-                    <WorkspaceAvatar
-                      name={workspaceName}
-                      image={workspaceLogo}
-                      className="size-8"
-                    />
-                    <span className="text-sm font-medium">
-                      {isUploadingWorkspaceImage
-                        ? "Uploading…"
-                        : "Upload a new image"}
-                    </span>
+                    {isUploadingWorkspaceImage ? (
+                      <>
+                        <Skeleton className="size-8 rounded-md" />
+                        <Skeleton className="h-4 w-32" />
+                      </>
+                    ) : (
+                      <>
+                        <WorkspaceAvatar
+                          name={workspaceName}
+                          image={workspaceLogo}
+                          className="size-8"
+                        />
+                        <span className="text-sm font-medium">
+                          Upload a new image
+                        </span>
+                      </>
+                    )}
                     <input
                       type="file"
                       accept="image/*"
@@ -674,7 +726,16 @@ export function OrganizationSettings({
         />
       ) : null}
 
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+      <Dialog
+        open={
+          isCreateOpen ||
+          (settings.action === "create-workspace" && view === "workspace")
+        }
+        onOpenChange={(open) => {
+          setIsCreateOpen(open);
+          if (!open) settings.consumeAction();
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Create a new workspace</DialogTitle>

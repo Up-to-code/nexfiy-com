@@ -2,6 +2,14 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
+  workspaceAliases: defineTable({
+    organizationId: v.string(),
+    workspaceId: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_organization", ["organizationId"])
+    .index("by_workspace", ["workspaceId"]),
+
   documents: defineTable({
     title: v.string(),
     userId: v.string(),

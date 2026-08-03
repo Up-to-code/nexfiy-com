@@ -349,14 +349,25 @@ export function DatabaseGrid({
           ),
           cell: ({ row }) =>
             property.type === "title" ? (
-              <Input
-                aria-label={`Name for ${row.original.title}`}
-                defaultValue={row.original.title}
-                className="h-8 w-full min-w-0 border-0 bg-transparent text-xs font-medium shadow-none focus-visible:ring-1 focus-visible:ring-[#2383E2]"
-                onBlur={(event) =>
-                  onUpdateRowTitle(row.original.id, event.target.value)
-                }
-              />
+              <div className="group/title-cell flex min-w-0 items-center gap-1">
+                <Input
+                  aria-label={`Name for ${row.original.title}`}
+                  defaultValue={row.original.title}
+                  className="h-8 min-w-0 flex-1 border-0 bg-transparent text-xs font-medium shadow-none focus-visible:ring-1 focus-visible:ring-[#2383E2]"
+                  onBlur={(event) =>
+                    onUpdateRowTitle(row.original.id, event.target.value)
+                  }
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 shrink-0 gap-1 px-2 text-[10px] opacity-0 transition-opacity group-hover/title-cell:opacity-100 focus-visible:opacity-100"
+                  onClick={() => onOpenRow(row.original.id)}
+                  aria-label={`Open ${row.original.title}`}
+                >
+                  <ExternalLink className="size-3" /> Open
+                </Button>
+              </div>
             ) : (
               <DatabaseCell
                 property={property}
@@ -374,20 +385,6 @@ export function DatabaseGrid({
             ),
         }),
       ),
-      columnHelper.display({
-        id: "open-page",
-        header: () => null,
-        cell: ({ row }) => (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => onOpenRow(row.original.id)}
-            aria-label={`Open ${row.original.title}`}
-          >
-            <ExternalLink className="size-3.5" />
-          </Button>
-        ),
-      }),
     ],
     [
       database,
@@ -422,8 +419,6 @@ export function DatabaseGrid({
                     className={cn(
                       "border-border/30 border-r px-3 py-2 text-left font-medium whitespace-nowrap last:border-r-0",
                       index === 0 ? "min-w-72" : "min-w-36",
-                      header.id === "open-page" &&
-                        "w-10 min-w-10 px-1 text-center",
                     )}
                   >
                     {header.isPlaceholder
@@ -449,8 +444,6 @@ export function DatabaseGrid({
                     className={cn(
                       "border-border/30 border-r p-1 whitespace-nowrap last:border-r-0",
                       index === 0 ? "min-w-72" : "min-w-36",
-                      cell.column.id === "open-page" &&
-                        "w-10 min-w-10 text-center",
                     )}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

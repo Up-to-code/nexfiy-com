@@ -17,9 +17,14 @@ export async function getWorkspaceScope(
   const session = await auth.api.getSession({ headers });
   const activeOrganizationId = session?.session.activeOrganizationId;
 
-  return activeOrganizationId
-    ? `organization:${activeOrganizationId}`
-    : personalUserId;
+  if (!activeOrganizationId) return personalUserId;
+  const alias = await ctx.db
+    .query("workspaceAliases")
+    .withIndex("by_organization", (query) =>
+      query.eq("organizationId", activeOrganizationId),
+    )
+    .unique();
+  return alias?.workspaceId ?? `organization:${activeOrganizationId}`;
 }
 
 /**
@@ -39,6 +44,13 @@ export async function getWorkspaceBillingScope(
     return { workspaceId: personalUserId, billingOwnerId: personalUserId };
   }
 
+  const alias = await ctx.db
+    .query("workspaceAliases")
+    .withIndex("by_organization", (query) =>
+      query.eq("organizationId", activeOrganizationId),
+    )
+    .unique();
+
   const organization = await auth.api.getFullOrganization({
     headers,
     query: { organizationId: activeOrganizationId },
@@ -55,7 +67,7 @@ export async function getWorkspaceBillingScope(
   }
 
   return {
-    workspaceId: `organization:${activeOrganizationId}`,
+    workspaceId: alias?.workspaceId ?? `organization:${activeOrganizationId}`,
     billingOwnerId: owner.userId,
   };
 }
@@ -72,12 +84,19 @@ export async function getWorkspaceManagementScope(
     return { workspaceId: personalUserId, canManage: true };
   }
 
+  const alias = await ctx.db
+    .query("workspaceAliases")
+    .withIndex("by_organization", (query) =>
+      query.eq("organizationId", activeOrganizationId),
+    )
+    .unique();
+
   const activeRole = await auth.api.getActiveMemberRole({ headers });
   const roles = String(activeRole.role)
     .split(",")
     .map((role: string) => role.trim());
   return {
-    workspaceId: `organization:${activeOrganizationId}`,
+    workspaceId: alias?.workspaceId ?? `organization:${activeOrganizationId}`,
     canManage: roles.includes("owner") || roles.includes("admin"),
   };
 }

@@ -17,6 +17,7 @@ export function DatabaseRowSidePeek({
   onClose,
   onUpdateTitle,
   onSetValue,
+  onAddSelectOption,
   onCreateTemplate,
 }: {
   database: DatabaseData;
@@ -24,6 +25,7 @@ export function DatabaseRowSidePeek({
   onClose: () => void;
   onUpdateTitle: ReturnType<typeof useDatabase>["updateRowTitle"];
   onSetValue: ReturnType<typeof useDatabase>["setValue"];
+  onAddSelectOption: ReturnType<typeof useDatabase>["addSelectOption"];
   onCreateTemplate: ReturnType<typeof useDatabase>["createRowTemplate"];
 }) {
   if (!rowId) return null;
@@ -73,6 +75,7 @@ export function DatabaseRowSidePeek({
           rowId={row.id}
           onUpdateTitle={onUpdateTitle}
           onSetValue={onSetValue}
+          onAddSelectOption={onAddSelectOption}
         />
       </section>
     </div>

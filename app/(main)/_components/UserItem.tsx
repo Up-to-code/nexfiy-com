@@ -17,7 +17,6 @@ import {
   Plus,
   Settings,
   UserPlus,
-  UserRoundPlus,
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useSettings } from "@/hooks/useSettingsModal";
@@ -45,10 +44,18 @@ export const UserItem = ({ navDrawer }: { navDrawer?: boolean }) => {
   };
 
   const handleOpenSettings = (
-    tab: "account" | "organization" | "billing" | "preferences" | "api" | "mcp",
+    tab:
+      | "account"
+      | "organization"
+      | "people"
+      | "billing"
+      | "preferences"
+      | "api"
+      | "mcp",
+    action?: "create-workspace",
   ) => {
     setInnerPopoverOpen(false);
-    settings.onOpen(tab);
+    settings.onOpen(tab, action);
   };
 
   return (
@@ -131,20 +138,13 @@ export const UserItem = ({ navDrawer }: { navDrawer?: boolean }) => {
           </DropdownMenuItem>
 
           <DropdownMenuItem
-            onClick={() => handleOpenSettings("organization")}
+            onClick={() => handleOpenSettings("people")}
             className="cursor-pointer"
           >
             <UserPlus className="text-muted-foreground size-4" />
             Invite members
           </DropdownMenuItem>
 
-          <DropdownMenuItem
-            onClick={() => handleOpenSettings("organization")}
-            className="cursor-pointer"
-          >
-            <UserRoundPlus className="text-muted-foreground size-4" />
-            Add account
-          </DropdownMenuItem>
         </div>
 
         <DropdownMenuSeparator className="bg-border/60 my-1" />
@@ -208,7 +208,9 @@ export const UserItem = ({ navDrawer }: { navDrawer?: boolean }) => {
 
           {/* Add / New Workspace */}
           <DropdownMenuItem
-            onClick={() => handleOpenSettings("organization")}
+            onClick={() =>
+              handleOpenSettings("organization", "create-workspace")
+            }
             className="cursor-pointer font-medium text-[#2383E2] hover:text-[#2383E2] focus:text-[#2383E2]"
           >
             <Plus className="size-4 text-[#2383E2]" />

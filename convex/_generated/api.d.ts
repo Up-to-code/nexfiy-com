@@ -27,6 +27,7 @@ import type * as lib_workspace from "../lib/workspace.js";
 import type * as mcpActions from "../mcpActions.js";
 import type * as mcpEnvironments from "../mcpEnvironments.js";
 import type * as mcpServers from "../mcpServers.js";
+import type * as organizationWorkspaces from "../organizationWorkspaces.js";
 import type * as pageBlocks from "../pageBlocks.js";
 import type * as pageContentMigrations from "../pageContentMigrations.js";
 import type * as pageTemplates from "../pageTemplates.js";
@@ -59,6 +60,7 @@ declare const fullApi: ApiFromModules<{
   mcpActions: typeof mcpActions;
   mcpEnvironments: typeof mcpEnvironments;
   mcpServers: typeof mcpServers;
+  organizationWorkspaces: typeof organizationWorkspaces;
   pageBlocks: typeof pageBlocks;
   pageContentMigrations: typeof pageContentMigrations;
   pageTemplates: typeof pageTemplates;

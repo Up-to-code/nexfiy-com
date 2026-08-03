@@ -349,6 +349,7 @@ export function DatabaseTable({
           onClose={() => setOpenRowId(undefined)}
           onUpdateTitle={databaseState.updateRowTitle}
           onSetValue={databaseState.setValue}
+          onAddSelectOption={databaseState.addSelectOption}
           onCreateTemplate={databaseState.createRowTemplate}
         />
       ) : null}
