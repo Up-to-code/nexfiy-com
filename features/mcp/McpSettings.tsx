@@ -49,6 +49,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useMcpServers, type McpServerInput } from "@/hooks/useMcpServers";
 import { ConnectionEditor } from "./ConnectionEditor";
@@ -88,6 +89,7 @@ export function McpSettings({ enabled }: { enabled: boolean }) {
   const mcp = useMcpServers(enabled, selectedServerId);
   const mcpEnvironments = useMcpEnvironments(enabled);
   const billing = useBilling();
+  const hasConnections = Boolean(mcp.servers?.length);
   const selectedServer = mcp.servers?.find(
     (server) => server._id === selectedServerId,
   );
@@ -148,6 +150,17 @@ export function McpSettings({ enabled }: { enabled: boolean }) {
 
   if (!billing.isLoading && !billing.subscription?.hasPro) {
     return <ProUpgradePrompt feature="MCP" />;
+  }
+
+  if (billing.isLoading) {
+    return (
+      <div className="space-y-5" aria-label="Loading MCP settings">
+        <Skeleton className="h-6 w-28" />
+        <Skeleton className="h-4 w-4/5" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-32 w-full" />
+      </div>
+    );
   }
 
   return (
@@ -217,6 +230,14 @@ export function McpSettings({ enabled }: { enabled: boolean }) {
             type="button"
             onClick={() => {
               if (
+                !hasConnections &&
+                (item.value === "tools" || item.value === "activity")
+              ) {
+                setView("connections");
+                setEditingId("new");
+                return;
+              }
+              if (
                 item.value === "tools" &&
                 !selectedServerId &&
                 mcp.servers?.[0]
@@ -228,6 +249,9 @@ export function McpSettings({ enabled }: { enabled: boolean }) {
             className={cn(
               "text-muted-foreground flex items-center gap-2 border-b-2 border-transparent px-3 py-2 text-sm transition",
               view === item.value && "border-foreground text-foreground",
+              !hasConnections &&
+                (item.value === "tools" || item.value === "activity") &&
+                "cursor-not-allowed opacity-45",
             )}
           >
             <item.icon className="size-4" /> {item.label}
@@ -337,41 +361,62 @@ export function McpSettings({ enabled }: { enabled: boolean }) {
 
       {view === "tools" ? (
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <Select
-              value={selectedServerId ?? ""}
-              onValueChange={(value) =>
-                setSelectedServerId(value as Id<"mcpServers">)
-              }
-            >
-              <SelectTrigger className="min-w-56" aria-label="MCP connection">
-                <SelectValue placeholder="Select a connection" />
-              </SelectTrigger>
-              <SelectContent>
-                {mcp.servers?.map((server) => (
-                  <SelectItem key={server._id} value={server._id}>
-                    {server.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedServer ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => sync(selectedServer._id)}
-                disabled={syncingId === selectedServer._id}
+          {hasConnections ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <Select
+                value={selectedServerId ?? ""}
+                onValueChange={(value) =>
+                  setSelectedServerId(value as Id<"mcpServers">)
+                }
               >
-                <RefreshCw
-                  className={cn(
-                    syncingId === selectedServer._id && "animate-spin",
-                  )}
-                />{" "}
-                Sync tools
+                <SelectTrigger className="min-w-56" aria-label="MCP connection">
+                  <SelectValue placeholder="Select a connection" />
+                </SelectTrigger>
+                <SelectContent>
+                  {mcp.servers?.map((server) => (
+                    <SelectItem key={server._id} value={server._id}>
+                      {server.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedServer ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => sync(selectedServer._id)}
+                  disabled={syncingId === selectedServer._id}
+                >
+                  <RefreshCw
+                    className={cn(
+                      syncingId === selectedServer._id && "animate-spin",
+                    )}
+                  />{" "}
+                  Sync tools
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
+          {!hasConnections ? (
+            <div className="flex flex-col items-center rounded-lg border border-dashed px-6 py-12 text-center">
+              <Wrench className="text-muted-foreground mb-3 size-8" />
+              <p className="font-medium">Connect a server to discover tools</p>
+              <p className="text-muted-foreground mt-1 max-w-md text-sm">
+                Tools appear here after Nexfiy connects and reads the server
+                capabilities.
+              </p>
+              <Button
+                className="mt-4"
+                size="sm"
+                onClick={() => {
+                  setView("connections");
+                  setEditingId("new");
+                }}
+              >
+                <Plus /> Add MCP connection
               </Button>
-            ) : null}
-          </div>
-          {selectedServerId ? (
+            </div>
+          ) : selectedServerId ? (
             <ToolExplorer
               tools={mcp.tools}
               isLoading={mcp.isToolsLoading}

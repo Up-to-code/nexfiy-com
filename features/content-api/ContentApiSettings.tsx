@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Id } from "@/convex/_generated/dataModel";
 import { DatabaseAccessPicker } from "./DatabaseAccessPicker";
@@ -138,8 +139,14 @@ export function ContentApiSettings({ enabled }: { enabled: boolean }) {
 
   if (contentApi.isLoading) {
     return (
-      <div className="text-muted-foreground flex items-center gap-2 py-10 text-sm">
-        <LoaderCircle className="size-4 animate-spin" /> Loading Content API…
+      <div className="space-y-5 py-2" aria-label="Loading Content API settings">
+        <Skeleton className="h-6 w-36" />
+        <Skeleton className="h-4 w-4/5" />
+        <Skeleton className="h-10 w-full" />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
       </div>
     );
   }

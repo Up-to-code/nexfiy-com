@@ -89,6 +89,14 @@ export function OrganizationSettings({
   const [isCreating, setIsCreating] = useState(false);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [workspaceDraft, setWorkspaceDraft] = useState<{
+    organizationId: string;
+    name: string;
+    logo: string;
+  } | null>(null);
+  const [isSavingWorkspace, setIsSavingWorkspace] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [memberToRemove, setMemberToRemove] = useState<{
     id: string;
     name: string;
@@ -121,6 +129,17 @@ export function OrganizationSettings({
       ),
   );
   const memberCount = activeOrganization ? members.length : 1;
+
+  const workspaceName = activeOrganization
+    ? workspaceDraft && workspaceDraft.organizationId === activeOrganization.id
+      ? workspaceDraft.name
+      : activeOrganization.name
+    : "Personal workspace";
+  const workspaceLogo = activeOrganization
+    ? workspaceDraft && workspaceDraft.organizationId === activeOrganization.id
+      ? workspaceDraft.logo
+      : (activeOrganization.logo ?? "")
+    : "";
 
   const createOrganization = async () => {
     const slug = toSlug(name);
@@ -156,6 +175,57 @@ export function OrganizationSettings({
     if (!memberToRemove) return;
     await management.removeMember(memberToRemove.id);
     setMemberToRemove(null);
+  };
+
+  const saveWorkspace = async () => {
+    if (!activeOrganization) return;
+    const trimmedName = workspaceName.trim();
+    if (!trimmedName) {
+      toast.error("Enter a workspace name.");
+      return;
+    }
+    setIsSavingWorkspace(true);
+    try {
+      const { error } = await authClient.organization.update({
+        organizationId: activeOrganization.id,
+        data: {
+          name: trimmedName,
+          slug: toSlug(trimmedName),
+          logo: workspaceLogo.trim() || undefined,
+        },
+      });
+      if (error) throw new Error(error.message ?? "Workspace was not updated");
+      await refreshActiveOrganization();
+      setWorkspaceDraft(null);
+      toast.success("Workspace updated.");
+    } catch (error) {
+      logger.error("Failed to update organization", error);
+      toast.error(
+        error instanceof Error ? error.message : "Could not update workspace.",
+      );
+    } finally {
+      setIsSavingWorkspace(false);
+    }
+  };
+
+  const deleteWorkspace = async () => {
+    if (!activeOrganization || deleteConfirmation !== activeOrganization.name)
+      return;
+    try {
+      const { error } = await authClient.organization.delete({
+        organizationId: activeOrganization.id,
+      });
+      if (error) throw new Error(error.message ?? "Workspace was not deleted");
+      setIsDeleteOpen(false);
+      setDeleteConfirmation("");
+      await setActiveOrganization(null);
+      toast.success("Workspace deleted.");
+    } catch (error) {
+      logger.error("Failed to delete organization", error);
+      toast.error(
+        error instanceof Error ? error.message : "Could not delete workspace.",
+      );
+    }
   };
 
   const selectedName = activeOrganization?.name ?? "Personal workspace";
@@ -397,10 +467,84 @@ export function OrganizationSettings({
         </TabsContent>
 
         <TabsContent value="workspace" className="mt-0 pt-5">
-          {!billing.isLoading && !billing.subscription?.hasPro ? (
-            <ProUpgradePrompt feature="Team workspaces" />
-          ) : (
-            <div className="space-y-4">
+          <div className="space-y-7">
+            <section className="space-y-3">
+              <div>
+                <h3 className="text-sm font-semibold">Workspace profile</h3>
+                <p className="text-muted-foreground mt-0.5 text-xs">
+                  Change the name and image people see for this workspace.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <WorkspaceAvatar
+                  name={workspaceName}
+                  image={
+                    activeOrganization ? workspaceLogo : session?.user.image
+                  }
+                  className="size-12"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">
+                    {activeOrganization
+                      ? activeOrganization.name
+                      : session?.user.name}
+                  </p>
+                  <p className="text-muted-foreground truncate text-xs">
+                    {activeOrganization
+                      ? `${memberCount} members · Workspace owner`
+                      : `${session?.user.email ?? ""} · Account owner`}
+                  </p>
+                </div>
+              </div>
+              {activeOrganization ? (
+                <div className="space-y-3 rounded-lg border p-4">
+                  <label className="block space-y-1.5 text-xs font-medium">
+                    Workspace name
+                    <Input
+                      value={workspaceName}
+                      onChange={(event) =>
+                        setWorkspaceDraft({
+                          organizationId: activeOrganization.id,
+                          name: event.target.value,
+                          logo: workspaceLogo,
+                        })
+                      }
+                      maxLength={80}
+                    />
+                  </label>
+                  <label className="block space-y-1.5 text-xs font-medium">
+                    Workspace image URL
+                    <Input
+                      type="url"
+                      value={workspaceLogo}
+                      onChange={(event) =>
+                        setWorkspaceDraft({
+                          organizationId: activeOrganization.id,
+                          name: workspaceName,
+                          logo: event.target.value,
+                        })
+                      }
+                      placeholder="https://…"
+                    />
+                  </label>
+                  <div className="flex justify-end">
+                    <Button
+                      size="sm"
+                      onClick={() => void saveWorkspace()}
+                      disabled={isSavingWorkspace || !workspaceName.trim()}
+                    >
+                      {isSavingWorkspace ? (
+                        <LoaderCircle className="animate-spin" />
+                      ) : null}
+                      Save changes
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+            </section>
+
+            <section className="space-y-3">
+              <h3 className="text-sm font-semibold">Your workspaces</h3>
               <div className="divide-border/40 divide-y rounded-lg border px-3">
                 <div className="flex items-center gap-3 py-3">
                   <WorkspaceAvatar
@@ -441,11 +585,37 @@ export function OrganizationSettings({
                   </button>
                 ))}
               </div>
-              <Button type="button" onClick={() => setIsCreateOpen(true)}>
-                <Plus /> Create new workspace
-              </Button>
-            </div>
-          )}
+              {!billing.isLoading && !billing.subscription?.hasPro ? (
+                <ProUpgradePrompt feature="Team workspaces" />
+              ) : (
+                <button
+                  type="button"
+                  className="text-sm font-medium text-[#2383E2] hover:underline"
+                  onClick={() => setIsCreateOpen(true)}
+                >
+                  Add a new workspace
+                </button>
+              )}
+            </section>
+
+            {activeOrganization ? (
+              <section className="border-destructive/30 space-y-3 border-t pt-5">
+                <div>
+                  <h3 className="text-sm font-semibold">Delete workspace</h3>
+                  <p className="text-muted-foreground mt-0.5 text-xs">
+                    Permanently remove this workspace and revoke member access.
+                  </p>
+                </div>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setIsDeleteOpen(true)}
+                >
+                  Delete workspace
+                </Button>
+              </section>
+            ) : null}
+          </div>
         </TabsContent>
       </Tabs>
 
@@ -500,6 +670,39 @@ export function OrganizationSettings({
                 <Plus />
               )}
               {isCreating ? "Creating…" : "Create workspace"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete {activeOrganization?.name}?</DialogTitle>
+            <DialogDescription>
+              This permanently deletes the workspace. Type the workspace name to
+              confirm.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={deleteConfirmation}
+            onChange={(event) => setDeleteConfirmation(event.target.value)}
+            placeholder={activeOrganization?.name}
+            autoComplete="off"
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={
+                !activeOrganization ||
+                deleteConfirmation !== activeOrganization.name
+              }
+              onClick={() => void deleteWorkspace()}
+            >
+              Delete permanently
             </Button>
           </DialogFooter>
         </DialogContent>
