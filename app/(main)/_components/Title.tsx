@@ -7,6 +7,7 @@ import { api } from "@/convex/_generated/api";
 import { Doc } from "@/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { ChangeEvent, useRef, useState } from "react";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 interface TitleProps {
   initialData: Doc<"documents">;
@@ -15,8 +16,9 @@ interface TitleProps {
 export const Title = ({ initialData }: TitleProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const update = useMutation(api.documents.update);
+  const { t } = useI18n();
 
-  const [title, setTitle] = useState(initialData.title || "Untitled");
+  const [title, setTitle] = useState(initialData.title || t("common.untitled"));
   const [isEditing, setIsEditing] = useState(false);
 
   const enableInput = () => {
@@ -36,7 +38,7 @@ export const Title = ({ initialData }: TitleProps) => {
     setTitle(event.target.value);
     update({
       id: initialData._id,
-      title: event.target.value || "Untitled",
+      title: event.target.value || t("common.untitled"),
     });
   };
 

@@ -1,17 +1,23 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono, Lora } from "next/font/google";
+import { Inter, JetBrains_Mono, Lora, Noto_Sans_Arabic } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ConvexClientProvider } from "@/components/providers/convex-provider";
 import { ToasterProvider } from "@/components/providers/toaster-provider";
+import { I18nProvider } from "@/lib/i18n/I18nProvider";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const lora = Lora({ subsets: ["latin"], variable: "--font-lora" });
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains-mono",
+});
+const notoSansArabic = Noto_Sans_Arabic({
+  subsets: ["arabic"],
+  variable: "--font-noto-arabic",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -74,10 +80,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" dir="ltr" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`${inter.className} ${inter.variable} ${lora.variable} ${jetbrainsMono.variable}`}
+        className={`${inter.className} ${inter.variable} ${lora.variable} ${jetbrainsMono.variable} ${notoSansArabic.variable}`}
       >
         <ConvexClientProvider>
           <ThemeProvider
@@ -87,9 +93,11 @@ export default function RootLayout({
             disableTransitionOnChange
             storageKey="nexfiy-theme-2"
           >
-            <ToasterProvider />
-            {children}
-            <Analytics />
+            <I18nProvider>
+              <ToasterProvider />
+              {children}
+              <Analytics />
+            </I18nProvider>
           </ThemeProvider>
         </ConvexClientProvider>
       </body>

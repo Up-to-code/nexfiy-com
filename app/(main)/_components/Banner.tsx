@@ -7,6 +7,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 interface BannerProps {
   documentId: Id<"documents">;
@@ -14,6 +15,7 @@ interface BannerProps {
 
 export const Banner = ({ documentId }: BannerProps) => {
   const router = useRouter();
+  const { t } = useI18n();
   const remove = useMutation(api.documents.remove);
   const restore = useMutation(api.documents.restore);
 
@@ -21,9 +23,9 @@ export const Banner = ({ documentId }: BannerProps) => {
     const promise = remove({ id: documentId });
 
     toast.promise(promise, {
-      loading: "Deleting note...",
-      success: "Note Deleted!",
-      error: "Failed to delete note.",
+      loading: t("app.deletingNote"),
+      success: t("app.noteDeleted"),
+      error: t("app.deleteFailed"),
     });
 
     router.push("/documents");
@@ -33,16 +35,16 @@ export const Banner = ({ documentId }: BannerProps) => {
     const promise = restore({ id: documentId });
 
     toast.promise(promise, {
-      loading: "Restoring note...",
-      success: "Note restored!",
-      error: "Failed to restore note.",
+      loading: t("app.restoringNote"),
+      success: t("app.noteRestored"),
+      error: t("app.restoreFailed"),
     });
   };
 
   return (
     <div className="flex w-full items-center justify-center gap-x-2 bg-rose-500 p-2 text-center text-sm text-white">
       <p>
-        This page is in the <span className="font-bold">Trash.</span>
+        {t("app.thisPageIsInThe")} <span className="font-bold">{t("app.trashPeriod")}</span>
       </p>
       <Button
         size="sm"
@@ -50,7 +52,7 @@ export const Banner = ({ documentId }: BannerProps) => {
         variant="outline"
         className="h-auto border-white bg-transparent p-1 px-2 font-normal text-white transition hover:bg-white hover:text-rose-500"
       >
-        Restore page
+        {t("app.restorePage")}
       </Button>
       <ConfirmModal onConfirm={onRemove}>
         <Button
@@ -58,7 +60,7 @@ export const Banner = ({ documentId }: BannerProps) => {
           variant="outline"
           className="h-auto border-white bg-transparent p-1 px-2 font-normal text-white transition hover:bg-white hover:text-rose-500"
         >
-          Delete forever
+          {t("app.deleteForever")}
         </Button>
       </ConfirmModal>
     </div>

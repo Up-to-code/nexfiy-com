@@ -19,11 +19,13 @@ import { useSearch } from "@/hooks/useSearch";
 import { api } from "@/convex/_generated/api";
 import { DialogTitle } from "./ui/dialog";
 import { captureEvent } from "@/lib/analytics";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 export const SearchCommand = () => {
   const { data: session } = authClient.useSession();
   const router = useRouter();
   const documents = useQuery(api.documents.getSearch);
+  const { t } = useI18n();
   const isMounted = useSyncExternalStore(
     () => () => undefined,
     () => true,
@@ -59,7 +61,7 @@ export const SearchCommand = () => {
 
   return (
     <CommandDialog open={isOpen} onOpenChange={onClose}>
-      <DialogTitle hidden>Search Documents</DialogTitle>
+      <DialogTitle hidden>{t("app.searchDocuments")}</DialogTitle>
       <Command
         loop
         filter={(value, search) => {
@@ -70,11 +72,13 @@ export const SearchCommand = () => {
         }}
       >
         <CommandInput
-          placeholder={`Search ${session?.user.name ?? "your"} workspace…`}
+          placeholder={t("app.searchPlaceholder", {
+            name: session?.user.name ?? "",
+          })}
         />
         <CommandList>
-          <CommandEmpty>No results found.</CommandEmpty>
-          <CommandGroup heading="Documents" className="pb-1">
+          <CommandEmpty>{t("app.searchEmpty")}</CommandEmpty>
+          <CommandGroup heading={t("app.searchDocuments")} className="pb-1">
             {documents?.map((document) => (
               <CommandItem
                 key={document._id}

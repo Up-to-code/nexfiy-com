@@ -1,57 +1,33 @@
-import { ChevronDown } from "lucide-react";
+"use client";
 
-const faqs = [
-  {
-    question: "What can I build in Nexfiy?",
-    answer:
-      "You can create connected documents, team knowledge bases, relational databases, project hubs, reusable templates, and agent-assisted workflows in the same workspace.",
-  },
-  {
-    question: "How do AI agents access my workspace?",
-    answer:
-      "You create a dedicated MCP client environment in Workspace settings. Each environment has its own revocable URL, so access stays visible and under your control.",
-  },
-  {
-    question: "Can I use Nexfiy as a content source for another website?",
-    answer:
-      "Yes. The read-only Content API lets you select specific databases and fetch their schema, records, properties, and normalized page blocks from a trusted server.",
-  },
-  {
-    question: "Does it support teams and personal workspaces?",
-    answer:
-      "Yes. Personal notes stay separate, while organization workspaces support members, roles, shared billing, and collaborative content.",
-  },
-  {
-    question: "Will my documents and databases update in real time?",
-    answer:
-      "Yes. Workspace data is backed by Convex, so connected views update as changes happen without manual polling or refresh workflows.",
-  },
-  {
-    question: "Can I import links, YouTube videos, and GitHub repositories?",
-    answer:
-      "Yes. The editor includes labeled link cards, YouTube embeds, GitHub repository cards, files, images, and database views alongside regular document blocks.",
-  },
-  {
-    question: "Where can developers find the API and MCP reference?",
-    answer:
-      "The public developer documentation includes quickstarts, endpoint payloads, block rendering examples, MCP tools, and downloadable Markdown guides.",
-  },
-] as const;
+import { ChevronDown } from "lucide-react";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 export const FaqSection = () => {
+  const { t } = useI18n();
+
+  const faqs = [
+    { question: t("faq.faq1.question"), answer: t("faq.faq1.answer") },
+    { question: t("faq.faq2.question"), answer: t("faq.faq2.answer") },
+    { question: t("faq.faq3.question"), answer: t("faq.faq3.answer") },
+    { question: t("faq.faq4.question"), answer: t("faq.faq4.answer") },
+    { question: t("faq.faq5.question"), answer: t("faq.faq5.answer") },
+    { question: t("faq.faq6.question"), answer: t("faq.faq6.answer") },
+    { question: t("faq.faq7.question"), answer: t("faq.faq7.answer") },
+  ];
+
   return (
     <section id="faq" className="bg-background text-foreground py-24">
       <div className="mx-auto grid max-w-6xl gap-12 px-4 sm:px-6 lg:grid-cols-[0.75fr_1.25fr] lg:gap-20 lg:px-8">
         <div>
           <p className="text-muted-foreground mb-3 text-xs font-bold tracking-[0.18em] uppercase">
-            Frequently asked
+            {t("faq.eyebrow")}
           </p>
           <h2 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
-            Clear answers before you start.
+            {t("faq.title")}
           </h2>
           <p className="text-muted-foreground mt-5 text-lg leading-8">
-            Learn more in the public developer docs or begin with a personal
-            workspace and invite your team later.
+            {t("faq.body")}
           </p>
         </div>
 

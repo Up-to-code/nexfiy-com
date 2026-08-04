@@ -27,6 +27,7 @@ import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { BLOCK_DRAG_MIME } from "@/features/blocks/drag";
 import { optimisticallyMoveBlock } from "@/features/blocks/optimisticBlockMove";
 import { usePageTreeMutations } from "@/features/documents/usePageTreeMutations";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import posthog from "posthog-js";
 
 import { Item } from "./Item";
@@ -230,6 +231,7 @@ export function DocumentList({
 }: DocumentListProps) {
   const params = useParams();
   const router = useRouter();
+  const { t } = useI18n();
   const { movePage } = usePageTreeMutations();
   const moveBlock = useMutation(api.pageBlocks.move).withOptimisticUpdate(
     optimisticallyMoveBlock,
@@ -258,9 +260,9 @@ export function DocumentList({
       posthog.capture("document_favorite_toggled");
     }).catch(() => undefined);
     toast.promise(promise, {
-      loading: "Updating favorites...",
-      success: "Favorites updated!",
-      error: "Failed to update favorites.",
+      loading: t("app.updatingFavorites"),
+      success: t("app.favoritesUpdated"),
+      error: t("app.favoritesUpdateFailed"),
     });
   };
 
@@ -288,10 +290,10 @@ export function DocumentList({
       posthog.capture("page_reordered", { placement });
     }).catch(() => undefined);
     toast.promise(promise, {
-      loading: "Moving page...",
+      loading: t("app.movingPage"),
       success:
-        placement === "inside" ? "Page nested successfully" : "Page moved",
-      error: "Could not move that page",
+        placement === "inside" ? t("app.pageNested") : t("app.pageMoved"),
+      error: t("app.movePageFailed"),
     });
     if (placement === "inside") {
       setExpandedPages((current) => ({
@@ -312,9 +314,9 @@ export function DocumentList({
         placement: "after",
       }),
       {
-        loading: "Moving block...",
-        success: "Block moved to page",
-        error: "Could not move the block",
+        loading: t("app.movingBlock"),
+        success: t("app.blockMoved"),
+        error: t("app.moveBlockFailed"),
       },
     );
   };

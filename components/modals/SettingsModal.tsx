@@ -12,6 +12,8 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useSettings } from "@/hooks/useSettingsModal";
 import { ModeToggle } from "../mode-toggle";
+import { LanguageToggle } from "../language-toggle";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import { EditorFont, useEditorFont } from "@/hooks/useEditorFont";
 import { useFocusMode } from "@/hooks/useFocusMode";
 import { fontFamilies } from "@/lib/editorFont";
@@ -42,6 +44,7 @@ const FONTS: { label: string; value: EditorFont }[] = [
 
 export const SettingsModal = () => {
   const settings = useSettings();
+  const { t } = useI18n();
   const { editorFont, setEditorFont } = useEditorFont({
     enabled: settings.isOpen,
   });
@@ -59,7 +62,7 @@ export const SettingsModal = () => {
         className="bg-background border-border/70 flex h-[min(720px,calc(100vh-4rem))] max-h-[90vh] w-[calc(100%-2rem)] max-w-4xl flex-col gap-0 overflow-hidden rounded-xl border p-0 shadow-2xl focus:outline-none sm:max-w-4xl sm:flex-row"
       >
         <DialogHeader className="sr-only">
-          <DialogTitle>Workspace settings</DialogTitle>
+          <DialogTitle>{t("settings.title")}</DialogTitle>
         </DialogHeader>
 
         <Tabs
@@ -76,60 +79,60 @@ export const SettingsModal = () => {
               {/* Account Group */}
               <div className="mb-4 space-y-0.5">
                 <p className="text-muted-foreground/70 px-3 pt-2 pb-1 text-[11px] font-semibold tracking-wider uppercase">
-                  Account
+                  {t("settings.groupAccount")}
                 </p>
                 <TabsTrigger value="account" className={tabTriggerClass}>
                   <UserRound className="size-4 shrink-0" />
-                  <span className="truncate">Account</span>
+                  <span className="truncate">{t("settings.account")}</span>
                 </TabsTrigger>
                 <TabsTrigger value="preferences" className={tabTriggerClass}>
                   <Palette className="size-4 shrink-0" />
-                  <span className="truncate">Preferences</span>
+                  <span className="truncate">{t("settings.preferences")}</span>
                 </TabsTrigger>
               </div>
 
               {/* Workspace Group */}
               <div className="mb-4 space-y-0.5">
                 <p className="text-muted-foreground/70 px-3 pt-2 pb-1 text-[11px] font-semibold tracking-wider uppercase">
-                  Workspace
+                  {t("settings.groupWorkspace")}
                 </p>
                 <TabsTrigger value="organization" className={tabTriggerClass}>
                   <Building2 className="size-4 shrink-0" />
-                  <span className="truncate">Workspace</span>
+                  <span className="truncate">{t("settings.workspace")}</span>
                 </TabsTrigger>
                 <TabsTrigger value="people" className={tabTriggerClass}>
                   <UsersRound className="size-4 shrink-0" />
-                  <span className="truncate">People</span>
+                  <span className="truncate">{t("settings.people")}</span>
                 </TabsTrigger>
               </div>
 
               {/* Features Group */}
               <div className="mb-4 space-y-0.5">
                 <p className="text-muted-foreground/70 px-3 pt-2 pb-1 text-[11px] font-semibold tracking-wider uppercase">
-                  Features
+                  {t("settings.groupFeatures")}
                 </p>
                 <TabsTrigger value="api" className={tabTriggerClass}>
                   <Braces className="size-4 shrink-0" />
-                  <span className="truncate">API</span>
+                  <span className="truncate">{t("settings.api")}</span>
                 </TabsTrigger>
                 <TabsTrigger value="mcp" className={tabTriggerClass}>
                   <PlugZap className="size-4 shrink-0" />
-                  <span className="truncate">MCP</span>
+                  <span className="truncate">{t("settings.mcp")}</span>
                 </TabsTrigger>
                 <TabsTrigger value="webhooks" className={tabTriggerClass}>
                   <Webhook className="size-4 shrink-0" />
-                  <span className="truncate">Webhooks</span>
+                  <span className="truncate">{t("settings.webhooks")}</span>
                 </TabsTrigger>
               </div>
 
               {/* Access & billing Group */}
               <div className="mb-4 space-y-0.5">
                 <p className="text-muted-foreground/70 px-3 pt-2 pb-1 text-[11px] font-semibold tracking-wider uppercase">
-                  Access & billing
+                  {t("settings.groupAccess")}
                 </p>
                 <TabsTrigger value="billing" className={tabTriggerClass}>
                   <CreditCard className="size-4 shrink-0" />
-                  <span className="truncate">Billing</span>
+                  <span className="truncate">{t("settings.billing")}</span>
                 </TabsTrigger>
               </div>
             </div>
@@ -161,19 +164,38 @@ export const SettingsModal = () => {
 
               <TabsContent value="preferences" className="mt-0">
                 <div className="mb-6">
-                  <h2 className="text-xl font-bold">Preferences</h2>
+                  <h2 className="text-xl font-bold">
+                    {t("settings.preferencesTitle")}
+                  </h2>
                   <p className="text-muted-foreground mt-1 text-sm">
-                    Choose how you want Notion to look and behave
+                    {t("settings.preferencesBody")}
                   </p>
                 </div>
 
                 <div className="flex flex-col">
+                  {/* Language Section */}
+                  <div className="border-border/40 flex items-center justify-between gap-6 border-b py-4">
+                    <div className="flex min-w-0 flex-1 flex-col gap-y-0.5">
+                      <Label className="text-sm font-medium">
+                        {t("settings.language")}
+                      </Label>
+                      <span className="text-muted-foreground text-xs">
+                        {t("settings.languageHint")}
+                      </span>
+                    </div>
+                    <div className="w-52 shrink-0">
+                      <LanguageToggle variant="select" />
+                    </div>
+                  </div>
+
                   {/* Appearance Section */}
                   <div className="border-border/40 flex items-center justify-between gap-6 border-b py-4">
                     <div className="flex min-w-0 flex-1 flex-col gap-y-0.5">
-                      <Label className="text-sm font-medium">Theme</Label>
+                      <Label className="text-sm font-medium">
+                        {t("settings.theme")}
+                      </Label>
                       <span className="text-muted-foreground text-xs">
-                        Choose a theme for Notion on this device
+                        {t("settings.themeHint")}
                       </span>
                     </div>
                     <div className="shrink-0">
@@ -184,9 +206,11 @@ export const SettingsModal = () => {
                   {/* Editor font Section */}
                   <div className="border-border/40 flex items-center justify-between gap-6 border-b py-4">
                     <div className="flex min-w-0 flex-1 flex-col gap-y-0.5">
-                      <Label className="text-sm font-medium">Editor font</Label>
+                      <Label className="text-sm font-medium">
+                        {t("settings.editorFont")}
+                      </Label>
                       <span className="text-muted-foreground text-xs">
-                        Choose the font used in the editor
+                        {t("settings.editorFontHint")}
                       </span>
                     </div>
                     <div className="grid w-64 shrink-0 grid-cols-3 gap-2">
@@ -220,12 +244,14 @@ export const SettingsModal = () => {
                   {/* Focus mode Section */}
                   <div className="border-border/40 flex items-center justify-between gap-6 border-b py-4">
                     <div className="flex min-w-0 flex-1 flex-col gap-y-0.5">
-                      <Label className="text-sm font-medium">Focus mode</Label>
+                      <Label className="text-sm font-medium">
+                        {t("settings.focusMode")}
+                      </Label>
                       <span className="text-muted-foreground text-xs">
-                        Collapse sidebar and topbar to minimize distractions
+                        {t("settings.focusModeHint")}
                       </span>
                       <span className="text-muted-foreground/80 mt-1 text-[11px]">
-                        Shortcut:
+                        {t("settings.shortcut")}
                         <kbd className="border-border/50 bg-muted/50 ml-1 inline-flex items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-medium shadow-2xs">
                           Ctrl + Shift + F
                         </kbd>

@@ -1,27 +1,32 @@
-import Image from "next/image";
+"use client";
 
-const features = [
-  {
-    eyebrow: "Write naturally",
-    title: "Mix documents, media, links, and data in the same page.",
-    image: "/landing/nexfiy-capture-knowledge-v4.png",
-    alt: "Notes and files gathering into one organized source",
-  },
-  {
-    eyebrow: "Structure what matters",
-    title: "Turn repeated information into databases you can actually browse.",
-    image: "/landing/nexfiy-find-answers-v4.png",
-    alt: "A magnifying glass connecting an answer to its sources",
-  },
-  {
-    eyebrow: "Connect your tools",
-    title: "Expose selected context through the Content API and MCP.",
-    image: "/landing/nexfiy-automate-work-v4.png",
-    alt: "An agent moving tasks through a continuous workflow",
-  },
-] as const;
+import Image from "next/image";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 export const AiFeatures = () => {
+  const { t } = useI18n();
+
+  const features = [
+    {
+      eyebrow: t("ai.feature1.eyebrow"),
+      title: t("ai.feature1.title"),
+      image: "/landing/nexfiy-capture-knowledge-v4.png",
+      alt: t("ai.feature1.alt"),
+    },
+    {
+      eyebrow: t("ai.feature2.eyebrow"),
+      title: t("ai.feature2.title"),
+      image: "/landing/nexfiy-find-answers-v4.png",
+      alt: t("ai.feature2.alt"),
+    },
+    {
+      eyebrow: t("ai.feature3.eyebrow"),
+      title: t("ai.feature3.title"),
+      image: "/landing/nexfiy-automate-work-v4.png",
+      alt: t("ai.feature3.alt"),
+    },
+  ];
+
   return (
     <section
       id="ai"
@@ -29,7 +34,7 @@ export const AiFeatures = () => {
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <h2 className="text-foreground mb-12 text-3xl font-extrabold tracking-tight sm:text-5xl">
-          Pages first. Structured when you need it.
+          {t("ai.title")}
         </h2>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

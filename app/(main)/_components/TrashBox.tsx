@@ -14,10 +14,12 @@ import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import posthog from "posthog-js";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 export const TrashBox = () => {
   const router = useRouter();
   const params = useParams();
+  const { t } = useI18n();
 
   const documents = useQuery(api.documents.getTrash);
   const restore = useMutation(api.documents.restore);
@@ -46,9 +48,9 @@ export const TrashBox = () => {
     }).catch(() => undefined);
 
     toast.promise(promise, {
-      loading: "Restoring note..",
-      success: "Note restored!",
-      error: "Failed to restore note.",
+      loading: t("app.restoringNote"),
+      success: t("app.noteRestored"),
+      error: t("app.restoreFailed"),
     });
   };
 
@@ -73,9 +75,9 @@ export const TrashBox = () => {
     }).catch(() => undefined);
 
     toast.promise(promise, {
-      loading: "Deleting note..",
-      success: "Note deleted!",
-      error: "Failed to delete note.",
+      loading: t("app.deletingNote"),
+      success: t("app.noteDeleted"),
+      error: t("app.deleteFailed"),
     });
 
     if (params.documentId === documentId) {
@@ -96,9 +98,9 @@ export const TrashBox = () => {
     }).catch(() => undefined);
 
     toast.promise(promise, {
-      loading: "Emptying trash..",
-      success: "Trash emptied!",
-      error: "Failed to empty trash.",
+      loading: t("app.emptyingTrash"),
+      success: t("app.trashEmptied"),
+      error: t("app.emptyTrashFailed"),
     });
 
     if (params.documentId) {
@@ -116,7 +118,7 @@ export const TrashBox = () => {
       <div
         className="space-y-2 p-3"
         aria-busy="true"
-        aria-label="Loading trash"
+        aria-label={t("app.trash")}
       >
         <Skeleton className="h-8 w-full" />
         <Skeleton className="h-7 w-4/5" />
@@ -133,13 +135,13 @@ export const TrashBox = () => {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="bg-secondary h-7 px-2 focus-visible:ring-transparent"
-          placeholder="Filter by page title..."
-          aria-label="Filter by page title"
+          placeholder={t("app.filterByTitle")}
+          aria-label={t("app.filterByTitle")}
         />
         {documents.length > 0 && (
           <ConfirmModal onConfirm={onEmptyTrash}>
             <div>
-              <ActionTooltip label="Empty trash">
+              <ActionTooltip label={t("app.emptyTrash")}>
                 <div
                   role="button"
                   className="rounded-sm p-2 hover:bg-neutral-200 dark:hover:bg-neutral-600"
@@ -155,13 +157,13 @@ export const TrashBox = () => {
       <div className="mt-2 px-1 pb-1">
         {documents.length === 0 ? (
           <p className="text-muted-foreground pb-2 text-center text-xs">
-            Trash is empty
+            {t("app.trashEmpty")}
             <Coffee className="mb-1 ml-1 inline-block size-4" />
           </p>
         ) : (
           filteredDocuments?.length === 0 && (
             <p className="text-muted-foreground pb-2 text-center text-xs">
-              No documents found.
+              {t("app.noDocumentsFound")}
             </p>
           )
         )}
@@ -172,25 +174,25 @@ export const TrashBox = () => {
               role="button"
               onClick={() => onClick(document._id)}
               className="text-primary hover:bg-primary/5 flex w-full items-center justify-between rounded-sm text-sm"
-              aria-label="Document"
+              aria-label={t("app.document")}
             >
               <span className="truncate pl-2">{document.title}</span>
               <div className="flex items-center">
-                <ActionTooltip label="Restore page">
+                <ActionTooltip label={t("app.restorePage")}>
                   <button
                     onClick={(e) => onRestore(e, document._id)}
                     className="rounded-sm p-2 hover:bg-neutral-200 dark:hover:bg-neutral-600"
-                    aria-label="Restore Document"
+                    aria-label={t("app.restorePage")}
                   >
                     <Undo className="text-muted-foreground h-4 w-4" />
                   </button>
                 </ActionTooltip>
                 <ConfirmModal onConfirm={() => onRemove(document._id)}>
                   <div>
-                    <ActionTooltip label="Delete forever">
+                    <ActionTooltip label={t("app.deleteForever")}>
                       <button
                         className="rounded-sm p-2 hover:bg-neutral-200 dark:hover:bg-neutral-600"
-                        aria-label="Delete Permanently"
+                        aria-label={t("app.deleteForever")}
                       >
                         <Trash className="text-muted-foreground h-4 w-4" />
                       </button>

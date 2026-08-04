@@ -1,31 +1,33 @@
-const workflowSteps: Array<{
-  number: string;
-  title: string;
-  description: string;
-}> = [
-  {
-    number: "01",
-    title: "Capture",
-    description: "Write a page or bring in a file, link, video, or repository.",
-  },
-  {
-    number: "02",
-    title: "Structure",
-    description: "Use a database when the content needs properties and views.",
-  },
-  {
-    number: "03",
-    title: "Connect",
-    description: "Relate pages and records so context stays close to the work.",
-  },
-  {
-    number: "04",
-    title: "Act",
-    description: "Publish selected data through an API or connect it over MCP.",
-  },
-];
+"use client";
+
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 export const WorkflowSection = () => {
+  const { t } = useI18n();
+
+  const workflowSteps = [
+    {
+      number: "01",
+      title: t("workflow.step1.title"),
+      description: t("workflow.step1.description"),
+    },
+    {
+      number: "02",
+      title: t("workflow.step2.title"),
+      description: t("workflow.step2.description"),
+    },
+    {
+      number: "03",
+      title: t("workflow.step3.title"),
+      description: t("workflow.step3.description"),
+    },
+    {
+      number: "04",
+      title: t("workflow.step4.title"),
+      description: t("workflow.step4.description"),
+    },
+  ];
+
   return (
     <section
       id="workflow"
@@ -34,14 +36,13 @@ export const WorkflowSection = () => {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-14 max-w-3xl">
           <p className="text-muted-foreground mb-3 text-xs font-bold tracking-[0.18em] uppercase">
-            One connected loop
+            {t("workflow.eyebrow")}
           </p>
           <h2 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
-            Start with a page. Add structure as the work grows.
+            {t("workflow.title")}
           </h2>
           <p className="text-muted-foreground mt-5 text-lg leading-8">
-            The workspace stays simple for writing while databases, APIs, and
-            MCP remain available when the job needs them.
+            {t("workflow.body")}
           </p>
         </div>
 

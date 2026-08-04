@@ -25,11 +25,13 @@ import { useOrganizationContext } from "@/features/organizations/OrganizationPro
 import { WorkspaceAvatar } from "@/features/organizations/WorkspaceAvatar";
 import { useBilling } from "@/features/billing/use-billing";
 import posthog from "posthog-js";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 export const UserItem = ({ navDrawer }: { navDrawer?: boolean }) => {
   const { data: session } = authClient.useSession();
   const settings = useSettings();
   const router = useRouter();
+  const { t } = useI18n();
   const { organizations, activeOrganization, setActiveOrganization } =
     useOrganizationContext();
   const workspaceName =
@@ -111,8 +113,14 @@ export const UserItem = ({ navDrawer }: { navDrawer?: boolean }) => {
             </p>
             <p className="text-muted-foreground line-clamp-1 text-xs">
               {billing.subscription?.hasPro
-                ? `Pro · ${billing.subscription.quantity} ${billing.subscription.quantity === 1 ? "seat" : "seats"}`
-                : "Free · 1 member"}
+                ? t("app.proMembership", {
+                    count: String(billing.subscription.quantity),
+                    unit:
+                      billing.subscription.quantity === 1
+                        ? t("common.seat")
+                        : t("common.seats"),
+                  })
+                : t("app.freeMembership")}
             </p>
           </div>
         </div>
@@ -125,7 +133,7 @@ export const UserItem = ({ navDrawer }: { navDrawer?: boolean }) => {
               className="cursor-pointer font-medium text-[#2383E2] hover:text-[#2383E2] focus:text-[#2383E2]"
             >
               <ArrowUpCircle className="size-4 text-[#2383E2]" />
-              Upgrade
+              {t("common.upgrade")}
             </DropdownMenuItem>
           ) : null}
 
@@ -134,7 +142,7 @@ export const UserItem = ({ navDrawer }: { navDrawer?: boolean }) => {
             className="cursor-pointer"
           >
             <Settings className="text-muted-foreground size-4" />
-            Settings
+            {t("common.settings")}
           </DropdownMenuItem>
 
           <DropdownMenuItem
@@ -142,7 +150,7 @@ export const UserItem = ({ navDrawer }: { navDrawer?: boolean }) => {
             className="cursor-pointer"
           >
             <UserPlus className="text-muted-foreground size-4" />
-            Invite members
+            {t("common.inviteMembers")}
           </DropdownMenuItem>
 
         </div>
@@ -171,8 +179,8 @@ export const UserItem = ({ navDrawer }: { navDrawer?: boolean }) => {
               />
               <span className="truncate text-sm font-medium">
                 {session?.user.name
-                  ? `${session.user.name}'s Space`
-                  : "Personal Space"}
+                  ? t("app.personalSpaceNamed", { name: session.user.name })
+                  : t("common.personalSpace")}
               </span>
             </div>
             {!activeOrganization && (
@@ -214,7 +222,7 @@ export const UserItem = ({ navDrawer }: { navDrawer?: boolean }) => {
             className="cursor-pointer font-medium text-[#2383E2] hover:text-[#2383E2] focus:text-[#2383E2]"
           >
             <Plus className="size-4 text-[#2383E2]" />
-            New workspace
+            {t("common.newWorkspace")}
           </DropdownMenuItem>
         </div>
 
@@ -232,7 +240,7 @@ export const UserItem = ({ navDrawer }: { navDrawer?: boolean }) => {
           className="text-muted-foreground hover:text-foreground cursor-pointer"
         >
           <LogOut className="text-muted-foreground size-4" />
-          <span>Log out</span>
+          <span>{t("app.logOut")}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

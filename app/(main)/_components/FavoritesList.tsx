@@ -10,10 +10,12 @@ import { DocumentList } from "./DocumentList";
 import { FileIcon, Star } from "lucide-react";
 import { toast } from "sonner";
 import posthog from "posthog-js";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 export const FavoritesList = ({ navDrawer }: { navDrawer?: boolean }) => {
   const params = useParams();
   const router = useRouter();
+  const { t } = useI18n();
   const documents = useQuery(api.documents.getFavorites);
   const toggleFavorite = useMutation(api.documents.toggleFavorite);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -24,9 +26,9 @@ export const FavoritesList = ({ navDrawer }: { navDrawer?: boolean }) => {
       posthog.capture("document_favorite_toggled");
     }).catch(() => undefined);
     toast.promise(promise, {
-      loading: "Updating favorites...",
-      success: "Favorites updated!",
-      error: "Failed to update favorites.",
+      loading: t("app.updatingFavorites"),
+      success: t("app.favoritesUpdated"),
+      error: t("app.favoritesUpdateFailed"),
     });
   };
 
@@ -49,7 +51,7 @@ export const FavoritesList = ({ navDrawer }: { navDrawer?: boolean }) => {
     <div className="w-full">
       <p className="text-muted-foreground/60 flex items-center px-3 py-1 text-xs font-medium">
         <Star className="mr-1 size-3 shrink-0 fill-yellow-400 text-yellow-400" />
-        Favorites
+        {t("app.favorites")}
       </p>
       {documents.map((document) => (
         <div key={document._id}>

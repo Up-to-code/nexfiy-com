@@ -12,6 +12,7 @@ import { Menu } from "./Menu";
 import { Publish } from "./Publish";
 import { ActionTooltip } from "@/components/action-tooltip";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 interface NavbarProps {
   isCollapsed: boolean;
@@ -20,6 +21,7 @@ interface NavbarProps {
 
 export const Navbar = ({ isCollapsed, onResetWidth }: NavbarProps) => {
   const params = useParams();
+  const { t } = useI18n();
 
   const toggleFavorite = useMutation(api.documents.toggleFavorite);
   const document = useQuery(api.documents.getById, {
@@ -50,7 +52,7 @@ export const Navbar = ({ isCollapsed, onResetWidth }: NavbarProps) => {
     <>
       <nav className="bg-background/90 flex w-full items-center gap-x-2 border-b px-3 py-2 backdrop-blur-md">
         {isCollapsed && (
-          <ActionTooltip label="Open sidebar (Ctrl + \)">
+          <ActionTooltip label={t("app.openSidebar")}>
             <button aria-label="Menu" onClick={onResetWidth}>
               <MenuIcon className="text-muted-foreground h-6 w-6" />
             </button>
@@ -61,12 +63,12 @@ export const Navbar = ({ isCollapsed, onResetWidth }: NavbarProps) => {
           <div className="flex shrink-0 items-center">
             <Publish initialData={document} />
             <ActionTooltip
-              label={document.isFavorite ? "Unfavorite" : "Favorite"}
+              label={document.isFavorite ? t("app.unfavorite") : t("app.favorite")}
             >
               <Button
                 variant="ghost"
                 onClick={onToggleFavorite}
-                aria-label={document.isFavorite ? "Unfavorite" : "Favorite"}
+                aria-label={document.isFavorite ? t("app.unfavorite") : t("app.favorite")}
               >
                 <Star
                   className={cn(

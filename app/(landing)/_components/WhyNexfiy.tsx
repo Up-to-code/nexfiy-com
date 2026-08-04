@@ -1,14 +1,19 @@
+"use client";
+
 import { Check } from "lucide-react";
 import Image from "next/image";
-
-const benefits = [
-  "Block-based pages for writing, media, links, and embeds.",
-  "Database views for information that needs structure.",
-  "Scoped Content API and MCP connections you control.",
-  "Personal and organization workspaces in the same product.",
-] as const;
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 export const WhyNexfiy = () => {
+  const { t } = useI18n();
+
+  const benefits = [
+    t("why.benefit1"),
+    t("why.benefit2"),
+    t("why.benefit3"),
+    t("why.benefit4"),
+  ];
+
   return (
     <section
       id="why-nexfiy"
@@ -18,7 +23,7 @@ export const WhyNexfiy = () => {
         <div className="overflow-hidden rounded-[2rem] border border-zinc-200/80 bg-[#faf8f5] p-2 shadow-xs sm:p-4 lg:order-first dark:border-zinc-800/60 dark:bg-[#05070a]">
           <Image
             src="/landing/nexfiy-connected-workspace-v4.png"
-            alt="Nexfiy mascots bringing disconnected tools into one workspace"
+            alt={t("why.imageAlt")}
             width={1200}
             height={800}
             className="h-auto w-full rounded-[1.5rem] object-contain"
@@ -27,15 +32,13 @@ export const WhyNexfiy = () => {
 
         <div className="max-w-xl">
           <p className="text-muted-foreground mb-4 text-xs font-bold tracking-[0.18em] uppercase">
-            Why Nexfiy
+            {t("why.eyebrow")}
           </p>
           <h2 className="text-foreground text-4xl leading-tight font-extrabold tracking-tight sm:text-5xl">
-            Keep the source and the structure together.
+            {t("why.title")}
           </h2>
           <p className="text-muted-foreground mt-6 text-lg leading-8">
-            A note can stay a note. When it becomes a process, connect it to a
-            database, publish selected records, or make it available to an
-            agent—without rebuilding the content somewhere else.
+            {t("why.body")}
           </p>
 
           <ul className="mt-8 space-y-4">

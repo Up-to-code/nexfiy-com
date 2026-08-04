@@ -32,6 +32,7 @@ import { useWordCount } from "@/hooks/useWordCount";
 import { Switch } from "@/components/ui/switch";
 import { TemplateGalleryDialog } from "@/features/templates/TemplateGalleryDialog";
 import { logger } from "@/lib/logger";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 interface MenuProps {
   documentId: Id<"documents">;
@@ -39,6 +40,7 @@ interface MenuProps {
 
 export const Menu = ({ documentId }: MenuProps) => {
   const router = useRouter();
+  const { t, resolvedLocale } = useI18n();
 
   const settings = useSettings();
   const words = useWordCount();
@@ -61,9 +63,9 @@ export const Menu = ({ documentId }: MenuProps) => {
     const promise = archive({ id: documentId });
 
     toast.promise(promise, {
-      loading: "Moving to trash...",
-      success: "Note moved to trash!",
-      error: "Failed to archive note.",
+      loading: t("app.movingToTrash"),
+      success: t("app.noteMovedToTrash"),
+      error: t("app.archiveFailed"),
     });
   };
 
@@ -95,30 +97,30 @@ export const Menu = ({ documentId }: MenuProps) => {
         sourcePageId: documentId,
         name: document.title,
       });
-      toast.success("Page tree saved as a template");
+      toast.success(t("app.pageSavedAsTemplate"));
     } catch (error) {
       logger.error("Failed to save page template", error);
-      toast.error("Could not save this page as a template");
+      toast.error(t("app.saveTemplateFailed"));
     }
   };
 
   const onDuplicate = async () => {
     try {
       const duplicatedId = await duplicatePage({ sourcePageId: documentId });
-      toast.success("Page duplicated");
+      toast.success(t("app.pageDuplicated"));
       router.push(`/documents/${duplicatedId}`);
     } catch (error) {
       logger.error("Failed to duplicate page", error);
-      toast.error("Could not duplicate this page");
+      toast.error(t("app.duplicateFailed"));
     }
   };
 
   return (
     <>
       <DropdownMenu>
-        <ActionTooltip label="Page actions">
+        <ActionTooltip label={t("app.pageActions")}>
           <DropdownMenuTrigger asChild>
-            <Button size="sm" variant="ghost" aria-label="Page actions">
+            <Button size="sm" variant="ghost" aria-label={t("app.pageActions")}>
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -130,19 +132,20 @@ export const Menu = ({ documentId }: MenuProps) => {
           forceMount
         >
           <MenuToggleItem
-            label="Small text"
+            label={t("app.smallText")}
             icon={AArrowDown}
             checked={isSmallText}
             onChange={onSmallTextChange}
           />
           <MenuToggleItem
-            label="Full width"
+            label={t("app.fullWidth")}
             icon={Maximize2}
             checked={isFullWidth}
             onChange={onFullWidthChange}
+            rotateIcon
           />
           <MenuToggleItem
-            label="Show table of contents"
+            label={t("app.showToc")}
             icon={TableOfContents}
             checked={toggleToc}
             onChange={onTocChange}
@@ -150,37 +153,37 @@ export const Menu = ({ documentId }: MenuProps) => {
           <DropdownMenuSeparator className="mx-1.5" />
           <DropdownMenuItem onClick={() => void onDuplicate()}>
             <CopyPlus className="mr-2 h-4 w-4" />
-            Duplicate
+            {t("app.duplicate")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onSaveAsTemplate}>
             <BookTemplate className="mr-2 h-4 w-4" />
-            Save as template
+            {t("app.saveAsTemplate")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setIsTemplateGalleryOpen(true)}>
             <FilePlus2 className="mr-2 h-4 w-4" />
-            Add subpage from template
+            {t("app.addSubpageFromTemplate")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="mx-1.5" />
           <DropdownMenuItem onClick={() => settings.onOpen("preferences")}>
             <Settings className="mr-2 h-4 w-4" />
-            Settings
+            {t("app.settings")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onArchive}>
             <Trash className="mr-2 h-4 w-4" />
-            Move to Trash
+            {t("app.moveToTrash")}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="mx-1.5" />
           <div className="text-muted-foreground/70 space-y-0.5 p-2 text-[.6875rem]">
             <p>
-              Word count: {words.wordCount}{" "}
-              {words.wordCount === 1 ? "word" : "words"}
+              {t("app.wordCount")}: {words.wordCount}{" "}
+              {words.wordCount === 1 ? t("app.word") : t("app.words")}
             </p>
             <p>
-              Last edited on{" "}
+              {t("app.lastEdited")}{" "}
               {document
                 ? new Date(
                     document.updatedAt ?? document._creationTime,
-                  ).toLocaleString("en-US", {
+                  ).toLocaleString(resolvedLocale, {
                     month: "short",
                     day: "numeric",
                     year: "numeric",
@@ -191,9 +194,9 @@ export const Menu = ({ documentId }: MenuProps) => {
                 : "..."}
             </p>
             <p>
-              Created on{" "}
+              {t("app.createdOn")}{" "}
               {document
-                ? new Date(document._creationTime).toLocaleString("en-US", {
+                ? new Date(document._creationTime).toLocaleString(resolvedLocale, {
                     month: "short",
                     day: "numeric",
                     year: "numeric",
@@ -221,11 +224,13 @@ const MenuToggleItem = ({
   icon: Icon,
   checked,
   onChange,
+  rotateIcon = false,
 }: {
   label: string;
   icon: React.FC<{ className?: string }>;
   checked: boolean;
   onChange: (checked: boolean) => void;
+  rotateIcon?: boolean;
 }) => (
   <DropdownMenuItem
     onSelect={(e) => e.preventDefault()}
@@ -236,7 +241,7 @@ const MenuToggleItem = ({
   >
     <div className="flex items-center justify-between gap-1">
       <Icon
-        className={`mr-2 h-4 w-4 ${label === "Full width" ? "rotate-45" : " "}`}
+        className={`mr-2 h-4 w-4 ${rotateIcon ? "rotate-45" : " "}`}
       />
       {label}
     </div>

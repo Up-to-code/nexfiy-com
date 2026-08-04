@@ -41,6 +41,7 @@ import { FavoritesList } from "./FavoritesList";
 import { ActionTooltip } from "@/components/action-tooltip";
 import { useFocusMode } from "@/hooks/useFocusMode";
 import NavDrawer from "./NavDrawer";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import posthog from "posthog-js";
 
 const Navigation = () => {
@@ -53,6 +54,7 @@ const Navigation = () => {
 
   const search = useSearch();
   const settings = useSettings();
+  const { t } = useI18n();
 
   const { focusMode, setFocusMode } = useFocusMode();
   const prevFocusMode = useRef(focusMode);
@@ -215,15 +217,15 @@ const Navigation = () => {
   };
 
   const handleCreate = () => {
-    const promise = create({ title: "Untitled" }).then((documentId) => {
+    const promise = create({ title: t("common.untitled") }).then((documentId) => {
       posthog.capture("document_created", { source: "navigation" });
       router.push(`/documents/${documentId}`);
     });
 
     toast.promise(promise, {
-      loading: "Creating a new note....",
-      success: "New note created.",
-      error: "Failed to create a note.",
+      loading: t("app.creatingNote"),
+      success: t("app.noteCreated"),
+      error: t("app.createFailed"),
     });
   };
 
@@ -237,11 +239,11 @@ const Navigation = () => {
           isMobile && "w-0",
         )}
       >
-        <ActionTooltip label="Close sidebar (Ctrl + \)">
+        <ActionTooltip label={t("app.closeSidebar")}>
           <div
             onClick={collapse}
             role="button"
-            aria-label="Close sidebar"
+            aria-label={t("app.closeSidebar")}
             className={cn(
               "text-muted-foreground absolute top-3 right-2 h-6 w-6 rounded-sm opacity-0 transition group-hover/sidebar:opacity-100 hover:bg-neutral-300 dark:hover:bg-neutral-600",
               isMobile && "opacity-100",
@@ -253,17 +255,17 @@ const Navigation = () => {
         <div>
           <UserItem />
           <Item
-            label="Search"
+            label={t("app.search")}
             icon={Search}
             onClick={search.onOpen}
             shortcut="Ctrl + K"
           />
           <Item
-            label="Settings"
+            label={t("app.settings")}
             icon={Settings}
             onClick={() => settings.onOpen("preferences")}
           />
-          <Item onClick={handleCreate} label="New page" icon={PlusCircle} />
+          <Item onClick={handleCreate} label={t("app.newPage")} icon={PlusCircle} />
         </div>
         <div className="mt-4">
           <div>
@@ -271,16 +273,16 @@ const Navigation = () => {
               <FavoritesList />
               <div>
                 <p className="text-muted-foreground/60 px-3 py-1 text-xs font-medium">
-                  Notes
+                  {t("app.notes")}
                 </p>
                 <DocumentList />
               </div>
             </ScrollableList>
           </div>
-          <Item onClick={handleCreate} icon={Plus} label="Add a page" />
+          <Item onClick={handleCreate} icon={Plus} label={t("app.addPage")} />
           <Popover>
             <PopoverTrigger className="mt-3 w-full">
-              <Item label="Trash" icon={Trash} />
+              <Item label={t("app.trash")} icon={Trash} />
             </PopoverTrigger>
             <PopoverContent
               side={isMobile ? "bottom" : "right"}
@@ -323,7 +325,7 @@ const Navigation = () => {
             )}
           >
             {isCollapsed && (
-              <ActionTooltip label="Open sidebar (Ctrl + \)">
+              <ActionTooltip label={t("app.openSidebar")}>
                 <button onClick={resetWidth}>
                   <MenuIcon className="text-muted-foreground h-6 w-6" />
                 </button>

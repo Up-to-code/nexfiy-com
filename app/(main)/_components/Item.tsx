@@ -28,6 +28,7 @@ import {
 
 import { ActionTooltip } from "@/components/action-tooltip";
 import { useNavDrawer } from "@/hooks/useNavDrawer";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import posthog from "posthog-js";
 
 interface ItemProps {
@@ -67,6 +68,7 @@ export const Item = ({
 }: ItemProps) => {
   const router = useRouter();
   const params = useParams();
+  const { t, resolvedLocale } = useI18n();
 
   const { setInnerPopoverOpen } = useNavDrawer();
 
@@ -95,14 +97,14 @@ export const Item = ({
     }).catch(() => undefined);
 
     toast.promise(promise, {
-      loading: "Moving to trash...",
-      error: "Failed to archive note.",
+      loading: t("app.noteMovedToTrash"),
+      error: t("app.archiveFailed"),
     });
 
     promise.then(() => {
-      toast("Note moved to trash", {
+      toast(t("app.noteMovedToTrash"), {
         action: {
-          label: "Undo",
+          label: t("app.undo"),
           onClick: () => restore({ id }),
         },
       });
@@ -123,10 +125,10 @@ export const Item = ({
     const creation = supportsCanvasSubPages
       ? createChildPage({
           pageId: id,
-          title: "Untitled",
+          title: t("common.untitled"),
           operationId: crypto.randomUUID(),
         }).then((result) => result.pageId)
-      : create({ title: "Untitled", parentDocument: id });
+      : create({ title: t("common.untitled"), parentDocument: id });
     const promise = creation.then((documentId) => {
       posthog.capture("document_created", { source: "sub_page" });
       if (!expanded) {
@@ -136,9 +138,9 @@ export const Item = ({
     });
 
     toast.promise(promise, {
-      loading: "Creating new note",
-      success: "New note created.",
-      error: "Failed to create note.",
+      loading: t("app.creatingNote"),
+      success: t("app.noteCreated"),
+      error: t("app.createFailed"),
     });
   };
 
@@ -167,7 +169,7 @@ export const Item = ({
         {!!id && (
           <div
             role="button"
-            aria-label={expanded ? "Collapse page" : "Expand page"}
+            aria-label={expanded ? t("app.collapsePage") : t("app.expandPage")}
             aria-expanded={!!expanded}
             className="mr-1 h-full rounded-sm hover:bg-neutral-300 dark:hover:bg-neutral-600"
             onClick={handleExpand}
@@ -197,10 +199,10 @@ export const Item = ({
       )}
       {!!id && (
         <div className="ml-auto flex items-center gap-x-2">
-          <ActionTooltip label="Add sub-page">
+          <ActionTooltip label={t("app.addSubPage")}>
             <div
               role="button"
-              aria-label="Add sub-page"
+              aria-label={t("app.addSubPage")}
               onClick={onCreate}
               className="ml-auto h-full rounded-sm opacity-100 transition hover:bg-neutral-300 md:opacity-0 md:group-hover:opacity-100 dark:hover:bg-neutral-600"
             >
@@ -208,11 +210,11 @@ export const Item = ({
             </div>
           </ActionTooltip>
           <DropdownMenu onOpenChange={navDrawer ? onOpenChange : undefined}>
-            <ActionTooltip label="More actions">
+            <ActionTooltip label={t("app.moreActions")}>
               <DropdownMenuTrigger onClick={(e) => e.stopPropagation()} asChild>
                 <div
                   role="button"
-                  aria-label="More actions"
+                  aria-label={t("app.moreActions")}
                   className="ml-auto h-full rounded-sm opacity-100 transition hover:bg-neutral-300 md:opacity-0 md:group-hover:opacity-100 dark:hover:bg-neutral-600"
                 >
                   <MoreHorizontal className="text-muted-foreground h-4 w-4" />
@@ -237,20 +239,20 @@ export const Item = ({
                     isFavorite && "fill-yellow-400 text-yellow-400",
                   )}
                 />
-                {isFavorite ? "Remove from favorites" : "Add to favorites"}
+                {isFavorite ? t("app.removeFromFavorites") : t("app.addToFavorites")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onArchive}>
                 <Trash className="mr-2 h-4 w-4" />
-                Delete
+                {t("app.delete")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <div className="space-y-0.5 p-2 text-[.6875rem]">
                 <p className="text-muted-foreground/70">
-                  Last edited on{" "}
+                  {t("app.lastEdited")}{" "}
                   {document
                     ? new Date(
                         document.updatedAt ?? document._creationTime,
-                      ).toLocaleString("en-US", {
+                      ).toLocaleString(resolvedLocale, {
                         month: "short",
                         day: "numeric",
                         year: "numeric",
@@ -261,9 +263,9 @@ export const Item = ({
                     : "..."}
                 </p>
                 <p className="text-muted-foreground/70">
-                  Created on{" "}
+                  {t("app.createdOn")}{" "}
                   {document
-                    ? new Date(document._creationTime).toLocaleString("en-US", {
+                    ? new Date(document._creationTime).toLocaleString(resolvedLocale, {
                         month: "short",
                         day: "numeric",
                         year: "numeric",

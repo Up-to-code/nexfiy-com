@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { captureEvent } from "@/lib/analytics";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 export const AuthForm = ({
   mode,
@@ -21,6 +22,7 @@ export const AuthForm = ({
   callbackUrl?: string;
 }) => {
   const router = useRouter();
+  const { t } = useI18n();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [socialProvider, setSocialProvider] = useState<
     "apple" | "google" | null
@@ -47,7 +49,8 @@ export const AuthForm = ({
       if (result.error) {
         captureEvent("auth_failed", { method: provider, mode });
         const message =
-          result.error.message || `Could not continue with ${provider}.`;
+          result.error.message ||
+          t("auth.socialAuthError", { provider: provider });
         setErrorMessage(message);
         toast.error(message);
         return;
@@ -60,7 +63,9 @@ export const AuthForm = ({
       window.location.assign(result.data.url);
     } catch {
       captureEvent("auth_failed", { method: provider, mode });
-      const message = `We couldn't connect to ${provider}. Please try again.`;
+      const message = t("auth.socialConnectError", {
+        provider: provider,
+      });
       setErrorMessage(message);
       toast.error(message);
     } finally {
@@ -85,7 +90,7 @@ export const AuthForm = ({
 
       if (result.error) {
         captureEvent("auth_failed", { method: "email", mode });
-        const message = result.error.message || "Authentication failed";
+        const message = result.error.message || t("auth.authFailed");
         setErrorMessage(message);
         toast.error(message);
         return;
@@ -96,7 +101,7 @@ export const AuthForm = ({
       router.refresh();
     } catch {
       captureEvent("auth_failed", { method: "email", mode });
-      const message = "We couldn't reach the server. Please try again.";
+      const message = t("auth.serverError");
       setErrorMessage(message);
       toast.error(message);
     } finally {
@@ -108,12 +113,10 @@ export const AuthForm = ({
     <div className="w-full">
       <div className="mb-8 space-y-2 text-center">
         <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-white">
-          {isSignUp ? "Create your account" : "Welcome back"}
+          {isSignUp ? t("auth.createAccount") : t("auth.welcomeBack")}
         </h1>
         <p className="text-sm leading-6 text-zinc-500 dark:text-zinc-400">
-          {isSignUp
-            ? "Set up your account and start turning ideas into organized work."
-            : "Enter your details to continue to your workspace."}
+          {isSignUp ? t("auth.signUpSubtitle") : t("auth.signInSubtitle")}
         </p>
       </div>
 
@@ -175,7 +178,7 @@ export const AuthForm = ({
       <div className="my-6 flex items-center gap-4" aria-hidden="true">
         <div className="bg-border h-px flex-1" />
         <span className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
-          Or continue with email
+          {t("auth.continueWith")} email
         </span>
         <div className="bg-border h-px flex-1" />
       </div>
@@ -185,15 +188,15 @@ export const AuthForm = ({
           <div className="space-y-1.5">
             <Label
               htmlFor="name"
-              className="text-xs font-semibold text-zinc-700 dark:text-zinc-300"
-            >
-              Name
-            </Label>
-            <Input
-              id="name"
-              name="name"
-              autoComplete="name"
-              placeholder="Your name"
+            className="text-xs font-semibold text-zinc-700 dark:text-zinc-300"
+          >
+            {t("auth.name")}
+          </Label>
+          <Input
+            id="name"
+            name="name"
+            autoComplete="name"
+            placeholder={t("auth.namePlaceholder")}
               className="h-11 rounded-xl border-zinc-200 focus-visible:ring-blue-500 dark:border-zinc-700"
               autoFocus
               required
@@ -205,14 +208,14 @@ export const AuthForm = ({
             htmlFor="email"
             className="text-xs font-semibold text-zinc-700 dark:text-zinc-300"
           >
-            Email
+            {t("auth.email")}
           </Label>
           <Input
             id="email"
             name="email"
             type="email"
             autoComplete="email"
-            placeholder="you@example.com"
+            placeholder={t("auth.emailPlaceholder")}
             className="h-11 rounded-xl border-zinc-200 focus-visible:ring-blue-500 dark:border-zinc-700"
             autoFocus={!isSignUp}
             required
@@ -223,14 +226,14 @@ export const AuthForm = ({
             htmlFor="password"
             className="text-xs font-semibold text-zinc-700 dark:text-zinc-300"
           >
-            Password
+            {t("auth.password")}
           </Label>
           <Input
             id="password"
             name="password"
             type="password"
             autoComplete={isSignUp ? "new-password" : "current-password"}
-            placeholder="At least 8 characters"
+            placeholder={t("auth.passwordPlaceholder")}
             className="h-11 rounded-xl border-zinc-200 focus-visible:ring-blue-500 dark:border-zinc-700"
             minLength={8}
             required
@@ -253,11 +256,11 @@ export const AuthForm = ({
           {isSubmitting ? (
             <>
               <Loader2 className="animate-spin" aria-hidden="true" />
-              Please wait
+              {t("auth.pleaseWait")}
             </>
           ) : (
             <>
-              {isSignUp ? "Create account" : "Sign in"}
+              {isSignUp ? t("auth.createAccountButton") : t("auth.signInButton")}
               <ArrowRight className="ml-1 size-4" aria-hidden="true" />
             </>
           )}
@@ -265,30 +268,30 @@ export const AuthForm = ({
       </form>
 
       <p className="mt-6 text-center text-xs text-zinc-500 dark:text-zinc-400">
-        {isSignUp ? "Already have an account?" : "New to Nexfiy?"}{" "}
+        {isSignUp ? t("auth.alreadyHaveAccount") : t("auth.newToNexfiy")}{" "}
         <Link
           className="font-semibold text-blue-600 hover:underline dark:text-blue-400"
           href={isSignUp ? "/sign-in" : "/sign-up"}
         >
-          {isSignUp ? "Sign in" : "Create an account"}
+          {isSignUp ? t("auth.signIn") : t("auth.createAccountLink")}
         </Link>
       </p>
 
       {/* Legal Disclaimer Footer */}
       <p className="mt-6 text-center text-[11px] leading-relaxed text-zinc-400 dark:text-zinc-500">
-        By continuing, you agree to Nexfiy&apos;s{" "}
+        {t("auth.legalNotice")}{" "}
         <Link
           href="/terms"
           className="underline hover:text-zinc-600 dark:hover:text-zinc-300"
         >
-          Terms of Service
+          {t("auth.termsOfService")}
         </Link>{" "}
-        and{" "}
+        {t("auth.and")}{" "}
         <Link
           href="/privacy"
           className="underline hover:text-zinc-600 dark:hover:text-zinc-300"
         >
-          Privacy Policy
+          {t("auth.privacyPolicy")}
         </Link>
         .
       </p>

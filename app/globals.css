@@ -144,6 +144,7 @@
   --font-inter: var(--font-inter);
   --font-lora: var(--font-lora);
   --font-jetbrains-mono: var(--font-jetbrains-mono);
+  --font-noto-arabic: var(--font-noto-arabic);
 }
 
 @utility container {
@@ -330,6 +331,14 @@ html.dark .docs-code .shiki span {
   }
   body {
     @apply bg-background text-foreground font-inter;
+  }
+
+  html[lang="ar"] body {
+    font-family: var(--font-noto-arabic), system-ui, -apple-system, sans-serif;
+  }
+
+  html[lang="ar"] .font-inter {
+    font-family: var(--font-noto-arabic), system-ui, -apple-system, sans-serif;
   }
 
   button:not(:disabled),

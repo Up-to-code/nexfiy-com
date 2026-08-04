@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { authClient } from "@/lib/auth-client";
 import { logger } from "@/lib/logger";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 export function AcceptInvitationClient({
   invitationId,
@@ -16,6 +17,7 @@ export function AcceptInvitationClient({
   invitationId: string | null;
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   const { data: session, isPending } = authClient.useSession();
   const [isAccepting, setIsAccepting] = useState(false);
   const callbackUrl = invitationId
@@ -31,7 +33,7 @@ export function AcceptInvitationClient({
         invitationId,
       });
       if (error || !data) {
-        throw new Error(error?.message ?? "Invitation was not accepted");
+        throw new Error(error?.message ?? t("invite.notAccepted"));
       }
 
       const { error: activeError } = await authClient.organization.setActive({
@@ -39,17 +41,19 @@ export function AcceptInvitationClient({
       });
       if (activeError) {
         throw new Error(
-          activeError.message ?? "The invited workspace could not be opened",
+          activeError.message ?? t("invite.workspaceOpenFailed"),
         );
       }
 
-      toast.success("Welcome to the workspace.");
+      toast.success(t("invite.welcome"));
       router.push("/documents");
       router.refresh();
     } catch (error) {
       logger.error("Failed to accept organization invitation", error);
       toast.error(
-        error instanceof Error ? error.message : "Could not accept invitation.",
+        error instanceof Error
+          ? error.message
+          : t("invite.couldNotAccept"),
       );
     } finally {
       setIsAccepting(false);
@@ -71,14 +75,14 @@ export function AcceptInvitationClient({
     <div className="text-center">
       <MailCheck className="mx-auto mb-5 size-10 text-[#2383e2]" />
       <h1 className="text-2xl font-bold tracking-tight">
-        Workspace invitation
+        {t("invite.title")}
       </h1>
       <p className="text-muted-foreground mt-2 text-sm leading-6">
         {!invitationId
-          ? "This invitation link is incomplete. Ask the workspace owner to send it again."
+          ? t("invite.incompleteLink")
           : session
-            ? `Accept this invitation as ${session.user.email}.`
-            : "Sign in or create an account with the invited email address to continue."}
+            ? t("invite.acceptAs", { email: session.user.email })
+            : t("invite.signInOrCreate")}
       </p>
 
       {invitationId && session ? (
@@ -87,7 +91,7 @@ export function AcceptInvitationClient({
           onClick={acceptInvitation}
           disabled={isAccepting}
         >
-          {isAccepting ? "Accepting…" : "Accept invitation"}
+          {isAccepting ? t("invite.accepting") : t("invite.acceptButton")}
         </Button>
       ) : null}
 
@@ -100,14 +104,14 @@ export function AcceptInvitationClient({
             <Link
               href={`/sign-in?callbackUrl=${encodeURIComponent(callbackUrl)}`}
             >
-              Sign in
+              {t("invite.signIn")}
             </Link>
           </Button>
           <Button asChild variant="outline" className="h-11 rounded-xl">
             <Link
               href={`/sign-up?callbackUrl=${encodeURIComponent(callbackUrl)}`}
             >
-              Create account
+              {t("invite.createAccount")}
             </Link>
           </Button>
         </div>

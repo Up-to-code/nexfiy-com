@@ -3,7 +3,9 @@
 import { useScrollTop } from "@/hooks/useScrollTop";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/logo";
-import { ModeToggle } from "@/components/mode-toggle";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageToggle } from "@/components/language-toggle";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import { useConvexAuth } from "convex/react";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,18 +19,19 @@ import { Spinner } from "@/components/spinner";
 import { Menu } from "lucide-react";
 import Link from "next/link";
 
-const NAV_LINKS = [
-  { label: "Why Nexfiy", href: "/#why-nexfiy" },
-  { label: "Compare", href: "/#compare" },
-  { label: "FAQ", href: "/#faq" },
-  { label: "Pricing", href: "/pricing" },
-  { label: "Blog", href: "/blog" },
-  { label: "Docs", href: "/docs" },
-];
-
 export const Navbar = () => {
   const { isAuthenticated, isLoading } = useConvexAuth();
+  const { t } = useI18n();
   const scrolled = useScrollTop();
+
+  const navLinks = [
+    { label: t("nav.whyNexfiy"), href: "/#why-nexfiy" },
+    { label: t("nav.compare"), href: "/#compare" },
+    { label: t("nav.faq"), href: "/#faq" },
+    { label: t("nav.pricing"), href: "/pricing" },
+    { label: t("nav.blog"), href: "/blog" },
+    { label: t("nav.docs"), href: "/docs" },
+  ];
 
   return (
     <nav
@@ -42,7 +45,7 @@ export const Navbar = () => {
         <div className="flex items-center gap-x-8">
           <Logo />
           <div className="hidden items-center gap-6 text-sm font-medium text-zinc-600 md:flex dark:text-white/65">
-            {NAV_LINKS.map((link) => (
+            {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -64,18 +67,19 @@ export const Navbar = () => {
                 className="font-medium text-zinc-900 hover:bg-zinc-100 dark:text-white dark:hover:bg-white/10"
                 asChild
               >
-                <Link href="/sign-in">Log in</Link>
+                <Link href="/sign-in">{t("common.logIn")}</Link>
               </Button>
               <Button
                 size="sm"
                 className="rounded-lg border-0 bg-[#2383e2] px-3.5 font-medium text-white shadow-xs hover:bg-[#1d6fc2]"
                 asChild
               >
-                <Link href="/pricing">See pricing</Link>
+                <Link href="/pricing">{t("common.seePricing")}</Link>
               </Button>
             </div>
           )}
-          <ModeToggle />
+          <ThemeToggle />
+          <LanguageToggle />
 
           {isAuthenticated && !isLoading && (
             <Button
@@ -83,7 +87,7 @@ export const Navbar = () => {
               className="rounded-lg bg-[#2383e2] font-medium text-white hover:bg-[#1d6fc2]"
               asChild
             >
-              <Link href="/documents">Enter Nexfiy</Link>
+              <Link href="/documents">{t("common.enterNexfiy")}</Link>
             </Button>
           )}
 
@@ -93,13 +97,13 @@ export const Navbar = () => {
                 variant="ghost"
                 size="icon"
                 className="md:hidden"
-                aria-label="Open menu"
+                aria-label={t("nav.openMenu")}
               >
                 <Menu className="size-5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              {NAV_LINKS.map((link) => (
+              {navLinks.map((link) => (
                 <DropdownMenuItem key={link.href} asChild>
                   <Link href={link.href} className="w-full">
                     {link.label}
@@ -111,12 +115,12 @@ export const Navbar = () => {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link href="/sign-in" className="w-full">
-                      Log in
+                      {t("common.logIn")}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/pricing" className="w-full">
-                      See pricing
+                      {t("common.seePricing")}
                     </Link>
                   </DropdownMenuItem>
                 </>

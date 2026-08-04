@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Check, Copy, Divide, Globe } from "lucide-react";
 import posthog from "posthog-js";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 interface PublishProps {
   initialData: Doc<"documents">;
@@ -23,6 +24,7 @@ interface PublishProps {
 export const Publish = ({ initialData }: PublishProps) => {
   const origin = useOrigin();
   const update = useMutation(api.documents.update);
+  const { t } = useI18n();
 
   const [copied, setCopied] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,9 +44,9 @@ export const Publish = ({ initialData }: PublishProps) => {
     }).catch(() => undefined);
 
     toast.promise(promise, {
-      loading: "Publishing...",
-      success: "Note published!",
-      error: "Failed to publish note.",
+      loading: t("app.publishing"),
+      success: t("app.notePublished"),
+      error: t("app.publishFailed"),
     });
   };
 
@@ -61,9 +63,9 @@ export const Publish = ({ initialData }: PublishProps) => {
     }).catch(() => undefined);
 
     toast.promise(promise, {
-      loading: "Unpublishing...",
-      success: "Note unpublished",
-      error: "Failed to unpublish note.",
+      loading: t("app.unpublishing"),
+      success: t("app.noteUnpublished"),
+      error: t("app.unpublishFailed"),
     });
   };
 
@@ -82,13 +84,13 @@ export const Publish = ({ initialData }: PublishProps) => {
         <Button
           size="sm"
           variant="ghost"
-          aria-label={initialData.isPublished ? "Published" : "Publish"}
-          title={initialData.isPublished ? "Published" : ""}
+          aria-label={initialData.isPublished ? t("app.published") : t("app.publish")}
+          title={initialData.isPublished ? t("app.published") : ""}
         >
           {initialData.isPublished ? (
             <Globe className="h-4 w-4 text-sky-500" />
           ) : (
-            <span className="text-sm">Publish</span>
+            <span className="text-sm">{t("app.publish")}</span>
           )}
         </Button>
       </PopoverTrigger>
@@ -98,7 +100,7 @@ export const Publish = ({ initialData }: PublishProps) => {
             <div className="flex items-center gap-x-2">
               <Globe className="h-4 w-4 animate-pulse text-sky-500" />
               <p className="text-xs font-medium text-sky-500">
-                This note is live on the web.
+                {t("app.liveOnWeb")}
               </p>
             </div>
             <div className="flex items-center">
@@ -125,15 +127,15 @@ export const Publish = ({ initialData }: PublishProps) => {
               disabled={isSubmitting}
               onClick={onUnpublish}
             >
-              Unpublish
+              {t("app.unpublish")}
             </Button>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center">
             <Globe className="text-muted-foreground mb-2 h-8 w-8" />
-            <p>Published this note</p>
+            <p>{t("app.publishedNote")}</p>
             <span className="text-muted-foreground mb-4 text-xs">
-              Share your work with others
+              {t("app.shareWork")}
             </span>
             <Button
               disabled={isSubmitting}
@@ -141,7 +143,7 @@ export const Publish = ({ initialData }: PublishProps) => {
               className="w-full text-xs"
               size="sm"
             >
-              Publish
+              {t("app.publish")}
             </Button>
           </div>
         )}

@@ -9,20 +9,21 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRef } from "react";
 import { captureEvent } from "@/lib/analytics";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 gsap.registerPlugin(useGSAP);
 
-const HERO_WORDS = [
-  "Collaborate",
-  "Organize",
-  "Automate",
-  "Execute",
-  "Ship",
-  "Think",
-] as const;
-
 export const Hero = () => {
   const { isAuthenticated, isLoading } = useConvexAuth();
+  const { t } = useI18n();
+  const heroWords = [
+    t("hero.word1"),
+    t("hero.word2"),
+    t("hero.word3"),
+    t("hero.word4"),
+    t("hero.word5"),
+    t("hero.word6"),
+  ];
   const headlineRef = useRef<HTMLHeadingElement>(null);
   const pillRef = useRef<HTMLSpanElement>(null);
   const wordRef = useRef<HTMLSpanElement>(null);
@@ -67,8 +68,8 @@ export const Hero = () => {
             1.55,
           )
           .call(() => {
-            wordIndex = (wordIndex + 1) % HERO_WORDS.length;
-            word.textContent = HERO_WORDS[wordIndex];
+            wordIndex = (wordIndex + 1) % heroWords.length;
+            word.textContent = heroWords[wordIndex];
             gsap.to(pill, {
               duration: 0.48,
               ease: "power3.inOut",
@@ -102,7 +103,7 @@ export const Hero = () => {
         <div className="mb-6 flex justify-center">
           <Image
             src="/landing/nexfiy-mascot-team-v1.png"
-            alt="The Nexfiy workspace mascot team"
+            alt={t("hero.mascotAlt")}
             width={420}
             height={105}
             priority
@@ -111,7 +112,7 @@ export const Hero = () => {
         </div>
 
         <p className="text-muted-foreground mb-6 border-l-2 border-[#2383e2] py-0.5 pl-3 text-left text-[11px] font-semibold tracking-[0.14em] uppercase">
-          Nexfiy is in early access
+          {t("hero.badge")}
         </p>
 
         {/* Main Headline */}
@@ -119,7 +120,7 @@ export const Hero = () => {
           ref={headlineRef}
           className="text-foreground relative mb-6 max-w-6xl text-[clamp(1.75rem,5.7vw,4.5rem)] leading-[1.08] font-extrabold tracking-tight"
         >
-          <span className="block whitespace-nowrap">Write, plan, and</span>
+          <span className="block whitespace-nowrap">{t("hero.line1")}</span>
           <span className="mt-2 flex items-center justify-center gap-[0.18em] whitespace-nowrap">
             <span
               ref={pillRef}
@@ -127,24 +128,23 @@ export const Hero = () => {
             >
               <span className="size-[0.19em] shrink-0 rounded-full bg-[#f59e0b]" />
               <span ref={wordRef} className="inline-block">
-                {HERO_WORDS[0]}
+                {heroWords[0]}
               </span>
             </span>
-            <span>with AI agents.</span>
+            <span>{t("hero.line2")}</span>
           </span>
           <span
             ref={measureRef}
             aria-hidden="true"
             className="pointer-events-none invisible absolute font-bold whitespace-nowrap"
           >
-            {HERO_WORDS[0]}
+            {heroWords[0]}
           </span>
         </h1>
 
         {/* Subtitle */}
         <p className="text-muted-foreground mb-8 max-w-2xl text-lg leading-relaxed font-normal sm:text-xl">
-          Build documents, connected databases, and reusable knowledge in one
-          workspace. Then make that context available through APIs and MCP.
+          {t("hero.subtitle")}
         </p>
 
         {/* Action Buttons */}
@@ -164,7 +164,7 @@ export const Hero = () => {
                     })
                   }
                 >
-                  View early-access pricing
+                  {t("hero.ctaPricing")}
                 </Link>
               </Button>
               <Button
@@ -181,7 +181,7 @@ export const Hero = () => {
                     })
                   }
                 >
-                  Explore Features
+                  {t("hero.ctaFeatures")}
                 </Link>
               </Button>
             </>
@@ -201,7 +201,7 @@ export const Hero = () => {
                   })
                 }
               >
-                Enter Nexfiy
+                {t("hero.ctaEnter")}
                 <ArrowRight className="ml-2 size-4" />
               </Link>
             </Button>
@@ -210,7 +210,7 @@ export const Hero = () => {
 
         {/* Trust micro-text */}
         <p className="text-muted-foreground mb-14 text-xs font-medium">
-          Start with a personal workspace. Add a team when you are ready.
+          {t("hero.trust")}
         </p>
 
         {/* Concept Art Card */}
@@ -218,7 +218,7 @@ export const Hero = () => {
           <div className="overflow-hidden rounded-[2rem] border border-zinc-200/80 bg-[#faf8f5] p-2 shadow-sm sm:p-4 dark:border-zinc-800/60 dark:bg-[#05070a]">
             <Image
               src="/landing/nexfiy-mascot-hero-v1.png"
-              alt="Nexfiy mascots connecting documents, databases, files, and AI workflows"
+              alt={t("hero.heroImageAlt")}
               width={1200}
               height={800}
               priority

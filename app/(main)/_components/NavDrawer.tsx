@@ -26,6 +26,7 @@ import { api } from "@/convex/_generated/api";
 import { useRouter } from "next/navigation";
 import { useSearch } from "@/hooks/useSearch";
 import { useSettings } from "@/hooks/useSettingsModal";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 type NavDrawerProps = {
   resetWidth: () => void;
@@ -34,6 +35,7 @@ type NavDrawerProps = {
 
 const NavDrawer = ({ resetWidth, isMobile }: NavDrawerProps) => {
   const router = useRouter();
+  const { t } = useI18n();
 
   const search = useSearch();
   const settings = useSettings();
@@ -47,14 +49,14 @@ const NavDrawer = ({ resetWidth, isMobile }: NavDrawerProps) => {
   const open = isEdgeHovered || isDrawerOpen || isInnerPopoverOpen;
 
   const handleCreate = () => {
-    const promise = create({ title: "Untitled" }).then((documentId) =>
+    const promise = create({ title: t("common.untitled") }).then((documentId) =>
       router.push(`/documents/${documentId}`),
     );
 
     toast.promise(promise, {
-      loading: "Creating a new note....",
-      success: "New note created.",
-      error: "Failed to create a note.",
+      loading: t("app.creatingNote"),
+      success: t("app.noteCreated"),
+      error: t("app.createFailed"),
     });
   };
 
@@ -78,11 +80,11 @@ const NavDrawer = ({ resetWidth, isMobile }: NavDrawerProps) => {
         >
           <div className="relative flex items-center justify-between gap-4 px-2">
             <UserItem navDrawer />
-            <ActionTooltip label="Lock sidebar open (Ctrl + \)">
+            <ActionTooltip label={t("app.lockSidebar")}>
               <div
                 onClick={resetWidth}
                 role="button"
-                aria-label="Open full sidebar"
+                aria-label={t("app.lockSidebar")}
                 className={cn(
                   "text-muted-foreground h-6 w-6 rounded-sm transition hover:bg-neutral-300 dark:hover:bg-neutral-600",
                 )}
@@ -94,19 +96,19 @@ const NavDrawer = ({ resetWidth, isMobile }: NavDrawerProps) => {
           <div className="flex items-center justify-between gap-2 px-2 pb-2">
             <div className="flex items-center justify-center">
               <Item
-                label="Search"
+                label={t("app.search")}
                 icon={Search}
                 onClick={search.onOpen}
                 navDrawer
               />
               <Item
-                label="New Page"
+                label={t("app.newPage")}
                 icon={PlusCircle}
                 onClick={handleCreate}
                 navDrawer
               />
             </div>
-            <ActionTooltip label="Settings">
+            <ActionTooltip label={t("app.settings")}>
               <div className="justify-end">
                 <Item
                   icon={Settings}
@@ -120,14 +122,14 @@ const NavDrawer = ({ resetWidth, isMobile }: NavDrawerProps) => {
             <FavoritesList navDrawer />
             <div>
               <p className="text-muted-foreground/60 px-3 py-1 text-xs font-medium">
-                Notes
+                {t("app.notes")}
               </p>
               <DocumentList navDrawer />
             </div>
-            <Item onClick={handleCreate} icon={Plus} label="Add a page" />
+            <Item onClick={handleCreate} icon={Plus} label={t("app.addPage")} />
             <Popover onOpenChange={setInnerPopoverOpen}>
               <PopoverTrigger className="mt-3 w-full">
-                <Item label="Trash" icon={Trash} />
+                <Item label={t("app.trash")} icon={Trash} />
               </PopoverTrigger>
               <PopoverContent
                 side={isMobile ? "bottom" : "right"}
