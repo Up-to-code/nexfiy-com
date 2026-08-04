@@ -64,7 +64,10 @@ const entitlementSummary = v.object({
   canManage: v.boolean(),
 });
 
-const ADMIN_EMAIL = "ahmedmansour20251@icloud.com";
+const ADMIN_EMAILS = [
+  "ahmedmansour20251@icloud.com",
+  "lamerweb.sa@gmail.com",
+];
 const ADMIN_SEAT_LIMIT = 25;
 
 type BetterAuthUser = {
@@ -98,12 +101,12 @@ async function organizationMembers(
   return result.page;
 }
 
-export const seedVerifiedAppleAdminGrant = internalMutation({
+export const seedVerifiedAdminGrant = internalMutation({
   args: { email: v.string() },
   returns: v.id("entitlementGrants"),
   handler: async (ctx, args) => {
     const email = args.email.trim().toLowerCase();
-    if (email !== ADMIN_EMAIL) {
+    if (!ADMIN_EMAILS.includes(email)) {
       throw new Error("This email is not eligible for the Nexfiy admin grant");
     }
 
@@ -115,7 +118,7 @@ export const seedVerifiedAppleAdminGrant = internalMutation({
       throw new Error("The verified Apple account does not exist yet");
     }
 
-    const appleAccount = (await ctx.runQuery(
+    const linkedAccount = (await ctx.runQuery(
       components.betterAuth.adapter.findOne,
       {
         model: "account",
@@ -125,8 +128,22 @@ export const seedVerifiedAppleAdminGrant = internalMutation({
         ],
       },
     )) as BetterAuthAccount | null;
-    if (!appleAccount || appleAccount.userId !== user._id) {
-      throw new Error("The account must be linked to Sign in with Apple");
+    const googleAccount = (await ctx.runQuery(
+      components.betterAuth.adapter.findOne,
+      {
+        model: "account",
+        where: [
+          { field: "userId", value: user._id },
+          { field: "providerId", value: "google" },
+        ],
+      },
+    )) as BetterAuthAccount | null;
+    const linked =
+      linkedAccount?.userId === user._id || googleAccount?.userId === user._id;
+    if (!linked) {
+      throw new Error(
+        "The account must be linked to Sign in with Apple or Google",
+      );
     }
 
     const now = Date.now();

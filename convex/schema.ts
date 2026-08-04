@@ -451,6 +451,28 @@ export default defineSchema({
     .index("by_workspace", ["workspaceId"])
     .index("by_token_hash", ["tokenHash"]),
 
+  webhookKeys: defineTable({
+    workspaceId: v.string(),
+    createdById: v.string(),
+    billingOwnerId: v.optional(v.string()),
+    name: v.string(),
+    tokenHash: v.string(),
+    tokenPrefix: v.string(),
+    permissions: v.array(
+      v.union(
+        v.literal("read"),
+        v.literal("create"),
+        v.literal("update"),
+        v.literal("delete"),
+        v.literal("add_blocks"),
+      ),
+    ),
+    isEnabled: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_workspace", ["workspaceId"])
+    .index("by_token_hash", ["tokenHash"]),
+
   entitlementGrants: defineTable({
     ownerUserId: v.string(),
     email: v.string(),

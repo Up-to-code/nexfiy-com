@@ -13,26 +13,20 @@ import {
   requireDataSource,
   setDatabaseRelationTargets,
   setDatabasePropertyValue,
-  syncDatabaseName,
   updateDatabaseProperty,
 } from "./lib/databaseDomain";
 import { serializeViewFilters } from "./lib/databaseViewEngine";
 import { compileFormulaExpression } from "./lib/formulaEngine";
 import { splitPageBlockAtCaret } from "./lib/pageBlockEditingDomain";
-import {
-  createChildPageBlock,
-  moveLinkedChildPage,
-} from "./lib/childPageDomain";
+import { createChildPageBlock } from "./lib/childPageDomain";
 import {
   createPageTemplateFromPage,
   instantiatePageTemplate,
   listPageTemplates,
 } from "./lib/pageTemplateDomain";
 import {
-  assertSyncedReferenceDestination,
   createSyncedBlockReference,
   getSyncedBlockContent,
-  moveSyncGroupSources,
   unlinkSyncedBlockReference,
 } from "./lib/syncedBlockDomain";
 import { getWorkspaceBillingScope } from "./lib/workspace";
@@ -44,6 +38,19 @@ import {
   toCanonicalBlock,
   toCanonicalPageSummary,
 } from "./lib/pageContentDomain";
+import {
+  archivePage as archivePageDomain,
+  blockBlueprintValidator,
+  createBlocks as createBlocksDomain,
+  createPage as createPageDomain,
+  moveBlock as moveBlockDomain,
+  pageBlockTypeValidator,
+  updateBlock as updateBlockDomain,
+  updatePage as updatePageDomain,
+  type MoveBlockInput,
+  type UpdateBlockInput,
+  type UpdatePageInput,
+} from "./lib/pageWriteDomain";
 
 const environmentViewValidator = v.object({
   _id: v.id("mcpEnvironments"),
@@ -192,29 +199,6 @@ const databaseViewTypeValidator = v.union(
   v.literal("timeline"),
 );
 
-const pageBlockTypeValidator = v.union(
-  v.literal("paragraph"),
-  v.literal("heading_1"),
-  v.literal("heading_2"),
-  v.literal("heading_3"),
-  v.literal("bulleted_list"),
-  v.literal("numbered_list"),
-  v.literal("checklist"),
-  v.literal("quote"),
-  v.literal("callout"),
-  v.literal("toggle"),
-  v.literal("divider"),
-  v.literal("image"),
-  v.literal("file"),
-  v.literal("bookmark"),
-  v.literal("database_view"),
-  v.literal("child_page"),
-  v.literal("columns"),
-  v.literal("column"),
-  v.literal("synced_reference"),
-  v.literal("blocknote"),
-);
-
 const pageBlockValidator = v.object({
   id: v.id("pageBlocks"),
   pageId: v.id("documents"),
@@ -233,13 +217,6 @@ const pageBlockValidator = v.object({
   syncGroupId: v.optional(v.id("syncedBlockGroups")),
   linkedPageId: v.optional(v.id("documents")),
 });
-
-const CONTAINER_BLOCK_TYPES = new Set<Doc<"pageBlocks">["type"]>([
-  "callout",
-  "toggle",
-  "columns",
-  "column",
-]);
 
 const toPageBlock = (block: Doc<"pageBlocks">) => ({
   id: block._id,
@@ -280,21 +257,6 @@ async function requireEnvironmentPage(
     );
   }
   return page;
-}
-
-async function pageBlockSiblings(
-  ctx: { db: QueryCtx["db"] },
-  pageId: Doc<"documents">["_id"],
-  parentBlockId?: Doc<"pageBlocks">["_id"],
-) {
-  return (
-    await ctx.db
-      .query("pageBlocks")
-      .withIndex("by_page_and_parent", (q) =>
-        q.eq("pageId", pageId).eq("parentBlockId", parentBlockId),
-      )
-      .take(500)
-  ).sort((left, right) => left.order - right.order);
 }
 
 export const list = query({
@@ -572,57 +534,21 @@ export const createDocument = mutation({
     if (!environment) {
       throw mcpError("UNAUTHORIZED", "MCP environment is unavailable");
     }
-    const title = args.title.trim();
-    if (!title || title.length > 200) {
-      throw mcpError("INVALID_TITLE", "Title must contain 1 to 200 characters");
-    }
-    if (args.content && args.content.length > 100_000) {
-      throw mcpError(
-        "CONTENT_TOO_LARGE",
-        "Document content exceeds 100,000 characters",
-      );
-    }
-    if (args.parentId) {
-      const parent = await ctx.db.get(args.parentId);
-      if (
-        !parent ||
-        parent.userId !== environment.workspaceId ||
-        parent.isArchived
-      ) {
-        throw mcpError(
-          "INVALID_PARENT",
-          "Parent document is unavailable in this workspace",
-        );
-      }
-    }
-    const now = Date.now();
-    const contentModel = args.contentModel ?? "page_blocks";
-    const id = await ctx.db.insert("documents", {
-      title,
-      parentDocument: args.parentId,
+    const created = await createPageDomain(ctx, environment.workspaceId, {
+      title: args.title,
+      parentId: args.parentId,
       content: args.content,
-      icon: args.icon?.slice(0, 20),
-      userId: environment.workspaceId,
-      fullWidth: true,
-      showToc: true,
-      isArchived: false,
-      isPublished: args.isPublished ?? false,
-      kind: "page",
-      contentModel,
-      updatedAt: now,
+      icon: args.icon,
+      cover: args.cover,
+      isPublished: args.isPublished,
+      contentModel: args.contentModel,
     });
-    if (contentModel === "page_blocks") {
-      await ctx.db.insert("pageBlocks", {
-        workspaceId: environment.workspaceId,
-        pageId: id,
-        type: "paragraph",
-        order: 0,
-        text: "",
-        createdAt: now,
-        updatedAt: now,
-      });
-    }
-    return { key: "document", id, title, parentId: args.parentId ?? null };
+    return {
+      key: "document",
+      id: created.id,
+      title: created.title,
+      parentId: created.parentId,
+    };
   },
 });
 
@@ -876,21 +802,6 @@ export const createChildPageBlockForMcp = mutation({
   },
 });
 
-const blockBlueprintValidator = v.object({
-  key: v.string(),
-  parentKey: v.optional(v.string()),
-  type: pageBlockTypeValidator,
-  text: v.optional(v.string()),
-  checked: v.optional(v.boolean()),
-  url: v.optional(v.string()),
-  alt: v.optional(v.string()),
-  caption: v.optional(v.string()),
-  color: v.optional(v.string()),
-  propsJson: v.optional(v.string()),
-  dataSourceId: v.optional(v.id("dataSources")),
-  viewId: v.optional(v.id("databaseViews")),
-});
-
 export const createPageBlocks = mutation({
   args: {
     tokenHash: v.string(),
@@ -909,154 +820,12 @@ export const createPageBlocks = mutation({
     if (!environment) {
       throw mcpError("UNAUTHORIZED", "MCP environment is unavailable");
     }
-    await requireEnvironmentPage(
+    return await createBlocksDomain(
       ctx,
       environment.workspaceId,
       args.pageId,
-      true,
+      args.blocks,
     );
-    if (!args.blocks.length || args.blocks.length > 250) {
-      throw mcpError(
-        "INVALID_BLOCK_BLUEPRINT",
-        "A block blueprint must contain 1 to 250 blocks",
-      );
-    }
-    let existing = await ctx.db
-      .query("pageBlocks")
-      .withIndex("by_page", (q) => q.eq("pageId", args.pageId))
-      .take(2_000);
-    const placeholder =
-      existing.length === 1 &&
-      existing[0].type === "paragraph" &&
-      existing[0].parentBlockId === undefined &&
-      !(existing[0].text ?? "").trim()
-        ? existing[0]
-        : null;
-    if (placeholder) {
-      await ctx.db.delete(placeholder._id);
-      existing = [];
-    }
-    if (existing.length + args.blocks.length > 2_000) {
-      throw mcpError("BLOCK_LIMIT", "This page has reached its block limit");
-    }
-    const idsByKey = new Map<string, Doc<"pageBlocks">["_id"]>();
-    const typesByKey = new Map<string, Doc<"pageBlocks">["type"]>();
-    const nextOrderByParent = new Map<string, number>();
-    for (const block of existing) {
-      const parentKey = block.parentBlockId ?? "root";
-      nextOrderByParent.set(
-        parentKey,
-        Math.max(nextOrderByParent.get(parentKey) ?? 0, block.order + 1),
-      );
-    }
-    const created: Array<{
-      key: string;
-      id: Doc<"pageBlocks">["_id"];
-      parentBlockId: Doc<"pageBlocks">["_id"] | null;
-    }> = [];
-
-    for (const [index, blueprint] of args.blocks.entries()) {
-      const key = blueprint.key.trim();
-      if (
-        blueprint.type === "synced_reference" ||
-        blueprint.type === "child_page"
-      ) {
-        throw mcpError(
-          "INVALID_BLOCK_TYPE",
-          "Use the dedicated synced-reference or child-page tool for this block type",
-        );
-      }
-      if (!key || key.length > 80 || idsByKey.has(key)) {
-        throw mcpError(
-          "INVALID_BLOCK_KEY",
-          `Block ${index + 1} has an empty, duplicate, or oversized key`,
-        );
-      }
-      const parentKey = blueprint.parentKey?.trim();
-      const parentBlockId = parentKey ? idsByKey.get(parentKey) : undefined;
-      const parentType = parentKey ? typesByKey.get(parentKey) : undefined;
-      if (parentKey && (!parentBlockId || !parentType)) {
-        throw mcpError(
-          "INVALID_BLOCK_PARENT",
-          `Block ${index + 1} references a parent that must appear earlier`,
-        );
-      }
-      if (parentType && !CONTAINER_BLOCK_TYPES.has(parentType)) {
-        throw mcpError(
-          "INVALID_BLOCK_PARENT",
-          `Block ${index + 1} has a parent that cannot contain children`,
-        );
-      }
-      if (
-        blueprint.type === "column" &&
-        (!parentType || parentType !== "columns")
-      ) {
-        throw mcpError(
-          "INVALID_COLUMN_PARENT",
-          "Column blocks must be direct children of a columns block",
-        );
-      }
-      if (blueprint.propsJson) {
-        try {
-          JSON.parse(blueprint.propsJson);
-        } catch {
-          throw mcpError(
-            "INVALID_BLOCK_PROPS",
-            `Block ${index + 1} properties must be valid JSON`,
-          );
-        }
-      }
-      if (blueprint.type === "database_view") {
-        if (!blueprint.dataSourceId || !blueprint.viewId) {
-          throw mcpError(
-            "DATABASE_VIEW_REQUIRED",
-            "Database view blocks require dataSourceId and viewId",
-          );
-        }
-        const [source, view] = await Promise.all([
-          ctx.db.get(blueprint.dataSourceId),
-          ctx.db.get(blueprint.viewId),
-        ]);
-        if (
-          !source ||
-          !view ||
-          source.workspaceId !== environment.workspaceId ||
-          view.workspaceId !== environment.workspaceId ||
-          view.dataSourceId !== source._id
-        ) {
-          throw mcpError(
-            "DATABASE_VIEW_UNAVAILABLE",
-            `Block ${index + 1} references an unavailable database view`,
-          );
-        }
-      }
-      const parentOrderKey = parentBlockId ?? "root";
-      const order = nextOrderByParent.get(parentOrderKey) ?? 0;
-      const now = Date.now();
-      const id = await ctx.db.insert("pageBlocks", {
-        workspaceId: environment.workspaceId,
-        pageId: args.pageId,
-        parentBlockId,
-        type: blueprint.type,
-        order,
-        text: blueprint.text?.slice(0, 50_000),
-        checked: blueprint.checked,
-        url: blueprint.url?.slice(0, 5_000),
-        alt: blueprint.alt?.slice(0, 1_000),
-        caption: blueprint.caption?.slice(0, 5_000),
-        color: blueprint.color?.slice(0, 50),
-        propsJson: blueprint.propsJson,
-        dataSourceId: blueprint.dataSourceId,
-        viewId: blueprint.viewId,
-        createdAt: now,
-        updatedAt: now,
-      });
-      idsByKey.set(key, id);
-      typesByKey.set(key, blueprint.type);
-      nextOrderByParent.set(parentOrderKey, order + 1);
-      created.push({ key, id, parentBlockId: parentBlockId ?? null });
-    }
-    return created;
   },
 });
 
@@ -1077,22 +846,11 @@ export const updatePageBlock = mutation({
     if (!environment) {
       throw mcpError("UNAUTHORIZED", "MCP environment is unavailable");
     }
-    const block = await ctx.db.get(args.blockId);
-    if (!block || block.workspaceId !== environment.workspaceId) {
-      throw mcpError("BLOCK_NOT_FOUND", "Block not found in this workspace");
-    }
-    await ctx.db.patch(block._id, {
-      ...(args.text !== undefined ? { text: args.text.slice(0, 50_000) } : {}),
-      ...(args.checked !== undefined ? { checked: args.checked } : {}),
-      ...(args.url !== undefined ? { url: args.url.slice(0, 5_000) } : {}),
-      ...(args.alt !== undefined ? { alt: args.alt.slice(0, 1_000) } : {}),
-      ...(args.caption !== undefined
-        ? { caption: args.caption.slice(0, 5_000) }
-        : {}),
-      ...(args.color !== undefined ? { color: args.color.slice(0, 50) } : {}),
-      updatedAt: Date.now(),
-    });
-    return null;
+    return await updateBlockDomain(
+      ctx,
+      environment.workspaceId,
+      args as UpdateBlockInput,
+    );
   },
 });
 
@@ -1114,154 +872,11 @@ export const movePageBlock = mutation({
     if (!environment) {
       throw mcpError("UNAUTHORIZED", "MCP environment is unavailable");
     }
-    const block = await ctx.db.get(args.blockId);
-    if (!block || block.workspaceId !== environment.workspaceId) {
-      throw mcpError("BLOCK_NOT_FOUND", "Block not found in this workspace");
-    }
-    await requireEnvironmentPage(
+    return await moveBlockDomain(
       ctx,
       environment.workspaceId,
-      args.targetPageId,
-      true,
+      args as MoveBlockInput,
     );
-    const target = args.targetBlockId
-      ? await ctx.db.get(args.targetBlockId)
-      : undefined;
-    if (
-      target &&
-      (target.workspaceId !== environment.workspaceId ||
-        target.pageId !== args.targetPageId)
-    ) {
-      throw mcpError("INVALID_TARGET", "Destination block is unavailable");
-    }
-    if (target?._id === block._id) return null;
-    const nextParent =
-      args.placement === "inside" ? target?._id : target?.parentBlockId;
-    if (
-      args.placement === "inside" &&
-      (!target || !CONTAINER_BLOCK_TYPES.has(target.type))
-    ) {
-      throw mcpError(
-        "INVALID_TARGET",
-        "The destination block cannot contain children",
-      );
-    }
-    const nextParentBlock = nextParent
-      ? await ctx.db.get(nextParent)
-      : undefined;
-    if (
-      block.type === "column" &&
-      (!nextParentBlock || nextParentBlock.type !== "columns")
-    ) {
-      throw mcpError(
-        "INVALID_COLUMN_PARENT",
-        "Columns must stay inside a columns block",
-      );
-    }
-    if (block.type === "synced_reference") {
-      await assertSyncedReferenceDestination(
-        ctx,
-        environment.workspaceId,
-        nextParent,
-      );
-    }
-    let ancestorId = nextParent;
-    for (let depth = 0; ancestorId && depth < 100; depth += 1) {
-      if (ancestorId === block._id) {
-        throw mcpError(
-          "BLOCK_CYCLE",
-          "A block cannot move inside itself or its descendants",
-        );
-      }
-      ancestorId = (await ctx.db.get(ancestorId))?.parentBlockId;
-    }
-    if (ancestorId) {
-      throw mcpError("BLOCK_DEPTH", "Block nesting is too deep");
-    }
-
-    const oldPageId = block.pageId;
-    const oldParentBlockId = block.parentBlockId;
-    const destination = (
-      await pageBlockSiblings(ctx, args.targetPageId, nextParent)
-    ).filter((candidate) => candidate._id !== block._id);
-    const targetIndex = target
-      ? destination.findIndex((candidate) => candidate._id === target._id)
-      : destination.length;
-    const insertionIndex = target
-      ? Math.max(0, targetIndex + (args.placement === "after" ? 1 : 0))
-      : destination.length;
-    destination.splice(insertionIndex, 0, block);
-    const now = Date.now();
-    await ctx.db.patch(block._id, {
-      pageId: args.targetPageId,
-      parentBlockId: nextParent,
-      updatedAt: now,
-    });
-
-    if (oldPageId !== args.targetPageId) {
-      if (block.type === "child_page" && block.linkedPageId) {
-        await moveLinkedChildPage(
-          ctx,
-          environment.workspaceId,
-          block.linkedPageId,
-          args.targetPageId,
-        );
-      }
-      const sourceBlocks = await ctx.db
-        .query("pageBlocks")
-        .withIndex("by_page", (q) => q.eq("pageId", oldPageId))
-        .take(2_000);
-      const descendants = new Set<string>([block._id]);
-      let found = true;
-      while (found) {
-        found = false;
-        for (const candidate of sourceBlocks) {
-          if (
-            candidate.parentBlockId &&
-            descendants.has(candidate.parentBlockId) &&
-            !descendants.has(candidate._id)
-          ) {
-            descendants.add(candidate._id);
-            found = true;
-          }
-        }
-      }
-      await Promise.all(
-        sourceBlocks
-          .filter(
-            (candidate) =>
-              candidate._id !== block._id && descendants.has(candidate._id),
-          )
-          .map((candidate) =>
-            ctx.db.patch(candidate._id, {
-              pageId: args.targetPageId,
-              updatedAt: now,
-            }),
-          ),
-      );
-      await moveSyncGroupSources(
-        ctx,
-        environment.workspaceId,
-        descendants,
-        args.targetPageId,
-      );
-    }
-    await Promise.all(
-      destination.map((candidate, order) =>
-        ctx.db.patch(candidate._id, { order, updatedAt: now }),
-      ),
-    );
-    if (oldPageId !== args.targetPageId || oldParentBlockId !== nextParent) {
-      const previous = (
-        await pageBlockSiblings(ctx, oldPageId, oldParentBlockId)
-      ).filter((candidate) => candidate._id !== block._id);
-      await Promise.all(
-        previous.map((candidate, order) =>
-          ctx.db.patch(candidate._id, { order, updatedAt: now }),
-        ),
-      );
-    }
-    return null;
   },
 });
 
@@ -1281,52 +896,7 @@ export const updateDocument = mutation({
     if (!environment) {
       throw mcpError("UNAUTHORIZED", "MCP environment is unavailable");
     }
-    const document = await ctx.db.get(args.documentId);
-    if (
-      !document ||
-      document.userId !== environment.workspaceId ||
-      document.isArchived
-    ) {
-      return null;
-    }
-    const title = args.title?.trim();
-    if (args.title !== undefined && (!title || title.length > 200)) {
-      throw mcpError("INVALID_TITLE", "Title must contain 1 to 200 characters");
-    }
-    if (args.content && args.content.length > 100_000) {
-      throw mcpError(
-        "CONTENT_TOO_LARGE",
-        "Document content exceeds 100,000 characters",
-      );
-    }
-    if (title !== undefined) {
-      await syncDatabaseName(ctx, environment.workspaceId, document, title);
-    }
-    const patch: Partial<Doc<"documents">> = { updatedAt: Date.now() };
-    if (title !== undefined) patch.title = title;
-    if (args.content !== undefined) patch.content = args.content;
-    if (args.icon !== undefined) patch.icon = args.icon.slice(0, 20);
-    if (args.cover !== undefined) {
-      patch.coverImage = args.cover.trim()
-        ? args.cover.trim().slice(0, 5_000)
-        : undefined;
-    }
-    if (args.isPublished !== undefined) patch.isPublished = args.isPublished;
-    await ctx.db.patch(args.documentId, patch);
-    const updated = await ctx.db.get(args.documentId);
-    if (!updated) return null;
-    const [properties, blocks] = await Promise.all([
-      listCanonicalPropertyValues(ctx, updated._id),
-      ctx.db
-        .query("pageBlocks")
-        .withIndex("by_page", (q) => q.eq("pageId", updated._id))
-        .take(1_001),
-    ]);
-    return {
-      ...toCanonicalPageSummary(updated, properties),
-      blocks: blocks.slice(0, 1_000).map(toCanonicalBlock),
-      blocksTruncated: blocks.length > 1_000,
-    };
+    return await updatePageDomain(ctx, environment.workspaceId, args as UpdatePageInput);
   },
 });
 
@@ -1338,19 +908,7 @@ export const archiveDocument = mutation({
     if (!environment) {
       throw mcpError("UNAUTHORIZED", "MCP environment is unavailable");
     }
-    const document = await ctx.db.get(args.documentId);
-    if (
-      !document ||
-      document.userId !== environment.workspaceId ||
-      document.isArchived
-    ) {
-      return false;
-    }
-    await ctx.db.patch(args.documentId, {
-      isArchived: true,
-      updatedAt: Date.now(),
-    });
-    return true;
+    return await archivePageDomain(ctx, environment.workspaceId, args.documentId);
   },
 });
 

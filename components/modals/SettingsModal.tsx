@@ -25,10 +25,12 @@ import {
   PlugZap,
   UsersRound,
   UserRound,
+  Webhook,
   X,
 } from "lucide-react";
 import { OrganizationSettings } from "@/features/organizations/OrganizationSettings";
 import { ContentApiSettings } from "@/features/content-api/ContentApiSettings";
+import { WebhooksSettings } from "@/features/webhooks/WebhooksSettings";
 import { BillingSettings } from "@/features/billing/BillingSettings";
 import { AccountSettings } from "@/features/account/AccountSettings";
 
@@ -113,6 +115,10 @@ export const SettingsModal = () => {
                 <TabsTrigger value="mcp" className={tabTriggerClass}>
                   <PlugZap className="size-4 shrink-0" />
                   <span className="truncate">MCP</span>
+                </TabsTrigger>
+                <TabsTrigger value="webhooks" className={tabTriggerClass}>
+                  <Webhook className="size-4 shrink-0" />
+                  <span className="truncate">Webhooks</span>
                 </TabsTrigger>
               </div>
 
@@ -244,6 +250,12 @@ export const SettingsModal = () => {
               <TabsContent value="api" className="mt-0 w-full min-w-0">
                 <ContentApiSettings
                   enabled={settings.isOpen && settings.tab === "api"}
+                />
+              </TabsContent>
+
+              <TabsContent value="webhooks" className="mt-0 w-full min-w-0">
+                <WebhooksSettings
+                  enabled={settings.isOpen && settings.tab === "webhooks"}
                 />
               </TabsContent>
             </div>

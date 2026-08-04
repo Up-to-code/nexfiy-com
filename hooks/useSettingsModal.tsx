@@ -9,7 +9,8 @@ type SettingsStore = {
     | "billing"
     | "preferences"
     | "api"
-    | "mcp";
+    | "mcp"
+    | "webhooks";
   setTab: (tab: SettingsStore["tab"]) => void;
   action?: "create-workspace";
   onOpen: (

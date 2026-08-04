@@ -22,6 +22,7 @@ import type * as lib_formulaEngine from "../lib/formulaEngine.js";
 import type * as lib_pageBlockEditingDomain from "../lib/pageBlockEditingDomain.js";
 import type * as lib_pageContentDomain from "../lib/pageContentDomain.js";
 import type * as lib_pageTemplateDomain from "../lib/pageTemplateDomain.js";
+import type * as lib_pageWriteDomain from "../lib/pageWriteDomain.js";
 import type * as lib_syncedBlockDomain from "../lib/syncedBlockDomain.js";
 import type * as lib_workspace from "../lib/workspace.js";
 import type * as mcpActions from "../mcpActions.js";
@@ -33,6 +34,7 @@ import type * as pageContentMigrations from "../pageContentMigrations.js";
 import type * as pageTemplates from "../pageTemplates.js";
 import type * as syncedBlocks from "../syncedBlocks.js";
 import type * as userSettings from "../userSettings.js";
+import type * as webhooks from "../webhooks.js";
 
 import type {
   ApiFromModules,
@@ -55,6 +57,7 @@ declare const fullApi: ApiFromModules<{
   "lib/pageBlockEditingDomain": typeof lib_pageBlockEditingDomain;
   "lib/pageContentDomain": typeof lib_pageContentDomain;
   "lib/pageTemplateDomain": typeof lib_pageTemplateDomain;
+  "lib/pageWriteDomain": typeof lib_pageWriteDomain;
   "lib/syncedBlockDomain": typeof lib_syncedBlockDomain;
   "lib/workspace": typeof lib_workspace;
   mcpActions: typeof mcpActions;
@@ -66,6 +69,7 @@ declare const fullApi: ApiFromModules<{
   pageTemplates: typeof pageTemplates;
   syncedBlocks: typeof syncedBlocks;
   userSettings: typeof userSettings;
+  webhooks: typeof webhooks;
 }>;
 
 /**
