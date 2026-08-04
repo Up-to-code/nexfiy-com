@@ -7,7 +7,15 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Check, Download, ExternalLink, Plus, Settings2 } from "lucide-react";
+import {
+  Check,
+  Download,
+  ExternalLink,
+  Minus,
+  Plus,
+  Settings2,
+  Trash2,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -286,6 +294,31 @@ function DatabaseCell({
   );
 }
 
+function SelectionCheckbox({
+  checked,
+  indeterminate = false,
+}: {
+  checked: boolean;
+  indeterminate?: boolean;
+}) {
+  return (
+    <span
+      className={cn(
+        "flex size-4 items-center justify-center rounded-[4px] border transition-colors",
+        checked || indeterminate
+          ? "border-[#2383E2] bg-[#2383E2] text-white"
+          : "border-muted-foreground/40",
+      )}
+    >
+      {indeterminate ? (
+        <Minus className="size-3" />
+      ) : checked ? (
+        <Check className="size-3" />
+      ) : null}
+    </span>
+  );
+}
+
 export function DatabaseGrid({
   database,
   visibleProperties,
@@ -295,6 +328,8 @@ export function DatabaseGrid({
   onEditProperty,
   onOpenRow,
   onAddSelectOption,
+  onDeleteRows,
+  readOnly = false,
 }: {
   database: DatabaseData;
   visibleProperties: DatabaseProperty[];
@@ -304,7 +339,13 @@ export function DatabaseGrid({
   onEditProperty: (property: DatabaseProperty) => void;
   onOpenRow: (rowId: Id<"documents">) => void;
   onAddSelectOption: ReturnType<typeof useDatabase>["addSelectOption"];
+  onDeleteRows: ReturnType<typeof useDatabase>["deleteRows"];
+  readOnly?: boolean;
 }) {
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<Id<"documents">>>(
+    new Set(),
+  );
+  const [isDeletingRows, setIsDeletingRows] = useState(false);
   const [newOptionTarget, setNewOptionTarget] = useState<{
     property: DatabaseProperty;
     row: DatabaseRow;
@@ -336,9 +377,63 @@ export function DatabaseGrid({
     const csv = exportDatabaseToCsv(database);
     downloadCsv(`${database.dataSource.name}.csv`, csv);
   };
+  const allRowIds = database.rows.map((row) => row.id);
+  const allSelected =
+    allRowIds.length > 0 && allRowIds.every((id) => selectedRowIds.has(id));
+  const someSelected = allRowIds.some((id) => selectedRowIds.has(id));
+  const toggleRow = (rowId: Id<"documents">) => {
+    setSelectedRowIds((current) => {
+      const next = new Set(current);
+      if (next.has(rowId)) {
+        next.delete(rowId);
+      } else {
+        next.add(rowId);
+      }
+      return next;
+    });
+  };
+  const handleDeleteSelected = async () => {
+    if (!selectedRowIds.size) return;
+    setIsDeletingRows(true);
+    const ok = await onDeleteRows([...selectedRowIds]);
+    if (ok) setSelectedRowIds(new Set());
+    setIsDeletingRows(false);
+  };
+  const selectionColumn = readOnly
+    ? null
+    : columnHelper.display({
+        id: "__selection__",
+        header: () => (
+          <button
+            type="button"
+            aria-label={allSelected ? "Deselect all rows" : "Select all rows"}
+            className="flex items-center"
+            onClick={() =>
+              setSelectedRowIds(allSelected ? new Set() : new Set(allRowIds))
+            }
+          >
+            <SelectionCheckbox
+              checked={allSelected}
+              indeterminate={someSelected && !allSelected}
+            />
+          </button>
+        ),
+        cell: ({ row }) => (
+          <button
+            type="button"
+            aria-label={`Select ${row.original.title}`}
+            aria-pressed={selectedRowIds.has(row.original.id)}
+            className="flex items-center opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+            onClick={() => toggleRow(row.original.id)}
+          >
+            <SelectionCheckbox checked={selectedRowIds.has(row.original.id)} />
+          </button>
+        ),
+      });
 
   const columns = useMemo(
     () => [
+      ...(selectionColumn ? [selectionColumn] : []),
       ...visibleProperties.map((property) =>
         columnHelper.display({
           id: property.id,
@@ -400,6 +495,7 @@ export function DatabaseGrid({
       onUpdateRowTitle,
       onOpenRow,
       visibleProperties,
+      selectionColumn,
     ],
   );
   // TanStack Table owns a headless table instance; keep it scoped to this
@@ -420,12 +516,16 @@ export function DatabaseGrid({
           <thead className="text-muted-foreground/70 border-border/40 bg-muted/20 border-b">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header, index) => (
+                {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
                     className={cn(
                       "border-border/30 border-r px-3 py-2 text-left font-medium whitespace-nowrap last:border-r-0",
-                      index === 0 ? "min-w-72" : "min-w-36",
+                      header.id === "__selection__"
+                        ? "w-8 px-1"
+                        : header.id === visibleProperties[0]?.id
+                          ? "min-w-72"
+                          : "min-w-36",
                     )}
                   >
                     {header.isPlaceholder
@@ -445,12 +545,16 @@ export function DatabaseGrid({
                 key={row.id}
                 className="group hover:bg-muted/30 border-border/30 border-b transition-colors"
               >
-                {row.getVisibleCells().map((cell, index) => (
+                {row.getVisibleCells().map((cell) => (
                   <td
                     key={cell.id}
                     className={cn(
                       "border-border/30 border-r p-1 whitespace-nowrap last:border-r-0",
-                      index === 0 ? "min-w-72" : "min-w-36",
+                      cell.column.id === "__selection__"
+                        ? "w-8 px-1"
+                        : cell.column.id === visibleProperties[0]?.id
+                          ? "min-w-72"
+                          : "min-w-36",
                     )}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -482,6 +586,33 @@ export function DatabaseGrid({
           Export CSV
         </Button>
       </div>
+      {!readOnly && selectedRowIds.size > 0 ? (
+        <div className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <div className="bg-background border-border/70 flex items-center gap-1 rounded-lg border px-2 py-1.5 shadow-lg">
+            <span className="text-muted-foreground px-2 text-xs font-medium">
+              {selectedRowIds.size} selected
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => setSelectedRowIds(new Set())}
+            >
+              Clear
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="h-7 gap-1.5 px-2.5 text-xs"
+              onClick={() => void handleDeleteSelected()}
+              disabled={isDeletingRows}
+            >
+              <Trash2 className="size-3.5" />
+              {isDeletingRows ? "Deleting…" : "Delete"}
+            </Button>
+          </div>
+        </div>
+      ) : null}
       <Dialog
         open={newOptionTarget !== null}
         onOpenChange={(open) => {

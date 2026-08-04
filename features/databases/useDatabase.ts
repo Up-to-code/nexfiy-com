@@ -89,6 +89,7 @@ export function useDatabase(
   const createViewMutation = useMutation(api.databases.createView);
   const updateViewMutation = useMutation(api.databases.updateView);
   const deleteViewMutation = useMutation(api.databases.deleteView);
+  const archiveDocumentMutation = useMutation(api.documents.archive);
   const updateSelectOptionMutation = useMutation(
     api.databases.updateSelectOption,
   );
@@ -329,6 +330,22 @@ export function useDatabase(
       } catch (error) {
         logger.error("Failed to delete database view", error);
         toast.error("Could not delete that view");
+        return false;
+      }
+    },
+    deleteRows: async (documentIds: Id<"documents">[]) => {
+      if (!documentIds.length) return true;
+      try {
+        await Promise.all(
+          documentIds.map((id) => archiveDocumentMutation({ id })),
+        );
+        toast.success(
+          `${documentIds.length} page${documentIds.length === 1 ? "" : "s"} moved to trash`,
+        );
+        return true;
+      } catch (error) {
+        logger.error("Failed to delete database rows", error);
+        toast.error("Could not delete those pages");
         return false;
       }
     },

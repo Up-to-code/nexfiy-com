@@ -11,6 +11,7 @@ import {
   Trash2,
   Workflow,
   SlidersHorizontal,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -132,11 +133,27 @@ export function DatabaseTable({
           {database.views.map((view) => {
             const Icon = VIEW_ICONS[view.type];
             const isActive = view.id === activeView?.id;
+            const deleteView = () => {
+              if (database.views.length <= 1) {
+                toast.error("A database needs at least one view");
+                return;
+              }
+              void databaseState.deleteView(view.id).then((deleted) => {
+                if (!deleted) return;
+                setSelectedViewId((current) =>
+                  current === view.id
+                    ? database.views.find(
+                        (candidate) => candidate.id !== view.id,
+                      )?.id
+                    : current,
+                );
+              });
+            };
             return (
               <div
                 key={view.id}
                 className={cn(
-                  "flex items-center border-b-2 border-transparent transition-colors",
+                  "group/tab flex items-center border-b-2 border-transparent transition-colors",
                   isActive && "border-foreground",
                 )}
               >
@@ -152,81 +169,80 @@ export function DatabaseTable({
                   {view.name}
                 </button>
                 {!readOnly ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        type="button"
-                        data-view-tab
-                        aria-label={`${view.name} view options`}
-                        className={cn(
-                          "text-muted-foreground/60 hover:text-foreground hover:bg-accent/60 mr-1 rounded p-1 transition-colors",
-                          isActive && "text-foreground",
-                        )}
-                      >
-                        <Icon className="size-3.5" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuLabel className="text-muted-foreground/70 text-xs">
-                        View type
-                      </DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      {(
-                        [
-                          ["table", "Table", Table2],
-                          ["board", "Pipeline", Workflow],
-                          ["calendar", "Calendar", CalendarDays],
-                          ["timeline", "Timeline", ListFilter],
-                        ] as const
-                      ).map(([type, label, TypeIcon]) => (
-                        <DropdownMenuItem
-                          key={type}
-                          className="cursor-pointer text-xs"
-                          disabled={type === view.type}
-                          onSelect={() => {
-                            if (type === view.type) return;
-                            void databaseState.updateView({
-                              viewId: view.id,
-                              type,
-                            });
-                          }}
-                        >
-                          {type === view.type ? (
-                            <Check className="mr-1.5 size-3.5" />
-                          ) : (
-                            <span className="mr-1.5 inline-block size-3.5" />
+                  <>
+                    <button
+                      type="button"
+                      data-view-tab
+                      aria-label={`Close ${view.name} view`}
+                      title="Delete view"
+                      onClick={deleteView}
+                      className={cn(
+                        "text-muted-foreground/60 hover:text-foreground hover:bg-accent/60 mr-0.5 rounded p-0.5 transition-all",
+                        isActive
+                          ? "opacity-100"
+                          : "opacity-0 group-hover/tab:opacity-100",
+                      )}
+                    >
+                      <X className="size-3" />
+                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          data-view-tab
+                          aria-label={`${view.name} view options`}
+                          className={cn(
+                            "text-muted-foreground/60 hover:text-foreground hover:bg-accent/60 mr-1 rounded p-1 transition-colors",
+                            isActive && "text-foreground",
                           )}
-                          <TypeIcon className="mr-1.5 size-3.5" />
-                          {label}
+                        >
+                          <Icon className="size-3.5" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel className="text-muted-foreground/70 text-xs">
+                          View type
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {(
+                          [
+                            ["table", "Table", Table2],
+                            ["board", "Pipeline", Workflow],
+                            ["calendar", "Calendar", CalendarDays],
+                            ["timeline", "Timeline", ListFilter],
+                          ] as const
+                        ).map(([type, label, TypeIcon]) => (
+                          <DropdownMenuItem
+                            key={type}
+                            className="cursor-pointer text-xs"
+                            disabled={type === view.type}
+                            onSelect={() => {
+                              if (type === view.type) return;
+                              void databaseState.updateView({
+                                viewId: view.id,
+                                type,
+                              });
+                            }}
+                          >
+                            {type === view.type ? (
+                              <Check className="mr-1.5 size-3.5" />
+                            ) : (
+                              <span className="mr-1.5 inline-block size-3.5" />
+                            )}
+                            <TypeIcon className="mr-1.5 size-3.5" />
+                            {label}
+                          </DropdownMenuItem>
+                        ))}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="cursor-pointer text-xs text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
+                          onSelect={deleteView}
+                        >
+                          <Trash2 className="mr-1.5 size-3.5" /> Delete view
                         </DropdownMenuItem>
-                      ))}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        className="cursor-pointer text-xs text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
-                        onSelect={() => {
-                          if (database.views.length <= 1) {
-                            toast.error("A database needs at least one view");
-                            return;
-                          }
-                          void databaseState.deleteView(view.id).then(
-                            (deleted) => {
-                              if (!deleted) return;
-                              setSelectedViewId((current) =>
-                                current === view.id
-                                  ? database.views.find(
-                                      (candidate) =>
-                                        candidate.id !== view.id,
-                                    )?.id
-                                  : current,
-                              );
-                            },
-                          );
-                        }}
-                      >
-                        <Trash2 className="mr-1.5 size-3.5" /> Delete view
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </>
                 ) : (
                   <Icon
                     className={cn(
@@ -389,6 +405,8 @@ export function DatabaseTable({
           onUpdateRowTitle={databaseState.updateRowTitle}
           onEditProperty={(property) => setEditingPropertyId(property.id)}
           onOpenRow={setOpenRowId}
+          onDeleteRows={databaseState.deleteRows}
+          readOnly={readOnly}
         />
       )}
       {!readOnly ? (
@@ -444,6 +462,7 @@ export function DatabaseTable({
           onSetValue={databaseState.setValue}
           onAddSelectOption={databaseState.addSelectOption}
           onCreateTemplate={databaseState.createRowTemplate}
+          onDeleteRows={databaseState.deleteRows}
         />
       ) : null}
     </div>

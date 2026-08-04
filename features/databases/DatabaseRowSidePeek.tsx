@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ExternalLink, X } from "lucide-react";
+import { BookTemplate, ExternalLink, MoreHorizontal, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import type { Id } from "@/convex/_generated/dataModel";
 
@@ -29,6 +36,7 @@ export function DatabaseRowSidePeek({
   onSetValue,
   onAddSelectOption,
   onCreateTemplate,
+  onDeleteRows,
 }: {
   database: DatabaseData;
   rowId?: Id<"documents">;
@@ -37,12 +45,25 @@ export function DatabaseRowSidePeek({
   onSetValue: ReturnType<typeof useDatabase>["setValue"];
   onAddSelectOption: ReturnType<typeof useDatabase>["addSelectOption"];
   onCreateTemplate: ReturnType<typeof useDatabase>["createRowTemplate"];
+  onDeleteRows: ReturnType<typeof useDatabase>["deleteRows"];
 }) {
   const [isTemplateOpen, setIsTemplateOpen] = useState(false);
   const [templateName, setTemplateName] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
   if (!rowId) return null;
   const row = database.rows.find((candidate) => candidate.id === rowId);
   if (!row) return null;
+
+  const openTemplateDialog = () => {
+    setTemplateName(row.title);
+    setIsTemplateOpen(true);
+  };
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    const ok = await onDeleteRows([row.id]);
+    setIsDeleting(false);
+    if (ok) onClose();
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/35" onMouseDown={onClose}>
@@ -60,21 +81,46 @@ export function DatabaseRowSidePeek({
                 <ExternalLink className="size-3.5" /> Open full page
               </Link>
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setTemplateName(row.title);
-                setIsTemplateOpen(true);
-              }}
-            >
+            <Button variant="ghost" size="sm" onClick={openTemplateDialog}>
               Save as template
             </Button>
           </div>
-          <Button variant="ghost" size="icon-sm" onClick={onClose}>
-            <X className="size-4" />
-            <span className="sr-only">Close</span>
-          </Button>
+          <div className="flex items-center gap-1">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Row actions"
+                >
+                  <MoreHorizontal className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem asChild>
+                  <Link href={`/documents/${row.id}`}>
+                    <ExternalLink className="mr-2 h-4 w-4" /> Open full page
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={openTemplateDialog}>
+                  <BookTemplate className="mr-2 h-4 w-4" /> Save as template
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
+                  disabled={isDeleting}
+                  onClick={() => void handleDelete()}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  {isDeleting ? "Moving to trash…" : "Move to Trash"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button variant="ghost" size="icon-sm" onClick={onClose}>
+              <X className="size-4" />
+              <span className="sr-only">Close</span>
+            </Button>
+          </div>
         </header>
         <DatabaseRowContent
           database={database}
