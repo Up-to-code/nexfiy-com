@@ -6,8 +6,25 @@ import { Logo } from "@/components/logo";
 import { ModeToggle } from "@/components/mode-toggle";
 import { useConvexAuth } from "convex/react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Spinner } from "@/components/spinner";
+import { Menu } from "lucide-react";
 import Link from "next/link";
+
+const NAV_LINKS = [
+  { label: "Why Nexfiy", href: "/#why-nexfiy" },
+  { label: "Compare", href: "/#compare" },
+  { label: "FAQ", href: "/#faq" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "Blog", href: "/blog" },
+  { label: "Docs", href: "/docs" },
+];
 
 export const Navbar = () => {
   const { isAuthenticated, isLoading } = useConvexAuth();
@@ -25,49 +42,22 @@ export const Navbar = () => {
         <div className="flex items-center gap-x-8">
           <Logo />
           <div className="hidden items-center gap-6 text-sm font-medium text-zinc-600 md:flex dark:text-white/65">
-            <Link
-              href="/#why-nexfiy"
-              className="transition-colors hover:text-zinc-900 dark:hover:text-white"
-            >
-              Why Nexfiy
-            </Link>
-            <Link
-              href="/#compare"
-              className="transition-colors hover:text-zinc-900 dark:hover:text-white"
-            >
-              Compare
-            </Link>
-            <Link
-              href="/#faq"
-              className="transition-colors hover:text-zinc-900 dark:hover:text-white"
-            >
-              FAQ
-            </Link>
-            <Link
-              href="/pricing"
-              className="transition-colors hover:text-zinc-900 dark:hover:text-white"
-            >
-              Pricing
-            </Link>
-            <Link
-              href="/blog"
-              className="transition-colors hover:text-zinc-900 dark:hover:text-white"
-            >
-              Blog
-            </Link>
-            <Link
-              href="/docs"
-              className="transition-colors hover:text-zinc-900 dark:hover:text-white"
-            >
-              Docs
-            </Link>
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="transition-colors hover:text-zinc-900 dark:hover:text-white"
+              >
+                {link.label}
+              </Link>
+            ))}
           </div>
         </div>
 
         <div className="flex items-center gap-x-2.5">
           {isLoading && <Spinner />}
           {!isLoading && !isAuthenticated && (
-            <>
+            <div className="hidden items-center gap-x-2.5 sm:flex">
               <Button
                 variant="ghost"
                 size="sm"
@@ -83,7 +73,7 @@ export const Navbar = () => {
               >
                 <Link href="/pricing">See pricing</Link>
               </Button>
-            </>
+            </div>
           )}
           <ModeToggle />
 
@@ -96,6 +86,43 @@ export const Navbar = () => {
               <Link href="/documents">Enter Nexfiy</Link>
             </Button>
           )}
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden"
+                aria-label="Open menu"
+              >
+                <Menu className="size-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              {NAV_LINKS.map((link) => (
+                <DropdownMenuItem key={link.href} asChild>
+                  <Link href={link.href} className="w-full">
+                    {link.label}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+              {!isLoading && !isAuthenticated && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/sign-in" className="w-full">
+                      Log in
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/pricing" className="w-full">
+                      See pricing
+                    </Link>
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </nav>

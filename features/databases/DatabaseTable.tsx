@@ -3,13 +3,16 @@
 import { useMemo, useState } from "react";
 import {
   CalendarDays,
+  Check,
   GalleryVerticalEnd,
   ListFilter,
   Plus,
   Table2,
+  Trash2,
   Workflow,
   SlidersHorizontal,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -130,19 +133,109 @@ export function DatabaseTable({
             const Icon = VIEW_ICONS[view.type];
             const isActive = view.id === activeView?.id;
             return (
-              <button
+              <div
                 key={view.id}
-                type="button"
-                data-view-tab
                 className={cn(
-                  "text-muted-foreground/70 hover:text-foreground flex items-center gap-1.5 border-b-2 border-transparent px-2.5 py-1.5 text-xs font-medium transition-colors",
-                  isActive && "border-foreground text-foreground font-semibold",
+                  "flex items-center border-b-2 border-transparent transition-colors",
+                  isActive && "border-foreground",
                 )}
-                onClick={() => setSelectedViewId(view.id)}
               >
-                <Icon className="size-3.5" />
-                {view.name}
-              </button>
+                <button
+                  type="button"
+                  data-view-tab
+                  className={cn(
+                    "text-muted-foreground/70 hover:text-foreground py-1.5 pl-2.5 pr-1 text-xs font-medium transition-colors",
+                    isActive && "text-foreground font-semibold",
+                  )}
+                  onClick={() => setSelectedViewId(view.id)}
+                >
+                  {view.name}
+                </button>
+                {!readOnly ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        data-view-tab
+                        aria-label={`${view.name} view options`}
+                        className={cn(
+                          "text-muted-foreground/60 hover:text-foreground hover:bg-accent/60 mr-1 rounded p-1 transition-colors",
+                          isActive && "text-foreground",
+                        )}
+                      >
+                        <Icon className="size-3.5" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel className="text-muted-foreground/70 text-xs">
+                        View type
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {(
+                        [
+                          ["table", "Table", Table2],
+                          ["board", "Pipeline", Workflow],
+                          ["calendar", "Calendar", CalendarDays],
+                          ["timeline", "Timeline", ListFilter],
+                        ] as const
+                      ).map(([type, label, TypeIcon]) => (
+                        <DropdownMenuItem
+                          key={type}
+                          className="cursor-pointer text-xs"
+                          disabled={type === view.type}
+                          onSelect={() => {
+                            if (type === view.type) return;
+                            void databaseState.updateView({
+                              viewId: view.id,
+                              type,
+                            });
+                          }}
+                        >
+                          {type === view.type ? (
+                            <Check className="mr-1.5 size-3.5" />
+                          ) : (
+                            <span className="mr-1.5 inline-block size-3.5" />
+                          )}
+                          <TypeIcon className="mr-1.5 size-3.5" />
+                          {label}
+                        </DropdownMenuItem>
+                      ))}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="cursor-pointer text-xs text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
+                        onSelect={() => {
+                          if (database.views.length <= 1) {
+                            toast.error("A database needs at least one view");
+                            return;
+                          }
+                          void databaseState.deleteView(view.id).then(
+                            (deleted) => {
+                              if (!deleted) return;
+                              setSelectedViewId((current) =>
+                                current === view.id
+                                  ? database.views.find(
+                                      (candidate) =>
+                                        candidate.id !== view.id,
+                                    )?.id
+                                  : current,
+                              );
+                            },
+                          );
+                        }}
+                      >
+                        <Trash2 className="mr-1.5 size-3.5" /> Delete view
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Icon
+                    className={cn(
+                      "text-muted-foreground/60 mr-1 size-3.5",
+                      isActive && "text-foreground",
+                    )}
+                  />
+                )}
+              </div>
             );
           })}
         </div>

@@ -965,6 +965,7 @@ export const updateView = mutation({
   args: {
     viewId: v.id("databaseViews"),
     name: v.optional(v.string()),
+    type: v.optional(viewTypeValidator),
     visiblePropertyIds: v.optional(v.array(v.id("databaseProperties"))),
     sorts: v.optional(v.array(sortValidator)),
     filters: v.optional(v.array(filterValidator)),
@@ -989,6 +990,33 @@ export const updateView = mutation({
     const propertyById = new Map(
       properties.map((property) => [property._id as string, property]),
     );
+    if (args.type !== undefined) {
+      const newType = args.type;
+      const groupProperty = properties.find((property) =>
+        ["status", "select"].includes(property.type),
+      );
+      const dateProperty = properties.find(
+        (property) => property.type === "date",
+      );
+      if (newType === "board" && !groupProperty) {
+        throw databaseError(
+          "GROUP_PROPERTY_REQUIRED",
+          "Add a status or select property before making this a pipeline",
+        );
+      }
+      if (["calendar", "timeline"].includes(newType) && !dateProperty) {
+        throw databaseError(
+          "DATE_PROPERTY_REQUIRED",
+          "Add a date property before making this a calendar or timeline",
+        );
+      }
+      if (newType === "board" && !view.groupPropertyId) {
+        args = { ...args, groupPropertyId: groupProperty?._id };
+      }
+      if (["calendar", "timeline"].includes(newType) && !view.datePropertyId) {
+        args = { ...args, datePropertyId: dateProperty?._id };
+      }
+    }
     const referencedIds = [
       ...(args.visiblePropertyIds ?? []),
       ...(args.sorts ?? []).map((sort) => sort.propertyId),
@@ -1037,6 +1065,7 @@ export const updateView = mutation({
     }
     await ctx.db.patch(view._id, {
       ...(name !== undefined ? { name } : {}),
+      ...(args.type !== undefined ? { type: args.type } : {}),
       ...(args.visiblePropertyIds !== undefined
         ? { visiblePropertyIds: args.visiblePropertyIds }
         : {}),
@@ -1058,6 +1087,42 @@ export const updateView = mutation({
         : {}),
       updatedAt: Date.now(),
     });
+    return null;
+  },
+});
+
+export const deleteView = mutation({
+  args: {
+    viewId: v.id("databaseViews"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const workspaceId = await requireProWorkspaceId(ctx);
+    const view = await ctx.db.get(args.viewId);
+    if (!view || view.workspaceId !== workspaceId) {
+      throw databaseError("VIEW_NOT_FOUND", "Database view not found");
+    }
+    const views = await ctx.db
+      .query("databaseViews")
+      .withIndex("by_data_source", (q) =>
+        q.eq("dataSourceId", view.dataSourceId),
+      )
+      .collect();
+    if (views.length <= 1) {
+      throw databaseError(
+        "LAST_VIEW",
+        "A database needs at least one view",
+      );
+    }
+    await ctx.db.delete(args.viewId);
+    const remaining = views
+      .filter((candidate) => candidate._id !== args.viewId)
+      .sort((a, b) => a.order - b.order);
+    await Promise.all(
+      remaining.map((candidate, index) =>
+        ctx.db.patch(candidate._id, { order: index }),
+      ),
+    );
     return null;
   },
 });

@@ -88,6 +88,7 @@ export function useDatabase(
   const setRelationMutation = useMutation(api.databases.setRelation);
   const createViewMutation = useMutation(api.databases.createView);
   const updateViewMutation = useMutation(api.databases.updateView);
+  const deleteViewMutation = useMutation(api.databases.deleteView);
   const updateSelectOptionMutation = useMutation(
     api.databases.updateSelectOption,
   );
@@ -294,6 +295,7 @@ export function useDatabase(
     updateView: async (input: {
       viewId: Id<"databaseViews">;
       name?: string;
+      type?: "table" | "board" | "calendar" | "timeline";
       visiblePropertyIds?: Id<"databaseProperties">[];
       sorts?: Array<{
         propertyId: Id<"databaseProperties">;
@@ -316,6 +318,17 @@ export function useDatabase(
       } catch (error) {
         logger.error("Failed to update database view", error);
         toast.error("Could not update that view");
+        return false;
+      }
+    },
+    deleteView: async (viewId: Id<"databaseViews">) => {
+      try {
+        await deleteViewMutation({ viewId });
+        toast.success("View deleted");
+        return true;
+      } catch (error) {
+        logger.error("Failed to delete database view", error);
+        toast.error("Could not delete that view");
         return false;
       }
     },
