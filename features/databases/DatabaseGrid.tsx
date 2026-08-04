@@ -7,7 +7,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Check, ExternalLink, Plus, Settings2 } from "lucide-react";
+import { Check, Download, ExternalLink, Plus, Settings2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -37,6 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Id } from "@/convex/_generated/dataModel";
+import { downloadCsv, exportDatabaseToCsv } from "@/lib/csv";
 import { cn } from "@/lib/utils";
 
 import type { useDatabase } from "./useDatabase";
@@ -331,6 +332,11 @@ export function DatabaseGrid({
     }
     setIsAddingOption(false);
   };
+  const handleExportCsv = () => {
+    const csv = exportDatabaseToCsv(database);
+    downloadCsv(`${database.dataSource.name}.csv`, csv);
+  };
+
   const columns = useMemo(
     () => [
       ...visibleProperties.map((property) =>
@@ -408,7 +414,8 @@ export function DatabaseGrid({
 
   return (
     <>
-      <div className="border-border/40 my-2 w-full scrollbar-thin overflow-x-auto border-y">
+      <div className="group relative my-2 w-full">
+        <div className="border-border/40 w-full scrollbar-thin overflow-x-auto border-y">
         <table className="w-max min-w-full border-collapse text-xs">
           <thead className="text-muted-foreground/70 border-border/40 bg-muted/20 border-b">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -463,6 +470,17 @@ export function DatabaseGrid({
             ) : null}
           </tbody>
         </table>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="absolute top-2 right-2 z-10 gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+          onClick={handleExportCsv}
+          aria-label={`Export ${database.dataSource.name} as CSV`}
+        >
+          <Download className="size-3.5" />
+          Export CSV
+        </Button>
       </div>
       <Dialog
         open={newOptionTarget !== null}
