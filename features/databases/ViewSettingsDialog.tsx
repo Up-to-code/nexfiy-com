@@ -24,6 +24,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
 
 import type { useDatabase } from "./useDatabase";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 type DatabaseData = NonNullable<ReturnType<typeof useDatabase>["database"]>;
 type DatabaseView = DatabaseData["views"][number];
@@ -49,14 +50,6 @@ function initialFilters(filterJson?: string): ViewFilter[] {
   }
 }
 
-const FILTER_LABELS: Record<FilterOperator, string> = {
-  equals: "Is",
-  not_equals: "Is not",
-  contains: "Contains",
-  is_empty: "Is empty",
-  is_not_empty: "Is not empty",
-};
-
 export function ViewSettingsDialog({
   open,
   onOpenChange,
@@ -70,6 +63,14 @@ export function ViewSettingsDialog({
   view: DatabaseView;
   onSave: ReturnType<typeof useDatabase>["updateView"];
 }) {
+  const { t } = useI18n();
+  const FILTER_LABELS: Record<FilterOperator, string> = {
+    equals: t("dialogs.filterIs"),
+    not_equals: t("dialogs.filterIsNot"),
+    contains: t("dialogs.filterContains"),
+    is_empty: t("dialogs.filterIsEmpty"),
+    is_not_empty: t("dialogs.filterIsNotEmpty"),
+  };
   const [name, setName] = useState(view.name);
   const [visiblePropertyIds, setVisiblePropertyIds] = useState(view.visiblePropertyIds);
   const [sorts, setSorts] = useState(view.sorts);
@@ -111,7 +112,9 @@ export function ViewSettingsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Configure {view.name}</DialogTitle>
+          <DialogTitle>
+            {t("dialogs.viewSettingsTitle", { name: view.name })}
+          </DialogTitle>
           <DialogDescription>
             These settings are saved for everyone who opens this database view.
           </DialogDescription>
@@ -126,7 +129,9 @@ export function ViewSettingsDialog({
           </section>
 
           <section className="space-y-2">
-            <h3 className="text-sm font-medium">Visible properties</h3>
+            <h3 className="text-sm font-medium">
+              {t("dialogs.viewSettingsVisible")}
+            </h3>
             <div className="grid grid-cols-2 gap-2">
               {database.properties.map((property) => {
                 const visible = visiblePropertyIds.includes(property.id);
@@ -158,7 +163,9 @@ export function ViewSettingsDialog({
 
           <section className="space-y-2">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium">Sorts</h3>
+              <h3 className="text-sm font-medium">
+                {t("dialogs.viewSettingsSorts")}
+              </h3>
               <Button
                 type="button"
                 variant="ghost"
@@ -209,8 +216,12 @@ export function ViewSettingsDialog({
                 >
                   <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="asc">Ascending</SelectItem>
-                    <SelectItem value="desc">Descending</SelectItem>
+                    <SelectItem value="asc">
+                      {t("dialogs.viewSettingsAscending")}
+                    </SelectItem>
+                    <SelectItem value="desc">
+                      {t("dialogs.viewSettingsDescending")}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
                 <Button variant="ghost" size="icon" onClick={() => setSorts((current) => current.filter((_, itemIndex) => itemIndex !== index))}>
@@ -223,8 +234,12 @@ export function ViewSettingsDialog({
           <section className="space-y-2">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-medium">Filters</h3>
-                <p className="text-muted-foreground text-xs">All filters must match.</p>
+                <h3 className="text-sm font-medium">
+                  {t("dialogs.viewSettingsFilters")}
+                </h3>
+                <p className="text-muted-foreground text-xs">
+                  {t("dialogs.viewSettingsAllMatch")}
+                </p>
               </div>
               <Button
                 type="button"
@@ -270,7 +285,7 @@ export function ViewSettingsDialog({
                   <Input
                     value={filter.value ?? ""}
                     disabled={!needsValue}
-                    placeholder={needsValue ? "Value" : "No value needed"}
+                    placeholder={needsValue ? t("dialogs.viewSettingsValue") : t("dialogs.viewSettingsNoValue")}
                     onChange={(event) => setFilters((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, value: event.target.value } : item))}
                   />
                   <Button variant="ghost" size="icon" onClick={() => setFilters((current) => current.filter((_, itemIndex) => itemIndex !== index))}><X /></Button>
@@ -281,9 +296,11 @@ export function ViewSettingsDialog({
 
           {view.type === "board" ? (
             <section className="space-y-2">
-              <h3 className="text-sm font-medium">Group pipeline by</h3>
+              <h3 className="text-sm font-medium">
+                {t("dialogs.viewSettingsGroupBy")}
+              </h3>
               <Select value={groupPropertyId} onValueChange={(id) => setGroupPropertyId(id as Id<"databaseProperties">)}>
-                <SelectTrigger><SelectValue placeholder="Choose a status property" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("dialogs.viewSettingsChooseStatus")} /></SelectTrigger>
                 <SelectContent>{groupProperties.map((property) => <SelectItem key={property.id} value={property.id}>{property.name}</SelectItem>)}</SelectContent>
               </Select>
               <label className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
@@ -325,9 +342,11 @@ export function ViewSettingsDialog({
 
           {["calendar", "timeline"].includes(view.type) ? (
             <section className="space-y-2">
-              <h3 className="text-sm font-medium">Date property</h3>
+              <h3 className="text-sm font-medium">
+                {t("dialogs.viewSettingsDateProperty")}
+              </h3>
               <Select value={datePropertyId} onValueChange={(id) => setDatePropertyId(id as Id<"databaseProperties">)}>
-                <SelectTrigger><SelectValue placeholder="Choose a date property" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("dialogs.viewSettingsChooseDate")} /></SelectTrigger>
                 <SelectContent>{dateProperties.map((property) => <SelectItem key={property.id} value={property.id}>{property.name}</SelectItem>)}</SelectContent>
               </Select>
             </section>
@@ -335,8 +354,12 @@ export function ViewSettingsDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={save} disabled={isSaving || !name.trim()}>{isSaving ? "Saving…" : "Save view"}</Button>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            {t("dialogs.cancel")}
+          </Button>
+          <Button onClick={save} disabled={isSaving || !name.trim()}>
+            {isSaving ? t("dialogs.saving") : t("dialogs.viewSettingsSave")}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

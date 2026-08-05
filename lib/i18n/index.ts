@@ -1,9 +1,9 @@
 import { en } from "./dictionaries/en";
 
-export type Locale = "en" | "ar";
+export type Locale = "en" | "ar" | "fr" | "es";
 export type LocaleSetting = "system" | Locale;
 
-export const SUPPORTED_LOCALES: Locale[] = ["en", "ar"];
+export const SUPPORTED_LOCALES: Locale[] = ["en", "ar", "fr", "es"];
 
 export const LANGUAGE_STORAGE_KEY = "nexfiy-language";
 
@@ -24,7 +24,18 @@ export type TranslationKey = DeepPaths<typeof en>;
 export function detectSystemLocale(): Locale {
   if (typeof navigator === "undefined") return "en";
   const language = navigator.language?.toLowerCase() ?? "";
-  return language.startsWith("ar") ? "ar" : "en";
+  if (language.startsWith("ar")) return "ar";
+  if (language.startsWith("fr")) return "fr";
+  if (language.startsWith("es")) return "es";
+  return "en";
+}
+
+export function localeFromLanguageTag(tag: string): Locale {
+  const primary = tag.split("-")[0]?.toLowerCase() ?? "";
+  if (primary === "ar") return "ar";
+  if (primary === "fr") return "fr";
+  if (primary === "es") return "es";
+  return "en";
 }
 
 export function resolveLocale(setting: LocaleSetting): Locale {
@@ -35,7 +46,13 @@ export function getStoredLocale(): LocaleSetting {
   if (typeof window === "undefined") return "system";
   try {
     const stored = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
-    if (stored === "en" || stored === "ar" || stored === "system") {
+    if (
+      stored === "en" ||
+      stored === "ar" ||
+      stored === "fr" ||
+      stored === "es" ||
+      stored === "system"
+    ) {
       return stored;
     }
   } catch {

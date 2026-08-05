@@ -19,6 +19,7 @@ import { useParams } from "next/navigation";
 import { Id } from "@/convex/_generated/dataModel";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 const COVER_COLORS = [
   "#f87171",
@@ -44,6 +45,7 @@ const COVER_COLORS = [
 ];
 
 export const CoverImageModal = () => {
+  const { t } = useI18n();
   const params = useParams();
 
   const [file, setFile] = useState<File>();
@@ -85,7 +87,9 @@ export const CoverImageModal = () => {
         });
       }
       setIsSubmitting(false);
-      toast.error(error instanceof Error ? error.message : "Cover upload failed");
+      toast.error(
+        error instanceof Error ? error.message : t("dialogs.coverUploadFailed"),
+      );
     }
   };
 
@@ -112,7 +116,7 @@ export const CoverImageModal = () => {
       const files = e.dataTransfer?.files;
       if (files?.[0]) {
         if (!files[0].type.startsWith("image/")) {
-          toast.error("Only image files are allowed.");
+          toast.error(t("dialogs.coverOnlyImages"));
           return;
         }
         await onChange(files[0]);
@@ -128,7 +132,7 @@ export const CoverImageModal = () => {
       window.removeEventListener("dragleave", handleDragLeave);
       window.removeEventListener("drop", handleDrop);
     };
-  }, [coverImage.isOpen, onChange]);
+  }, [coverImage.isOpen, onChange, t]);
 
   const onSelectColor = async (color: string) => {
     try {
@@ -147,29 +151,31 @@ export const CoverImageModal = () => {
       onClose();
     } catch (error) {
       logger.error("Failed to change cover color", error);
-      toast.error("Could not change the cover");
+      toast.error(t("dialogs.coverChangeFailed"));
     }
   };
 
   return (
     <Dialog open={coverImage.isOpen} onOpenChange={coverImage.onClose}>
       <DialogTitle>
-        <span className="sr-only">Change Cover Image</span>
+        <span className="sr-only">{t("dialogs.coverSrTitle")}</span>
       </DialogTitle>
       <DialogContent className="dark:bg-dark">
         <DialogHeader>
-          <h2 className="text-center text-lg font-semibold">Cover Image</h2>
+          <h2 className="text-center text-lg font-semibold">
+            {t("dialogs.coverTitle")}
+          </h2>
         </DialogHeader>
         <DialogDescription className="sr-only">
-          Upload a cover image or choose a color for your document.
+          {t("dialogs.coverDescription")}
         </DialogDescription>
         <Tabs defaultValue="upload">
           <TabsList className="w-full">
             <TabsTrigger value="upload" className="flex-1">
-              Upload
+              {t("dialogs.coverUpload")}
             </TabsTrigger>
             <TabsTrigger value="colors" className="flex-1">
-              Colors
+              {t("dialogs.coverColors")}
             </TabsTrigger>
           </TabsList>
           <TabsContent value="upload">

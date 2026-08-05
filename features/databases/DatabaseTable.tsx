@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import { cn } from "@/lib/utils";
 
 import { AddPropertyDialog } from "./AddPropertyDialog";
@@ -62,6 +63,7 @@ export function DatabaseTable({
     Id<"databaseViews"> | undefined
   >(initialViewId);
   const databaseState = useDatabase(documentId, selectedViewId, dataSourceId);
+  const { t } = useI18n();
   const [isAddingProperty, setIsAddingProperty] = useState(false);
   const [isConfiguringView, setIsConfiguringView] = useState(false);
   const [editingPropertyId, setEditingPropertyId] = useState<
@@ -135,7 +137,7 @@ export function DatabaseTable({
             const isActive = view.id === activeView?.id;
             const deleteView = () => {
               if (database.views.length <= 1) {
-                toast.error("A database needs at least one view");
+                toast.error(t("dialogs.tableAtLeastOneView"));
                 return;
               }
               void databaseState.deleteView(view.id).then((deleted) => {
@@ -174,7 +176,7 @@ export function DatabaseTable({
                       type="button"
                       data-view-tab
                       aria-label={`Close ${view.name} view`}
-                      title="Delete view"
+                      title={t("dialogs.tableDeleteView")}
                       onClick={deleteView}
                       className={cn(
                         "text-muted-foreground/60 hover:text-foreground hover:bg-accent/60 mr-0.5 rounded p-0.5 transition-all",
@@ -238,7 +240,8 @@ export function DatabaseTable({
                           className="cursor-pointer text-xs text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
                           onSelect={deleteView}
                         >
-                          <Trash2 className="mr-1.5 size-3.5" /> Delete view
+                          <Trash2 className="mr-1.5 size-3.5" />{" "}
+                          {t("dialogs.tableDeleteView")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -325,7 +328,7 @@ export function DatabaseTable({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Templates</DropdownMenuLabel>
+                <DropdownMenuLabel>{t("dialogs.tableTemplates")}</DropdownMenuLabel>
                 {databaseState.rowTemplates.map((template) => (
                   <DropdownMenuItem
                     key={template.id}

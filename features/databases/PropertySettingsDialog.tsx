@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import type { useDatabase } from "./useDatabase";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 type DatabaseProperty = NonNullable<
   ReturnType<typeof useDatabase>["database"]
@@ -35,6 +36,7 @@ export function PropertySettingsDialog({
     formulaExpression?: string;
   }) => Promise<boolean>;
 }) {
+  const { t } = useI18n();
   const [name, setName] = useState(property.name);
   const [formulaExpression, setFormulaExpression] = useState(
     property.formulaExpression ?? "",
@@ -59,16 +61,21 @@ export function PropertySettingsDialog({
       <DialogContent>
         <form onSubmit={submit} className="space-y-5">
           <DialogHeader>
-            <DialogTitle>Property settings</DialogTitle>
+            <DialogTitle>{t("dialogs.propertySettingsTitle")}</DialogTitle>
             <DialogDescription>
-              Rename this {property.type.replaceAll("_", " ")} property
-              {property.type === "formula"
-                ? " or update its safe expression."
-                : "."}
+              {t("dialogs.propertySettingsDescription", {
+                type: property.type.replaceAll("_", " "),
+                extra:
+                  property.type === "formula"
+                    ? t("dialogs.propertySettingsFormulaDesc")
+                    : "",
+              })}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <Label htmlFor="database-property-settings-name">Name</Label>
+            <Label htmlFor="database-property-settings-name">
+              {t("dialogs.propertySettingsName")}
+            </Label>
             <Input
               id="database-property-settings-name"
               value={name}
@@ -81,7 +88,7 @@ export function PropertySettingsDialog({
           {property.type === "formula" ? (
             <div className="space-y-2">
               <Label htmlFor="database-property-settings-formula">
-                Formula
+                {t("dialogs.propertySettingsFormula")}
               </Label>
               <Input
                 id="database-property-settings-formula"
@@ -93,9 +100,7 @@ export function PropertySettingsDialog({
                 required
               />
               <p className="text-muted-foreground text-xs">
-                Property references compile to stable IDs. Renaming a referenced
-                property updates this readable expression without changing the
-                dependency.
+                {t("dialogs.propertySettingsHint")}
               </p>
             </div>
           ) : null}
@@ -105,7 +110,7 @@ export function PropertySettingsDialog({
               variant="ghost"
               onClick={() => onOpenChange(false)}
             >
-              Cancel
+              {t("dialogs.cancel")}
             </Button>
             <Button
               disabled={
@@ -114,7 +119,9 @@ export function PropertySettingsDialog({
                 (property.type === "formula" && !formulaExpression.trim())
               }
             >
-              {isSaving ? "Saving…" : "Save changes"}
+              {isSaving
+                ? t("dialogs.saving")
+                : t("dialogs.propertySettingsSave")}
             </Button>
           </DialogFooter>
         </form>

@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { logger } from "@/lib/logger";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 import type { CreatedMcpEnvironment } from "./useMcpEnvironments";
 
@@ -77,7 +78,8 @@ export function ClientEnvironmentDialog({
   onOpenChange: (open: boolean) => void;
   onCreate: (name: string) => Promise<CreatedMcpEnvironment | null>;
 }) {
-  const [name, setName] = useState("Nexfiy workspace");
+  const { t } = useI18n();
+  const [name, setName] = useState(t("dialogs.clientNexfiyWorkspace"));
   const [client, setClient] = useState<ClientKind>("codex");
   const [created, setCreated] = useState<CreatedMcpEnvironment | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -87,7 +89,7 @@ export function ClientEnvironmentDialog({
   >();
 
   const reset = () => {
-    setName("Nexfiy workspace");
+    setName(t("dialogs.clientNexfiyWorkspace"));
     setClient("codex");
     setCreated(null);
     setIsCreating(false);
@@ -119,11 +121,11 @@ export function ClientEnvironmentDialog({
         message: `Connected successfully. ${toolCount} tools are available.`,
       });
     } catch (error) {
-      logger.error("MCP client environment test failed", error);
+      logger.error(t("dialogs.clientTestFailed"), error);
       setTestResult({
         success: false,
         message:
-          error instanceof Error ? error.message : "Connection test failed",
+          error instanceof Error ? error.message : t("dialogs.clientTestFailedTitle"),
       });
     } finally {
       setIsTesting(false);
@@ -138,30 +140,32 @@ export function ClientEnvironmentDialog({
         <DialogHeader>
           <DialogTitle>
             {created
-              ? "Connect your MCP client"
-              : "Create a client environment"}
+              ? t("dialogs.clientConnectTitle")
+              : t("dialogs.clientCreateTitle")}
           </DialogTitle>
           <DialogDescription>
             {created
-              ? "Copy the URL or command into Codex, Claude Code, or another Streamable HTTP MCP client."
-              : "Create a private URL that lets an external MCP client read documents from the current workspace."}
+              ? t("dialogs.clientCopyHint")
+              : t("dialogs.clientPrivateUrlHint")}
           </DialogDescription>
         </DialogHeader>
 
         {!created ? (
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="mcp-environment-name">Environment name</Label>
+              <Label htmlFor="mcp-environment-name">
+                {t("dialogs.clientEnvName")}
+              </Label>
               <Input
                 id="mcp-environment-name"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                placeholder="My Codex workspace"
+                placeholder={t("dialogs.clientEnvNameExample")}
                 autoFocus
               />
             </div>
             <div className="bg-muted/40 rounded-lg border p-4 text-sm">
-              <p className="font-medium">Read-only workspace access</p>
+              <p className="font-medium">{t("dialogs.clientReadOnly")}</p>
               <p className="text-muted-foreground mt-1 leading-6">
                 The generated environment exposes tools to list, search, and
                 read non-archived documents. Revoke it at any time from Client
@@ -172,7 +176,7 @@ export function ClientEnvironmentDialog({
         ) : (
           <div className="space-y-5 py-2">
             <div className="space-y-2">
-              <Label>MCP client</Label>
+              <Label>{t("dialogs.clientMcpClient")}</Label>
               <Select
                 value={client}
                 onValueChange={(value) => setClient(value as ClientKind)}
@@ -181,20 +185,26 @@ export function ClientEnvironmentDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="codex">Codex CLI</SelectItem>
-                  <SelectItem value="claude">Claude Code</SelectItem>
-                  <SelectItem value="generic">Generic JSON config</SelectItem>
+                  <SelectItem value="codex">{t("dialogs.clientCodex")}</SelectItem>
+                  <SelectItem value="claude">
+                    {t("dialogs.clientClaude")}
+                  </SelectItem>
+                  <SelectItem value="generic">
+                    {t("dialogs.clientGeneric")}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-3">
-                <Label htmlFor="mcp-environment-url">Streamable HTTP URL</Label>
+                <Label htmlFor="mcp-environment-url">
+                  {t("dialogs.clientStreamableHttp")}
+                </Label>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => copy(created.url, "MCP URL")}
+                  onClick={() => copy(created.url, t("dialogs.clientUrl"))}
                 >
                   <Clipboard /> Copy URL
                 </Button>
@@ -209,11 +219,13 @@ export function ClientEnvironmentDialog({
 
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-3">
-                <Label>Client configuration</Label>
+                <Label>{t("dialogs.clientConfig")}</Label>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => copy(command, "Configuration")}
+                  onClick={() =>
+                    copy(command, t("dialogs.clientConfiguration"))
+                  }
                 >
                   <Clipboard /> Copy
                 </Button>
@@ -230,7 +242,7 @@ export function ClientEnvironmentDialog({
                 ) : (
                   <FlaskConical />
                 )}
-                {isTesting ? "Testing…" : "Test connection"}
+                {isTesting ? "Testing…" : t("dialogs.clientTest")}
               </Button>
               {testResult ? (
                 <p
@@ -262,15 +274,15 @@ export function ClientEnvironmentDialog({
 
         <DialogFooter>
           {created ? (
-            <Button onClick={() => changeOpen(false)}>Done</Button>
+            <Button onClick={() => changeOpen(false)}>{t("dialogs.clientDone")}</Button>
           ) : (
             <>
               <Button variant="ghost" onClick={() => changeOpen(false)}>
-                Cancel
+                {t("dialogs.cancel")}
               </Button>
               <Button onClick={create} disabled={isCreating || !name.trim()}>
                 {isCreating ? <Loader2 className="animate-spin" /> : null}
-                {isCreating ? "Creating…" : "Create environment"}
+                {isCreating ? "Creating…" : t("dialogs.clientCreate")}
               </Button>
             </>
           )}

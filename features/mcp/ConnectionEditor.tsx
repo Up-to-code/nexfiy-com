@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import type { McpServerInput } from "@/hooks/useMcpServers";
 import type { McpServerView } from "./mcp-types";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 const EMPTY_FORM: McpServerInput = {
   name: "",
@@ -32,6 +33,7 @@ export function ConnectionEditor({
   onCancel: () => void;
   onSave: (input: McpServerInput) => Promise<void>;
 }) {
+  const { t } = useI18n();
   const [form, setForm] = useState<McpServerInput>(
     server
       ? {
@@ -57,17 +59,17 @@ export function ConnectionEditor({
     <form onSubmit={submit} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="mcp-name">Connection name</Label>
+          <Label htmlFor="mcp-name">{t("dialogs.connectionName")}</Label>
           <Input
             id="mcp-name"
             value={form.name}
             onChange={(event) => setForm({ ...form, name: event.target.value })}
-            placeholder="Email and calendar"
+            placeholder={t("dialogs.connectionEmailCalendar")}
             required
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="mcp-transport">Transport</Label>
+          <Label htmlFor="mcp-transport">{t("dialogs.connectionTransport")}</Label>
           <Select
             value={form.transport}
             onValueChange={(value) =>
@@ -81,15 +83,17 @@ export function ConnectionEditor({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="streamable-http">Streamable HTTP</SelectItem>
-              <SelectItem value="sse">SSE (legacy)</SelectItem>
+              <SelectItem value="streamable-http">
+                {t("dialogs.connectionStreamable")}
+              </SelectItem>
+              <SelectItem value="sse">{t("dialogs.connectionSse")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="mcp-url">Server URL</Label>
+        <Label htmlFor="mcp-url">{t("dialogs.connectionServerUrl")}</Label>
         <Input
           id="mcp-url"
           type="url"
@@ -102,7 +106,7 @@ export function ConnectionEditor({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="mcp-auth">Authentication</Label>
+          <Label htmlFor="mcp-auth">{t("dialogs.connectionAuth")}</Label>
           <Select
             value={form.authType}
             onValueChange={(value) =>
@@ -116,15 +120,21 @@ export function ConnectionEditor({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="none">None</SelectItem>
-              <SelectItem value="bearer">Bearer token</SelectItem>
-              <SelectItem value="custom-header">Custom header</SelectItem>
+              <SelectItem value="none">{t("dialogs.connectionNone")}</SelectItem>
+              <SelectItem value="bearer">
+                {t("dialogs.connectionBearer")}
+              </SelectItem>
+              <SelectItem value="custom-header">
+                {t("dialogs.connectionCustomHeader")}
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
         {form.authType === "custom-header" ? (
           <div className="space-y-2">
-            <Label htmlFor="mcp-header">Header name</Label>
+            <Label htmlFor="mcp-header">
+              {t("dialogs.connectionHeaderName")}
+            </Label>
             <Input
               id="mcp-header"
               value={form.headerName}
@@ -141,7 +151,9 @@ export function ConnectionEditor({
       {form.authType !== "none" ? (
         <div className="space-y-2">
           <Label htmlFor="mcp-secret">
-            {form.authType === "bearer" ? "Bearer token" : "Header value"}
+            {form.authType === "bearer"
+              ? t("dialogs.connectionBearer")
+              : t("dialogs.connectionHeaderValue")}
           </Label>
           <Input
             id="mcp-secret"
@@ -151,7 +163,9 @@ export function ConnectionEditor({
               setForm({ ...form, secret: event.target.value })
             }
             placeholder={
-              server ? "Leave blank to keep the saved secret" : "Required"
+              server
+                ? t("dialogs.connectionBlankToKeep")
+                : t("dialogs.connectionRequired")
             }
             required={!server}
           />
@@ -167,7 +181,7 @@ export function ConnectionEditor({
           Cancel
         </Button>
         <Button disabled={isSaving}>
-          {isSaving ? "Connecting…" : "Save and discover tools"}
+          {isSaving ? "Connecting…" : t("dialogs.connectionSave")}
         </Button>
       </div>
     </form>

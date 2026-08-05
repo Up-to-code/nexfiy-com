@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { logger } from "@/lib/logger";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 type WorkspaceInviteDialogProps = {
   open: boolean;
@@ -34,6 +35,7 @@ export function WorkspaceInviteDialog({
   isInviting,
   onInvite,
 }: WorkspaceInviteDialogProps) {
+  const { t } = useI18n();
   const [email, setEmail] = useState("");
   const [mode, setMode] = useState<"email" | "link">("email");
   const [inviteLink, setInviteLink] = useState<string | null>(null);
@@ -51,7 +53,7 @@ export function WorkspaceInviteDialog({
 
     const link = `${window.location.origin}/accept-invitation?id=${encodeURIComponent(invitationId)}`;
     if (mode === "email") {
-      toast.success("Invitation email sent.");
+      toast.success(t("dialogs.inviteSent"));
       onOpenChange(false);
       reset();
       return;
@@ -60,10 +62,10 @@ export function WorkspaceInviteDialog({
     setInviteLink(link);
     try {
       await navigator.clipboard.writeText(link);
-      toast.success("Invite link copied.");
+      toast.success(t("dialogs.inviteLinkCopied"));
     } catch (error) {
       logger.error("Failed to copy workspace invitation link", error);
-      toast.error("Invitation created. Copy the link below manually.");
+      toast.error(t("dialogs.inviteCopyManually"));
     }
   };
 
@@ -77,9 +79,11 @@ export function WorkspaceInviteDialog({
     >
       <DialogContent className="w-[calc(100vw-2rem)] gap-0 overflow-hidden rounded-xl p-0 sm:max-w-lg">
         <DialogHeader className="border-border/50 border-b px-6 py-5">
-          <DialogTitle>Invite to {workspaceName}</DialogTitle>
+          <DialogTitle>
+            {t("dialogs.inviteTitle", { name: workspaceName })}
+          </DialogTitle>
           <DialogDescription>
-            Invitations are tied to the recipient&apos;s email for security.
+            {t("dialogs.inviteDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -92,28 +96,28 @@ export function WorkspaceInviteDialog({
             className="border-border/50 grid h-12 w-full grid-cols-2 border-b px-6"
           >
             <TabsTrigger value="email" className="h-full px-0">
-              <Mail className="size-4" /> Email
+              <Mail className="size-4" /> {t("dialogs.inviteEmailTab")}
             </TabsTrigger>
             <TabsTrigger value="link" className="h-full px-0">
-              <Link2 className="size-4" /> Invite link
+              <Link2 className="size-4" /> {t("dialogs.inviteLinkTab")}
             </TabsTrigger>
           </TabsList>
 
           <div className="space-y-4 px-6 py-5">
             <TabsContent value="email" className="mt-0 space-y-2">
               <label htmlFor="invite-email" className="text-sm font-medium">
-                Email address
+                {t("dialogs.inviteEmailAddress")}
               </label>
               <Input
                 id="invite-email"
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder="teammate@example.com"
+                placeholder={t("dialogs.inviteEmailPlaceholder")}
                 autoFocus
               />
               <p className="text-muted-foreground text-xs">
-                We&apos;ll send a secure invitation that expires in 30 minutes.
+                {t("dialogs.inviteExpiry")}
               </p>
             </TabsContent>
 
@@ -122,18 +126,18 @@ export function WorkspaceInviteDialog({
                 htmlFor="invite-link-email"
                 className="text-sm font-medium"
               >
-                Recipient email
+                {t("dialogs.inviteRecipientEmail")}
               </label>
               <Input
                 id="invite-link-email"
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder="teammate@example.com"
+                placeholder={t("dialogs.inviteEmailPlaceholder")}
                 autoFocus
               />
               <p className="text-muted-foreground text-xs">
-                The link will only work for an account using this email address.
+                {t("dialogs.inviteLinkRestriction")}
               </p>
               {inviteLink ? (
                 <button
@@ -152,7 +156,7 @@ export function WorkspaceInviteDialog({
 
         <DialogFooter className="border-border/50 flex-wrap border-t px-6 py-4">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("dialogs.cancel")}
           </Button>
           <Button
             onClick={createInvitation}
@@ -164,10 +168,10 @@ export function WorkspaceInviteDialog({
               <Copy />
             ) : null}
             {isInviting
-              ? "Creating…"
+              ? t("dialogs.inviteCreating")
               : mode === "email"
-                ? "Send invite"
-                : "Create and copy link"}
+                ? t("dialogs.inviteSend")
+                : t("dialogs.inviteCreateAndCopy")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -16,6 +16,7 @@ import { ChevronLeft, ChevronRight, ExternalLink, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import { cn } from "@/lib/utils";
 
 import type { useDatabase } from "./useDatabase";
@@ -231,6 +232,7 @@ export function DatabaseCalendar({
   onOpenRow: (rowId: Id<"documents">) => void;
   readOnly?: boolean;
 }) {
+  const { t } = useI18n();
   const now = new Date();
   const [viewMode, setViewMode] = useState<"month" | "week" | "day" | "year">("month");
   const [currentDate, setCurrentDate] = useState(
@@ -282,7 +284,7 @@ export function DatabaseCalendar({
     return (
       <div className="bg-muted/25 space-y-3 rounded-md p-4">
         <div>
-          <h3 className="text-sm font-semibold">Calendar notes</h3>
+          <h3 className="text-sm font-semibold">{t("dialogs.calendarNotes")}</h3>
           <p className="text-muted-foreground mt-0.5 text-xs">
             These pages do not need a date. Add a date property later when you
             want to schedule them on the calendar grid.
@@ -398,7 +400,7 @@ export function DatabaseCalendar({
                 variant="ghost"
                 size="icon-sm"
                 onClick={() => movePeriod(-1)}
-                aria-label="Previous period"
+                aria-label={t("dialogs.calendarPrevious")}
               >
                 <ChevronLeft />
               </Button>
@@ -419,7 +421,7 @@ export function DatabaseCalendar({
                 variant="ghost"
                 size="icon-sm"
                 onClick={() => movePeriod(1)}
-                aria-label="Next period"
+                aria-label={t("dialogs.calendarNext")}
               >
                 <ChevronRight />
               </Button>
@@ -584,7 +586,9 @@ export function DatabaseCalendar({
 
         {rowsWithoutDate.length ? (
           <div className="space-y-2 rounded-md border border-dashed p-3">
-            <p className="text-muted-foreground text-xs font-medium">No date</p>
+            <p className="text-muted-foreground text-xs font-medium">
+              {t("dialogs.calendarNoDate")}
+            </p>
             <div className="flex flex-wrap gap-2">
               {rowsWithoutDate.map((row) => (
                 <CalendarCard

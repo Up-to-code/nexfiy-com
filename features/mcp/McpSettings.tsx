@@ -51,6 +51,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import type { TranslationKey } from "@/lib/i18n";
 import { useMcpServers, type McpServerInput } from "@/hooks/useMcpServers";
 import { ConnectionEditor } from "./ConnectionEditor";
 import { ExecutionHistory } from "./ExecutionHistory";
@@ -66,16 +68,17 @@ type McpView = "connections" | "tools" | "clients" | "activity";
 
 const VIEW_ITEMS: Array<{
   value: McpView;
-  label: string;
+  labelKey: TranslationKey;
   icon: typeof PlugZap;
 }> = [
-  { value: "connections", label: "Connections", icon: PlugZap },
-  { value: "tools", label: "Tools", icon: Wrench },
-  { value: "clients", label: "Client access", icon: Cable },
-  { value: "activity", label: "Activity", icon: Activity },
+  { value: "connections", labelKey: "dialogs.mcpConnections", icon: PlugZap },
+  { value: "tools", labelKey: "dialogs.mcpTools", icon: Wrench },
+  { value: "clients", labelKey: "dialogs.mcpClientAccess", icon: Cable },
+  { value: "activity", labelKey: "dialogs.mcpActivity", icon: Activity },
 ];
 
 export function McpSettings({ enabled }: { enabled: boolean }) {
+  const { t } = useI18n();
   const [view, setView] = useState<McpView>("connections");
   const [selectedServerId, setSelectedServerId] = useState<Id<"mcpServers">>();
   const [editingId, setEditingId] = useState<Id<"mcpServers"> | "new" | null>(
@@ -149,12 +152,12 @@ export function McpSettings({ enabled }: { enabled: boolean }) {
   };
 
   if (!billing.isLoading && !billing.subscription?.hasPro) {
-    return <ProUpgradePrompt feature="MCP" />;
+    return <ProUpgradePrompt feature={t("dialogs.mcpTitle")} />;
   }
 
   if (billing.isLoading) {
     return (
-      <div className="space-y-5" aria-label="Loading MCP settings">
+      <div className="space-y-5" aria-label={t("dialogs.mcpLoading")}>
         <Skeleton className="h-6 w-28" />
         <Skeleton className="h-4 w-4/5" />
         <Skeleton className="h-10 w-full" />
@@ -254,7 +257,7 @@ export function McpSettings({ enabled }: { enabled: boolean }) {
                 "cursor-not-allowed opacity-45",
             )}
           >
-            <item.icon className="size-4" /> {item.label}
+            <item.icon className="size-4" /> {t(item.labelKey)}
           </button>
         ))}
       </div>
@@ -269,7 +272,7 @@ export function McpSettings({ enabled }: { enabled: boolean }) {
           {!mcp.isLoading && !mcp.servers?.length ? (
             <div className="flex flex-col items-center rounded-lg border border-dashed px-6 py-12 text-center">
               <PlugZap className="text-muted-foreground mb-3 size-8" />
-              <p className="font-medium">Connect your first MCP server</p>
+              <p className="font-medium">{t("dialogs.mcpEmptyTitle")}</p>
               <p className="text-muted-foreground mt-1 max-w-md text-sm">
                 Add a remote server, securely store its token, then review the
                 tools it exposes before running anything.
@@ -305,7 +308,7 @@ export function McpSettings({ enabled }: { enabled: boolean }) {
                   {server.url}
                 </p>
                 <p className="text-muted-foreground mt-1 text-xs">
-                  {server.lastTestMessage ?? "Not connected yet"}
+                  {server.lastTestMessage ?? t("dialogs.mcpNotConnected")}
                 </p>
               </div>
               <button
@@ -316,7 +319,9 @@ export function McpSettings({ enabled }: { enabled: boolean }) {
                 <span className="block font-medium">
                   {server.toolCount ?? 0} tools
                 </span>
-                <span className="text-muted-foreground">Review access</span>
+                <span className="text-muted-foreground">
+                  {t("dialogs.mcpReviewAccess")}
+                </span>
               </button>
               <Switch
                 checked={server.isEnabled}
@@ -334,7 +339,7 @@ export function McpSettings({ enabled }: { enabled: boolean }) {
                 <RefreshCw
                   className={cn(syncingId === server._id && "animate-spin")}
                 />
-                {syncingId === server._id ? "Syncing…" : "Sync"}
+                {syncingId === server._id ? "Syncing…" : t("dialogs.mcpSync")}
               </Button>
               <Button
                 variant="ghost"
@@ -343,7 +348,9 @@ export function McpSettings({ enabled }: { enabled: boolean }) {
                 disabled={editingId !== null}
               >
                 <Pencil />
-                <span className="sr-only">Edit {server.name}</span>
+                <span className="sr-only">
+                  {t("dialogs.mcpEditServer", { name: server.name })}
+                </span>
               </Button>
               <Button
                 variant="ghost"
@@ -352,7 +359,9 @@ export function McpSettings({ enabled }: { enabled: boolean }) {
                 onClick={() => setServerToRemove(server)}
               >
                 <Trash2 />
-                <span className="sr-only">Remove {server.name}</span>
+                <span className="sr-only">
+                  {t("dialogs.mcpRemoveServer", { name: server.name })}
+                </span>
               </Button>
             </div>
           ))}
@@ -369,8 +378,11 @@ export function McpSettings({ enabled }: { enabled: boolean }) {
                   setSelectedServerId(value as Id<"mcpServers">)
                 }
               >
-                <SelectTrigger className="min-w-56" aria-label="MCP connection">
-                  <SelectValue placeholder="Select a connection" />
+                <SelectTrigger
+                  className="min-w-56"
+                  aria-label={t("dialogs.mcpConnection")}
+                >
+                  <SelectValue placeholder={t("dialogs.mcpSelectConnection")} />
                 </SelectTrigger>
                 <SelectContent>
                   {mcp.servers?.map((server) => (
@@ -400,7 +412,7 @@ export function McpSettings({ enabled }: { enabled: boolean }) {
           {!hasConnections ? (
             <div className="flex flex-col items-center rounded-lg border border-dashed px-6 py-12 text-center">
               <Wrench className="text-muted-foreground mb-3 size-8" />
-              <p className="font-medium">Connect a server to discover tools</p>
+              <p className="font-medium">{t("dialogs.mcpConnectToDiscover")}</p>
               <p className="text-muted-foreground mt-1 max-w-md text-sm">
                 Tools appear here after Nexfiy connects and reads the server
                 capabilities.
@@ -459,7 +471,9 @@ export function McpSettings({ enabled }: { enabled: boolean }) {
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {editingServer ? "Edit MCP connection" : "Connect an MCP server"}
+              {editingServer
+                ? t("dialogs.mcpEditConnection")
+                : t("dialogs.mcpAddConnection")}
             </DialogTitle>
             <DialogDescription>
               Use the remote server URL and credentials supplied by the service.
@@ -484,15 +498,15 @@ export function McpSettings({ enabled }: { enabled: boolean }) {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove MCP connection?</AlertDialogTitle>
+            <AlertDialogTitle>{t("dialogs.mcpRemoveConnection")}</AlertDialogTitle>
             <AlertDialogDescription>
               {serverToRemove
                 ? `${serverToRemove.name} and its saved tool history will be permanently removed.`
-                : "This connection and its saved tool history will be permanently removed."}
+                : t("dialogs.mcpRemoveDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("dialogs.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               onClick={() => {

@@ -26,30 +26,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 
 import type { EditablePropertyType, RollupFunction } from "./useDatabase";
-
-const PROPERTY_TYPES: Array<{
-  value: EditablePropertyType;
-  label: string;
-}> = [
-  { value: "text", label: "Text" },
-  { value: "number", label: "Number" },
-  { value: "status", label: "Status" },
-  { value: "date", label: "Date" },
-  { value: "checkbox", label: "Checkbox" },
-  { value: "url", label: "URL" },
-  { value: "relation", label: "Relation" },
-  { value: "rollup", label: "Rollup" },
-  { value: "formula", label: "Formula" },
-];
-
-const ROLLUP_FUNCTIONS: Array<{ value: RollupFunction; label: string }> = [
-  { value: "count", label: "Count related pages" },
-  { value: "count_values", label: "Count values" },
-  { value: "sum", label: "Sum" },
-  { value: "average", label: "Average" },
-  { value: "min", label: "Minimum" },
-  { value: "max", label: "Maximum" },
-];
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 export function AddPropertyDialog({
   open,
@@ -71,6 +48,32 @@ export function AddPropertyDialog({
     formulaExpression?: string;
   }) => Promise<boolean>;
 }) {
+  const { t } = useI18n();
+
+  const PROPERTY_TYPES: Array<{
+    value: EditablePropertyType;
+    label: string;
+  }> = [
+    { value: "text", label: t("dialogs.propertyText") },
+    { value: "number", label: t("dialogs.propertyNumber") },
+    { value: "status", label: t("dialogs.propertyStatus") },
+    { value: "date", label: t("dialogs.propertyDate") },
+    { value: "checkbox", label: t("dialogs.propertyCheckbox") },
+    { value: "url", label: t("dialogs.propertyUrl") },
+    { value: "relation", label: t("dialogs.propertyRelation") },
+    { value: "rollup", label: t("dialogs.propertyRollup") },
+    { value: "formula", label: t("dialogs.propertyFormula") },
+  ];
+
+  const ROLLUP_FUNCTIONS: Array<{ value: RollupFunction; label: string }> = [
+    { value: "count", label: t("dialogs.rollupCountRelated") },
+    { value: "count_values", label: t("dialogs.rollupCountValues") },
+    { value: "sum", label: t("dialogs.rollupSum") },
+    { value: "average", label: t("dialogs.rollupAverage") },
+    { value: "min", label: t("dialogs.rollupMin") },
+    { value: "max", label: t("dialogs.rollupMax") },
+  ];
+
   const databases = useQuery(api.databases.listAvailable);
   const rollupOptions = useQuery(api.databases.getRollupConfigurationOptions, {
     dataSourceId,
@@ -135,13 +138,15 @@ export function AddPropertyDialog({
       <DialogContent>
         <form onSubmit={submit} className="space-y-5">
           <DialogHeader>
-            <DialogTitle>Add a property</DialogTitle>
+            <DialogTitle>{t("dialogs.propertyTitle")}</DialogTitle>
             <DialogDescription>
-              Properties give every page in this database structured data.
+              {t("dialogs.propertyDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <Label htmlFor="database-property-name">Name</Label>
+            <Label htmlFor="database-property-name">
+              {t("dialogs.propertyName")}
+            </Label>
             <Input
               id="database-property-name"
               value={name}
@@ -152,7 +157,9 @@ export function AddPropertyDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="database-property-type">Type</Label>
+            <Label htmlFor="database-property-type">
+              {t("dialogs.propertyType")}
+            </Label>
             <Select
               value={type}
               onValueChange={(value) => {
@@ -185,7 +192,9 @@ export function AddPropertyDialog({
           {type === "relation" ? (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="database-relation-target">Target database</Label>
+                <Label htmlFor="database-relation-target">
+                  {t("dialogs.propertyTargetDatabase")}
+                </Label>
                 <Select
                   value={relationDataSourceId}
                   onValueChange={(value) =>
@@ -193,7 +202,9 @@ export function AddPropertyDialog({
                   }
                 >
                   <SelectTrigger id="database-relation-target">
-                    <SelectValue placeholder="Choose a database" />
+                    <SelectValue
+                      placeholder={t("dialogs.propertyChooseDatabase")}
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {databases?.map((database) => (
@@ -208,10 +219,10 @@ export function AddPropertyDialog({
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <Label htmlFor="database-reciprocal-relation">
-                      Show on target database
+                      {t("dialogs.propertyShowOnTarget")}
                     </Label>
                     <p className="text-muted-foreground text-xs">
-                      Keep both sides of this relation synchronized.
+                      {t("dialogs.propertyKeepSynced")}
                     </p>
                   </div>
                   <Switch
@@ -222,7 +233,8 @@ export function AddPropertyDialog({
                       setCreateReciprocal(checked);
                       if (checked && !reciprocalName) {
                         setReciprocalName(
-                          sourceDatabase?.name || "Related pages",
+                          sourceDatabase?.name ||
+                            t("dialogs.propertyRelatedPages"),
                         );
                       }
                     }}
@@ -231,13 +243,13 @@ export function AddPropertyDialog({
                 {createReciprocal ? (
                   <div className="space-y-2">
                     <Label htmlFor="database-reciprocal-name">
-                      Property name on target
+                      {t("dialogs.propertyTargetName")}
                     </Label>
                     <Input
                       id="database-reciprocal-name"
                       value={reciprocalName}
                       onChange={(event) => setReciprocalName(event.target.value)}
-                      placeholder="Related pages"
+                      placeholder={t("dialogs.propertyRelatedPages")}
                       required
                     />
                   </div>
@@ -248,7 +260,9 @@ export function AddPropertyDialog({
           {type === "rollup" ? (
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="database-rollup-relation">Relation</Label>
+                <Label htmlFor="database-rollup-relation">
+                  {t("dialogs.propertyRelationLabel")}
+                </Label>
                 <Select
                   value={rollupRelationPropertyId}
                   onValueChange={(value) => {
@@ -260,7 +274,9 @@ export function AddPropertyDialog({
                   }}
                 >
                   <SelectTrigger id="database-rollup-relation">
-                    <SelectValue placeholder="Choose relation" />
+                    <SelectValue
+                      placeholder={t("dialogs.propertyChooseRelation")}
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {rollupOptions?.map((option) => (
@@ -275,7 +291,9 @@ export function AddPropertyDialog({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="database-rollup-property">Property</Label>
+                <Label htmlFor="database-rollup-property">
+                  {t("dialogs.propertyTargetProperty")}
+                </Label>
                 <Select
                   value={rollupTargetPropertyId}
                   disabled={!selectedRollupRelation}
@@ -287,7 +305,9 @@ export function AddPropertyDialog({
                   }}
                 >
                   <SelectTrigger id="database-rollup-property">
-                    <SelectValue placeholder="Choose property" />
+                    <SelectValue
+                      placeholder={t("dialogs.propertyChooseProperty")}
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {selectedRollupRelation?.targetProperties.map(
@@ -301,7 +321,9 @@ export function AddPropertyDialog({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="database-rollup-function">Calculate</Label>
+                <Label htmlFor="database-rollup-function">
+                  {t("dialogs.propertyCalculate")}
+                </Label>
                 <Select
                   value={rollupFunction}
                   disabled={!selectedRollupTarget}
@@ -310,7 +332,9 @@ export function AddPropertyDialog({
                   }
                 >
                   <SelectTrigger id="database-rollup-function">
-                    <SelectValue placeholder="Choose calculation" />
+                    <SelectValue
+                      placeholder={t("dialogs.propertyChooseCalculation")}
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {availableRollupFunctions.map((item) => (
@@ -323,14 +347,16 @@ export function AddPropertyDialog({
               </div>
               {!rollupOptions?.length ? (
                 <p className="text-muted-foreground text-sm sm:col-span-3">
-                  Add a relation property before creating a rollup.
+                  {t("dialogs.propertyRollupHint")}
                 </p>
               ) : null}
             </div>
           ) : null}
           {type === "formula" ? (
             <div className="space-y-2">
-              <Label htmlFor="database-formula-expression">Expression</Label>
+              <Label htmlFor="database-formula-expression">
+                {t("dialogs.propertyExpression")}
+              </Label>
               <Input
                 id="database-formula-expression"
                 value={formulaExpression}
@@ -340,9 +366,7 @@ export function AddPropertyDialog({
                 className="font-mono"
               />
               <p className="text-muted-foreground text-xs">
-                Reference a property with prop(&quot;Property name&quot;). Safe
-                functions include if, empty, concat, round, min, max, length,
-                lower, and upper.
+                {t("dialogs.propertyFormulaHint")}
               </p>
             </div>
           ) : null}
@@ -352,7 +376,7 @@ export function AddPropertyDialog({
               variant="ghost"
               onClick={() => onOpenChange(false)}
             >
-              Cancel
+              {t("dialogs.cancel")}
             </Button>
             <Button
               disabled={
@@ -368,7 +392,7 @@ export function AddPropertyDialog({
                 (type === "formula" && !formulaExpression.trim())
               }
             >
-              {isSaving ? "Adding…" : "Add property"}
+              {isSaving ? t("dialogs.propertyAdding") : t("dialogs.propertyAdd")}
             </Button>
           </DialogFooter>
         </form>

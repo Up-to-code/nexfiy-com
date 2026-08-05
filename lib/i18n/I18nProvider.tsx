@@ -11,6 +11,8 @@ import {
 } from "react";
 import { en, type LocalizedDictionary } from "./dictionaries/en";
 import { ar } from "./dictionaries/ar";
+import { fr } from "./dictionaries/fr";
+import { es } from "./dictionaries/es";
 import {
   getPath,
   getStoredLocale,
@@ -22,7 +24,7 @@ import {
   type TranslationKey,
 } from "./index";
 
-const dictionaries: Record<Locale, LocalizedDictionary> = { en, ar };
+const dictionaries: Record<Locale, LocalizedDictionary> = { en, ar, fr, es };
 
 const STORAGE_EVENT = "nexfiy-language-change";
 

@@ -25,7 +25,9 @@ export default function DocsLayout({
               </span>
               <div>
                 <p className="text-sm font-semibold">Developer docs</p>
-                <p className="text-muted-foreground text-[11px]">API + MCP</p>
+                <p className="text-muted-foreground text-[11px]">
+                  API + MCP + Webhooks
+                </p>
               </div>
             </div>
             <DocsSearch />

@@ -2,7 +2,7 @@ export type DocsEntry = {
   slug: string;
   title: string;
   description: string;
-  section: "Start" | "Content API" | "MCP" | "Guides";
+  section: "Start" | "Content API" | "MCP" | "Webhooks" | "Guides";
 };
 
 export const docsManifest: DocsEntry[] = [
@@ -61,6 +61,18 @@ export const docsManifest: DocsEntry[] = [
     section: "MCP",
   },
   {
+    slug: "webhooks/quickstart",
+    title: "Webhooks quickstart",
+    description: "Create a webhook key and drive pages and blocks over HTTP.",
+    section: "Webhooks",
+  },
+  {
+    slug: "webhooks/reference",
+    title: "Webhook actions reference",
+    description: "Endpoint, authentication, permissions, and every action.",
+    section: "Webhooks",
+  },
+  {
     slug: "guides/nextjs",
     title: "Use Nexfiy with Next.js",
     description: "Fetch content securely and render a content collection.",
@@ -75,7 +87,13 @@ export const docsManifest: DocsEntry[] = [
   },
 ];
 
-export const docsSections = ["Start", "Content API", "MCP", "Guides"] as const;
+export const docsSections = [
+  "Start",
+  "Content API",
+  "MCP",
+  "Webhooks",
+  "Guides",
+] as const;
 
 export function docsHref(slug: string) {
   return slug === "overview" ? "/docs" : `/docs/${slug}`;

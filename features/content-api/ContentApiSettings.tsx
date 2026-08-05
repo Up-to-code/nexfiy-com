@@ -38,6 +38,7 @@ import {
 } from "./useContentApi";
 import { useBilling } from "@/features/billing/use-billing";
 import { ProUpgradePrompt } from "@/features/billing/ProUpgradePrompt";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import posthog from "posthog-js";
 
 type IntegrationKey = {
@@ -99,6 +100,7 @@ function IntegrationAccessEditor({
 export function ContentApiSettings({ enabled }: { enabled: boolean }) {
   const contentApi = useContentApi(enabled);
   const billing = useBilling();
+  const { t } = useI18n();
   const [name, setName] = useState("");
   const [selectedSources, setSelectedSources] = useState<Id<"dataSources">[]>(
     [],
@@ -118,11 +120,11 @@ export function ContentApiSettings({ enabled }: { enabled: boolean }) {
   const create = async () => {
     const trimmedName = name.trim();
     if (!trimmedName) {
-      toast.error("Enter a name for this integration");
+      toast.error(t("dialogs.contentNameRequired"));
       return;
     }
     if (selectedSources.length === 0) {
-      toast.error("Select at least one database");
+      toast.error(t("dialogs.contentSelectDatabase"));
       return;
     }
     setIsCreating(true);
@@ -139,7 +141,7 @@ export function ContentApiSettings({ enabled }: { enabled: boolean }) {
 
   if (contentApi.isLoading) {
     return (
-      <div className="space-y-5 py-2" aria-label="Loading Content API settings">
+      <div className="space-y-5 py-2" aria-label={t("dialogs.contentLoading")}>
         <Skeleton className="h-6 w-36" />
         <Skeleton className="h-4 w-4/5" />
         <Skeleton className="h-10 w-full" />
@@ -152,7 +154,7 @@ export function ContentApiSettings({ enabled }: { enabled: boolean }) {
   }
 
   if (!billing.isLoading && !billing.subscription?.hasPro) {
-    return <ProUpgradePrompt feature="Content API" />;
+    return <ProUpgradePrompt feature={t("dialogs.contentTitle")} />;
   }
 
   const sources = contentApi.sources ?? [];
@@ -162,7 +164,7 @@ export function ContentApiSettings({ enabled }: { enabled: boolean }) {
       <div className="border-border/40 border-b pb-4">
         <div className="flex items-center gap-2.5">
           <Braces className="size-5 text-[#2383E2]" />
-          <h2 className="text-lg font-bold">Content API</h2>
+          <h2 className="text-lg font-bold">{t("dialogs.contentTitle")}</h2>
         </div>
         <p className="text-muted-foreground mt-1 max-w-xl text-sm">
           Turn selected workspace databases into structured content for
@@ -172,7 +174,9 @@ export function ContentApiSettings({ enabled }: { enabled: boolean }) {
 
       {!contentApi.canManage ? (
         <div className="py-4">
-          <p className="text-sm font-medium">Owner or admin access required</p>
+          <p className="text-sm font-medium">
+            {t("dialogs.contentAdminRequired")}
+          </p>
           <p className="text-muted-foreground mt-0.5 text-xs">
             Only workspace owners and admins can manage Content API access.
           </p>
@@ -247,8 +251,8 @@ export function ContentApiSettings({ enabled }: { enabled: boolean }) {
                       }
                     >
                       {selectedSources.length === sources.length
-                        ? "Clear all"
-                        : "Select all"}
+                        ? t("dialogs.contentClearAll")
+                        : t("dialogs.contentSelectAll")}
                     </Button>
                   ) : null}
                 </div>
@@ -289,7 +293,10 @@ export function ContentApiSettings({ enabled }: { enabled: boolean }) {
                           size="sm"
                           className="h-8 rounded-md"
                           onClick={() =>
-                            void copy(createdKey.token, "API key copied")
+                            void copy(
+                              createdKey.token,
+                              t("dialogs.contentKeyCopied"),
+                            )
                           }
                         >
                           <Clipboard className="mr-1.5 size-3.5" /> Copy
@@ -312,7 +319,9 @@ export function ContentApiSettings({ enabled }: { enabled: boolean }) {
             {/* Vertical Tab 2: Active Keys List */}
             <TabsContent value="keys" className="mt-0 space-y-4">
               <div>
-                <h3 className="text-sm font-semibold">Active integrations</h3>
+                <h3 className="text-sm font-semibold">
+                  {t("dialogs.contentActive")}
+                </h3>
                 <p className="text-muted-foreground mt-0.5 text-xs">
                   Manage API keys and update database permissions dynamically.
                 </p>
@@ -335,7 +344,7 @@ export function ContentApiSettings({ enabled }: { enabled: boolean }) {
                               </p>
                               <p className="text-muted-foreground truncate text-xs">
                                 {selectedNames.join(", ") ||
-                                  "No available databases"}
+                                  t("dialogs.contentNoDatabases")}
                               </p>
                               <p className="text-muted-foreground/70 truncate font-mono text-[10px]">
                                 {key.tokenPrefix}••••••••
@@ -345,7 +354,11 @@ export function ContentApiSettings({ enabled }: { enabled: boolean }) {
                           <div className="flex shrink-0 items-center gap-3">
                             <Switch
                               checked={key.isEnabled}
-                              aria-label={`${key.isEnabled ? "Disable" : "Enable"} ${key.name}`}
+                              aria-label={`${
+                                key.isEnabled
+                                  ? t("dialogs.contentDisable")
+                                  : t("dialogs.contentEnable")
+                              } ${key.name}`}
                               onCheckedChange={(isEnabled) =>
                                 void contentApi.setEnabled(key._id, isEnabled)
                               }
@@ -398,7 +411,9 @@ export function ContentApiSettings({ enabled }: { enabled: boolean }) {
                       variant="outline"
                       size="sm"
                       className="h-8 rounded-md"
-                      onClick={() => void copy(path, "Endpoint copied")}
+                      onClick={() =>
+                        void copy(path, t("dialogs.contentEndpointCopied"))
+                      }
                     >
                       <Clipboard className="mr-1.5 size-3.5" /> Copy
                     </Button>
@@ -420,15 +435,15 @@ export function ContentApiSettings({ enabled }: { enabled: boolean }) {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Revoke Content API key?</AlertDialogTitle>
+            <AlertDialogTitle>{t("dialogs.contentRevokeTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {keyToRevoke?.name ?? "This key"} will stop working immediately.
-              Applications using it will no longer be able to read workspace
-              content.
+              {keyToRevoke?.name ?? t("dialogs.contentRevokeDescription")} will
+              stop working immediately. Applications using it will no longer be
+              able to read workspace content.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("dialogs.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               onClick={() => {

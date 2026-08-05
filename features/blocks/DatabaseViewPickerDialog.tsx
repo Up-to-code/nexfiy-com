@@ -22,6 +22,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 export function DatabaseViewPickerDialog({
   open,
@@ -35,6 +36,7 @@ export function DatabaseViewPickerDialog({
     viewId: Id<"databaseViews">;
   }) => Promise<unknown>;
 }) {
+  const { t } = useI18n();
   const databases = useQuery(api.databases.listAvailable);
   const [sourceId, setSourceId] = useState<Id<"dataSources">>();
   const [viewId, setViewId] = useState<Id<"databaseViews">>();
@@ -53,9 +55,9 @@ export function DatabaseViewPickerDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Embed a database view</DialogTitle>
+          <DialogTitle>{t("dialogs.viewPickerTitle")}</DialogTitle>
           <DialogDescription>
-            This block stays connected to the original data source and saved view.
+            {t("dialogs.viewPickerDescription")}
           </DialogDescription>
         </DialogHeader>
         {databases === undefined ? (
@@ -63,7 +65,9 @@ export function DatabaseViewPickerDialog({
         ) : databases.length ? (
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Database</label>
+              <label className="text-sm font-medium">
+                {t("dialogs.viewPickerDatabase")}
+              </label>
               <Select
                 value={sourceId}
                 onValueChange={(id) => {
@@ -72,7 +76,9 @@ export function DatabaseViewPickerDialog({
                   setViewId(nextSource?.views[0]?.id);
                 }}
               >
-                <SelectTrigger><SelectValue placeholder="Choose a database" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder={t("dialogs.viewPickerChooseDatabase")} />
+                </SelectTrigger>
                 <SelectContent>
                   {databases.map((database) => (
                     <SelectItem key={database.id} value={database.id}>
@@ -83,13 +89,17 @@ export function DatabaseViewPickerDialog({
               </Select>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Saved view</label>
+              <label className="text-sm font-medium">
+                {t("dialogs.viewPickerView")}
+              </label>
               <Select
                 value={viewId}
                 disabled={!selectedSource}
                 onValueChange={(id) => setViewId(id as Id<"databaseViews">)}
               >
-                <SelectTrigger><SelectValue placeholder="Choose a view" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder={t("dialogs.viewPickerChooseView")} />
+                </SelectTrigger>
                 <SelectContent>
                   {selectedSource?.views.map((view) => (
                     <SelectItem key={view.id} value={view.id}>
@@ -102,13 +112,17 @@ export function DatabaseViewPickerDialog({
           </div>
         ) : (
           <p className="text-muted-foreground rounded-md border border-dashed p-6 text-center text-sm">
-            Create a database and saved view first.
+            {t("dialogs.viewPickerEmpty")}
           </p>
         )}
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            {t("dialogs.cancel")}
+          </Button>
           <Button disabled={!sourceId || !viewId || isAdding} onClick={add}>
-            {isAdding ? "Embedding…" : "Embed view"}
+            {isAdding
+              ? t("dialogs.viewPickerEmbedding")
+              : t("dialogs.viewPickerEmbed")}
           </Button>
         </DialogFooter>
       </DialogContent>

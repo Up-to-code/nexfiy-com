@@ -20,6 +20,7 @@ import { UserItem } from "./UserItem";
 import { toast } from "sonner";
 import {
   ChevronsLeft,
+  ChevronsRight,
   MenuIcon,
   Plus,
   PlusCircle,
@@ -54,7 +55,8 @@ const Navigation = () => {
 
   const search = useSearch();
   const settings = useSettings();
-  const { t } = useI18n();
+  const { t, resolvedLocale } = useI18n();
+  const isRTL = resolvedLocale === "ar";
 
   const { focusMode, setFocusMode } = useFocusMode();
   const prevFocusMode = useRef(focusMode);
@@ -82,7 +84,10 @@ const Navigation = () => {
         "width",
         isMobile ? "0" : "calc(100% - 240px)",
       );
-      navbarRef.current.style.setProperty("left", isMobile ? "100%" : "240px");
+      navbarRef.current.style.setProperty(
+        "inset-inline-start",
+        isMobile ? "100%" : "240px",
+      );
     }, 0);
     setTimeout(() => setIsResetting(false), 300);
   }, [isMobile]);
@@ -93,7 +98,7 @@ const Navigation = () => {
     setIsResetting(true);
     sidebarRef.current.style.width = "0";
     navbarRef.current.style.setProperty("width", "100%");
-    navbarRef.current.style.setProperty("left", "0");
+    navbarRef.current.style.setProperty("inset-inline-start", "0");
     setTimeout(() => setIsResetting(false), 300);
   }, []);
 
@@ -194,14 +199,16 @@ const Navigation = () => {
 
   const handleMouseMove = (e: MouseEvent) => {
     if (!isResizingRef.current) return;
-    let newWidth = e.clientX;
+    let newWidth = isRTL
+      ? Math.max(0, window.innerWidth - e.clientX)
+      : e.clientX;
 
     if (newWidth < 240) newWidth = 240;
     if (newWidth > 480) newWidth = 480;
 
     if (sidebarRef.current && navbarRef.current) {
       sidebarRef.current.style.width = `${newWidth}px`;
-      navbarRef.current.style.setProperty("left", `${newWidth}px`);
+      navbarRef.current.style.setProperty("inset-inline-start", `${newWidth}px`);
       navbarRef.current.style.setProperty(
         "width",
         `calc(100% - ${newWidth}px)`,
@@ -234,7 +241,7 @@ const Navigation = () => {
       <aside
         ref={sidebarRef}
         className={cn(
-          "group/sidebar bg-sidebar border-sidebar-border relative z-300 flex h-full w-60 flex-col overflow-hidden overflow-x-hidden border-r pb-4",
+          "group/sidebar bg-sidebar border-sidebar-border relative z-300 flex h-full w-60 flex-col overflow-hidden overflow-x-hidden border-e pb-4",
           isResetting && "transition-all duration-300 ease-in-out",
           isMobile && "w-0",
         )}
@@ -245,11 +252,11 @@ const Navigation = () => {
             role="button"
             aria-label={t("app.closeSidebar")}
             className={cn(
-              "text-muted-foreground absolute top-3 right-2 h-6 w-6 rounded-sm opacity-0 transition group-hover/sidebar:opacity-100 hover:bg-neutral-300 dark:hover:bg-neutral-600",
+              "text-muted-foreground absolute top-3 end-2 h-6 w-6 rounded-sm opacity-0 transition group-hover/sidebar:opacity-100 hover:bg-neutral-300 dark:hover:bg-neutral-600",
               isMobile && "opacity-100",
             )}
           >
-            <ChevronsLeft className="h-6 w-6" />
+            {isRTL ? <ChevronsRight className="h-6 w-6" /> : <ChevronsLeft className="h-6 w-6" />}
           </div>
         </ActionTooltip>
         <div>
@@ -285,7 +292,7 @@ const Navigation = () => {
               <Item label={t("app.trash")} icon={Trash} />
             </PopoverTrigger>
             <PopoverContent
-              side={isMobile ? "bottom" : "right"}
+              side={isMobile ? "bottom" : isRTL ? "left" : "right"}
               className="w-72 p-0"
               collisionPadding={16}
             >
@@ -296,7 +303,7 @@ const Navigation = () => {
         <div
           onMouseDown={handleMouseDown}
           onClick={resetWidth}
-          className="bg-primary/10 absolute top-0 right-0 h-full w-1 cursor-ew-resize opacity-0 transition group-hover/sidebar:opacity-100"
+          className="bg-primary/10 absolute top-0 end-0 h-full w-1 cursor-ew-resize opacity-0 transition group-hover/sidebar:opacity-100"
         ></div>
       </aside>
       {isCollapsed && isDesktop && !focusMode && (
@@ -307,10 +314,10 @@ const Navigation = () => {
         onMouseEnter={() => setIsNavbarHovered(true)}
         onMouseLeave={() => setIsNavbarHovered(false)}
         className={cn(
-          "absolute top-0 left-60 z-40 w-[calc(100%_-_240px)]",
+          "absolute top-0 start-60 z-40 w-[calc(100%_-_240px)]",
           !isResizing &&
-            "transition-[left,width,opacity,transform] duration-300 ease-out",
-          isMobile && "left-0 w-full",
+            "transition-[inset-inline-start,width,opacity,transform] duration-300 ease-out",
+          isMobile && "start-0 w-full",
         )}
       >
         {!!params.documentId ? (

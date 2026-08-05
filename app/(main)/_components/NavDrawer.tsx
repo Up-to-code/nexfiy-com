@@ -9,6 +9,7 @@ import { useNavDrawer } from "@/hooks/useNavDrawer";
 import { UserItem } from "./UserItem";
 import { ActionTooltip } from "@/components/action-tooltip";
 import {
+  ChevronsLeft,
   ChevronsRight,
   Plus,
   PlusCircle,
@@ -35,7 +36,8 @@ type NavDrawerProps = {
 
 const NavDrawer = ({ resetWidth, isMobile }: NavDrawerProps) => {
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, resolvedLocale } = useI18n();
+  const isRTL = resolvedLocale === "ar";
 
   const search = useSearch();
   const settings = useSettings();
@@ -67,14 +69,22 @@ const NavDrawer = ({ resetWidth, isMobile }: NavDrawerProps) => {
           <span
             onMouseEnter={() => setIsEdgeHovered(true)}
             onMouseLeave={() => setTimeout(() => setIsEdgeHovered(false), 500)}
-            className="absolute top-0 left-0 z-200 h-full w-3.5"
+            className={cn(
+              "absolute top-0 z-200 h-full w-3.5",
+              isRTL ? "right-0" : "left-0",
+            )}
           ></span>
         </PopoverTrigger>
         <PopoverContent
-          side="right"
+          side={isRTL ? "left" : "right"}
           align="center"
           sideOffset={-24}
-          className="bg-secondary w-75 rounded-tl-none rounded-bl-none border border-gray-300 pt-2 pr-0 pb-3 pl-2"
+          className={cn(
+            "bg-secondary w-75 border border-gray-300 pt-2 pb-3",
+            isRTL
+              ? "rounded-tr-none rounded-br-none pr-2 pl-0"
+              : "rounded-tl-none rounded-bl-none pr-0 pl-2",
+          )}
           onMouseEnter={() => setIsDrawerOpen(true)}
           onMouseLeave={() => setIsDrawerOpen(false)}
         >
@@ -89,7 +99,11 @@ const NavDrawer = ({ resetWidth, isMobile }: NavDrawerProps) => {
                   "text-muted-foreground h-6 w-6 rounded-sm transition hover:bg-neutral-300 dark:hover:bg-neutral-600",
                 )}
               >
-                <ChevronsRight className="h-6 w-6" />
+                {isRTL ? (
+                  <ChevronsLeft className="h-6 w-6" />
+                ) : (
+                  <ChevronsRight className="h-6 w-6" />
+                )}
               </div>
             </ActionTooltip>
           </div>
@@ -132,7 +146,7 @@ const NavDrawer = ({ resetWidth, isMobile }: NavDrawerProps) => {
                 <Item label={t("app.trash")} icon={Trash} />
               </PopoverTrigger>
               <PopoverContent
-                side={isMobile ? "bottom" : "right"}
+                side={isMobile ? "bottom" : isRTL ? "left" : "right"}
                 className="w-72 p-0"
                 collisionPadding={16}
               >

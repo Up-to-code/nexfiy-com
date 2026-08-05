@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/popover";
 
 import { INSERTABLE_BLOCKS, type PageBlockType } from "./registry";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 export type BlockCommandAnchor = {
   left: number;
@@ -34,6 +35,7 @@ export function BlockCommandMenu({
   onSelect: (type: PageBlockType) => void;
   anchor?: BlockCommandAnchor;
 }) {
+  const { t } = useI18n();
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverAnchor asChild>
@@ -56,10 +58,10 @@ export function BlockCommandMenu({
         className="w-80 max-w-[calc(100vw-1.5rem)] overflow-hidden p-0 shadow-xl"
       >
         <Command className="**:[[cmdk-group-heading]]:text-muted-foreground">
-          <CommandInput placeholder="Search blocks…" autoFocus />
+          <CommandInput placeholder={t("dialogs.blockSearch")} autoFocus />
           <CommandList className="max-h-96">
-            <CommandEmpty>No matching blocks.</CommandEmpty>
-            <CommandGroup heading="Building blocks">
+            <CommandEmpty>{t("dialogs.blockEmpty")}</CommandEmpty>
+            <CommandGroup heading={t("dialogs.blockGroup")}>
               {INSERTABLE_BLOCKS.map((definition) => {
                 const Icon = definition.icon;
                 return (

@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 export function SyncBlockDialog({
   open,
@@ -32,6 +33,7 @@ export function SyncBlockDialog({
   onOpenChange: (open: boolean) => void;
   onSelect: (targetPageId: Id<"documents">) => Promise<boolean>;
 }) {
+  const { t } = useI18n();
   const pages = useQuery(api.syncedBlocks.listTargetPages);
   const [targetPageId, setTargetPageId] = useState<Id<"documents">>();
   const [isSaving, setIsSaving] = useState(false);
@@ -52,14 +54,15 @@ export function SyncBlockDialog({
       <DialogContent>
         <form onSubmit={submit} className="space-y-5">
           <DialogHeader>
-            <DialogTitle>Sync this block to another page</DialogTitle>
+            <DialogTitle>{t("dialogs.syncTitle")}</DialogTitle>
             <DialogDescription>
-              The destination renders the same canonical content. Editing either
-              view updates every reference in realtime.
+              {t("dialogs.syncDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <Label htmlFor="synced-block-target">Destination page</Label>
+            <Label htmlFor="synced-block-target">
+              {t("dialogs.syncDestination")}
+            </Label>
             <Select
               value={targetPageId}
               onValueChange={(value) =>
@@ -67,7 +70,7 @@ export function SyncBlockDialog({
               }
             >
               <SelectTrigger id="synced-block-target">
-                <SelectValue placeholder="Choose a page" />
+                <SelectValue placeholder={t("dialogs.syncChoosePage")} />
               </SelectTrigger>
               <SelectContent>
                 {pages?.map((page) => (
@@ -85,10 +88,10 @@ export function SyncBlockDialog({
               variant="ghost"
               onClick={() => onOpenChange(false)}
             >
-              Cancel
+              {t("dialogs.cancel")}
             </Button>
             <Button disabled={!targetPageId || isSaving}>
-              {isSaving ? "Creating…" : "Create synced reference"}
+              {isSaving ? t("dialogs.syncCreating") : t("dialogs.syncCreate")}
             </Button>
           </DialogFooter>
         </form>

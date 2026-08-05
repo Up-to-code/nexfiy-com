@@ -14,6 +14,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import { cn } from "@/lib/utils";
 
 type DateTimePickerPopoverProps = {
@@ -60,6 +61,7 @@ export function DateTimePickerPopover({
   onChange,
   ariaLabel,
 }: DateTimePickerPopoverProps) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
 
   const initialDate = value ? new Date(value) : new Date();
@@ -176,7 +178,7 @@ export function DateTimePickerPopover({
       <PopoverTrigger asChild>
         <button
           type="button"
-          aria-label={ariaLabel ?? "Choose date and time"}
+          aria-label={ariaLabel ?? t("dialogs.dateChoose")}
           className={cn(
             "flex h-8 w-full items-center justify-between gap-2 px-2.5 text-left text-xs font-medium transition-colors hover:bg-muted/40 rounded-md",
             displayText ? "text-foreground" : "text-muted-foreground",
@@ -278,7 +280,7 @@ export function DateTimePickerPopover({
                 includeTime ? "text-[#2383E2]" : "text-muted-foreground/70",
               )}
             >
-              {includeTime ? "Time On" : "+ Add Time"}
+              {includeTime ? t("dialogs.dateTimeOn") : "+ Add Time"}
             </button>
           </div>
 

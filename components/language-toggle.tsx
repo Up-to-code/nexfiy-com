@@ -36,8 +36,10 @@ export function LanguageToggle({
     hint?: string;
   }[] = [
     { value: "system", label: t("language.system"), hint: t("language.systemHint") },
-    { value: "en", label: "English" },
-    { value: "ar", label: "العربية" },
+    { value: "en", label: t("language.english") },
+    { value: "ar", label: t("language.arabic") },
+    { value: "fr", label: t("language.french") },
+    { value: "es", label: t("language.spanish") },
   ];
 
   const current =

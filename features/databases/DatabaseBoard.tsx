@@ -44,6 +44,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import { cn } from "@/lib/utils";
 
 import type { useDatabase } from "./useDatabase";
@@ -69,6 +70,7 @@ function PipelineCard({
   groupPropertyId: Id<"databaseProperties">;
   onOpenRow: (rowId: Id<"documents">) => void;
 }) {
+  const { t } = useI18n();
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
       id: `${ROW_PREFIX}${row.id}`,
@@ -93,7 +95,7 @@ function PipelineCard({
           onPointerDown={(event) => event.stopPropagation()}
           onClick={() => onOpenRow(row.id)}
         >
-          {row.title || "Untitled"}
+          {row.title || t("common.untitled")}
         </button>
         <Button
           variant="ghost"
@@ -172,6 +174,7 @@ function PipelineColumn({
   onRemoveOption?: (optionId: Id<"databaseSelectOptions">) => Promise<boolean>;
   onHideOption?: (optionId: Id<"databaseSelectOptions">) => void;
 }) {
+  const { t } = useI18n();
   const [isRenameOpen, setIsRenameOpen] = useState(false);
   const [renameDraft, setRenameDraft] = useState(name);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -207,10 +210,10 @@ function PipelineColumn({
                     setRenameDraft(name);
                     setIsRenameOpen(true);
                   }}
-                >
-                  Rename group
-                </DropdownMenuItem>
-                <DropdownMenuLabel>Color</DropdownMenuLabel>
+                  >
+                    {t("dialogs.boardRenameGroup")}
+                  </DropdownMenuItem>
+                  <DropdownMenuLabel>{t("dialogs.boardColor")}</DropdownMenuLabel>
                 {Object.keys(SELECT_OPTION_COLORS).map((optionColor) => (
                   <DropdownMenuItem
                     key={optionColor}
@@ -267,7 +270,7 @@ function PipelineColumn({
       <Dialog open={isRenameOpen} onOpenChange={setIsRenameOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Rename group</DialogTitle>
+            <DialogTitle>{t("dialogs.boardRenameGroup")}</DialogTitle>
             <DialogDescription>
               This name updates everywhere this option is shown.
             </DialogDescription>
@@ -280,7 +283,7 @@ function PipelineColumn({
           />
           <DialogFooter>
             <Button variant="ghost" onClick={() => setIsRenameOpen(false)}>
-              Cancel
+              {t("dialogs.cancel")}
             </Button>
             <Button
               disabled={!renameDraft.trim()}
@@ -300,14 +303,16 @@ function PipelineColumn({
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete “{name}”?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t("dialogs.boardDeleteGroup", { name })}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               Rows using this group will move to No status. This cannot be
               undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("dialogs.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               onClick={() =>
@@ -349,6 +354,7 @@ export function DatabaseBoard({
   const activeView = database.views.find(
     (view) => view.id === database.activeViewId,
   );
+  const { t } = useI18n();
   const groupProperty = database.properties.find(
     (property) => property.id === activeView?.groupPropertyId,
   );
@@ -368,7 +374,7 @@ export function DatabaseBoard({
       !hiddenOptionIds.includes(option.id),
   );
   const columns = [
-    { id: EMPTY_COLUMN_ID, name: "No status", color: "slate" },
+    { id: EMPTY_COLUMN_ID, name: t("dialogs.boardNoStatus"), color: "slate" },
     ...options.map((option) => ({
       id: option.id,
       name: option.name,

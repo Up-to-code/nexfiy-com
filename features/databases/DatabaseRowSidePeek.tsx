@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 import type { useDatabase } from "./useDatabase";
 import { DatabaseRowContent } from "./DatabaseRowContent";
@@ -47,6 +48,7 @@ export function DatabaseRowSidePeek({
   onCreateTemplate: ReturnType<typeof useDatabase>["createRowTemplate"];
   onDeleteRows: ReturnType<typeof useDatabase>["deleteRows"];
 }) {
+  const { t } = useI18n();
   const [isTemplateOpen, setIsTemplateOpen] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
@@ -70,7 +72,7 @@ export function DatabaseRowSidePeek({
       <section
         role="dialog"
         aria-modal="true"
-        aria-label={row.title || "Database page"}
+        aria-label={row.title || t("dialogs.rowPeekTitle")}
         className="bg-background absolute inset-y-0 right-0 w-[min(760px,72vw)] min-w-[420px] overflow-y-auto border-l shadow-2xl"
         onMouseDown={(event) => event.stopPropagation()}
       >
@@ -91,7 +93,7 @@ export function DatabaseRowSidePeek({
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  aria-label="Row actions"
+                  aria-label={t("dialogs.rowPeekActions")}
                 >
                   <MoreHorizontal className="size-4" />
                 </Button>
@@ -112,13 +114,13 @@ export function DatabaseRowSidePeek({
                   onClick={() => void handleDelete()}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
-                  {isDeleting ? "Moving to trash…" : "Move to Trash"}
+                  {isDeleting ? "Moving to trash…" : t("dialogs.rowPeekTrash")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <Button variant="ghost" size="icon-sm" onClick={onClose}>
               <X className="size-4" />
-              <span className="sr-only">Close</span>
+              <span className="sr-only">{t("dialogs.rowPeekClose")}</span>
             </Button>
           </div>
         </header>
@@ -133,7 +135,7 @@ export function DatabaseRowSidePeek({
       <Dialog open={isTemplateOpen} onOpenChange={setIsTemplateOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Save row as template</DialogTitle>
+            <DialogTitle>{t("dialogs.rowPeekSaveTemplate")}</DialogTitle>
             <DialogDescription>
               Reuse this row&apos;s properties and page content in this database.
             </DialogDescription>
@@ -141,7 +143,7 @@ export function DatabaseRowSidePeek({
           <Input
             value={templateName}
             onChange={(event) => setTemplateName(event.target.value)}
-            placeholder="Template name"
+            placeholder={t("dialogs.rowPeekTemplateName")}
             maxLength={80}
             autoFocus
           />

@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import { useMcpEnvironments } from "./useMcpEnvironments";
 
 export function ClientAccess({
@@ -26,6 +27,7 @@ export function ClientAccess({
   onCreate: () => void;
 }) {
   const environments = useMcpEnvironments(enabled);
+  const { t } = useI18n();
   const [environmentToRemove, setEnvironmentToRemove] = useState<{
     id: Parameters<typeof environments.remove>[0];
     name: string;
@@ -114,7 +116,9 @@ export function ClientAccess({
             }
           >
             <Trash2 />
-            <span className="sr-only">Revoke {environment.name}</span>
+            <span className="sr-only">
+              {t("dialogs.clientRevoke", { name: environment.name })}
+            </span>
           </Button>
         </div>
       ))}
@@ -133,15 +137,15 @@ export function ClientAccess({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Revoke MCP environment?</AlertDialogTitle>
+            <AlertDialogTitle>{t("dialogs.clientRevokeTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {environmentToRemove?.name ?? "This environment"} will stop
-              working immediately. Any client using its private URL will lose
-              access.
+              {environmentToRemove?.name ?? t("dialogs.clientRevokeDescription")}{" "}
+              will stop working immediately. Any client using its private URL
+              will lose access.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("dialogs.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               onClick={() => {

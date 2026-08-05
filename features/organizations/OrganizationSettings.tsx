@@ -50,6 +50,7 @@ import { authClient } from "@/lib/auth-client";
 import { logger } from "@/lib/logger";
 import { uploadFile } from "@/lib/uploadthing";
 import { useSettings } from "@/hooks/useSettingsModal";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import { api } from "@/convex/_generated/api";
 import { WorkspaceInviteDialog } from "./WorkspaceInviteDialog";
 import { useOrganizationContext } from "./OrganizationProvider";
@@ -119,6 +120,7 @@ export function OrganizationSettings({
   const { data: session } = authClient.useSession();
   const billing = useBilling();
   const settings = useSettings();
+  const { t } = useI18n();
   const attachPersonalWorkspace = useMutation(
     api.organizationWorkspaces.attachPersonalWorkspace,
   );
@@ -149,7 +151,7 @@ export function OrganizationSettings({
       : activeOrganization.name
     : workspaceDraft?.workspaceId === "personal"
       ? workspaceDraft.name
-      : (session?.user.name ?? "Personal workspace");
+      : (session?.user.name ?? t("dialogs.orgPersonal"));
   const workspaceLogo = activeOrganization
     ? workspaceDraft && workspaceDraft.workspaceId === activeOrganization.id
       ? workspaceDraft.logo
@@ -161,7 +163,7 @@ export function OrganizationSettings({
   const createOrganization = async () => {
     const slug = toSlug(name);
     if (!slug) {
-      toast.error("Enter a workspace name.");
+      toast.error(t("dialogs.orgNameRequired"));
       return;
     }
 
@@ -172,7 +174,7 @@ export function OrganizationSettings({
         slug,
       });
       if (error || !data) {
-        throw new Error(error?.message ?? "Workspace was not created");
+        throw new Error(error?.message ?? t("dialogs.orgNotCreated"));
       }
 
       await setActiveOrganization(data.id);
@@ -180,10 +182,10 @@ export function OrganizationSettings({
       setName("");
       setIsCreateOpen(false);
       settings.consumeAction();
-      toast.success("Workspace created.");
+      toast.success(t("dialogs.orgCreated"));
     } catch (error) {
       logger.error("Failed to create organization", error);
-      toast.error("Could not create workspace. Try a different name.");
+      toast.error(t("dialogs.orgCreateFailed"));
     } finally {
       setIsCreating(false);
     }
@@ -205,7 +207,7 @@ export function OrganizationSettings({
         logo: session.user.image ?? undefined,
       });
       if (error || !data) {
-        throw new Error(error?.message ?? "Workspace could not be shared");
+        throw new Error(error?.message ?? t("dialogs.orgShareFailed"));
       }
       const { error: activeError } = await authClient.organization.setActive({
         organizationId: data.id,
@@ -214,11 +216,13 @@ export function OrganizationSettings({
       await attachPersonalWorkspace();
       await refreshActiveOrganization();
       setIsInviteOpen(true);
-      toast.success("This workspace is ready for collaborators.");
+      toast.success(t("dialogs.orgShareReady"));
     } catch (error) {
       logger.error("Failed to prepare workspace invitation", error);
       toast.error(
-        error instanceof Error ? error.message : "Could not open invitations.",
+        error instanceof Error
+          ? error.message
+          : t("dialogs.orgInvitePrepareFailed"),
       );
     } finally {
       setIsPreparingInvite(false);
@@ -234,7 +238,7 @@ export function OrganizationSettings({
   const saveWorkspace = async () => {
     const trimmedName = workspaceName.trim();
     if (!trimmedName) {
-      toast.error("Enter a workspace name.");
+      toast.error(t("dialogs.orgNameRequired"));
       return;
     }
     setIsSavingWorkspace(true);
@@ -255,11 +259,11 @@ export function OrganizationSettings({
       if (error) throw new Error(error.message ?? "Workspace was not updated");
       await refreshActiveOrganization();
       setWorkspaceDraft(null);
-      toast.success("Workspace updated.");
+      toast.success(t("dialogs.orgUpdated"));
     } catch (error) {
       logger.error("Failed to update organization", error);
       toast.error(
-        error instanceof Error ? error.message : "Could not update workspace.",
+        error instanceof Error ? error.message : t("dialogs.orgUpdateFailed"),
       );
     } finally {
       setIsSavingWorkspace(false);
@@ -277,7 +281,7 @@ export function OrganizationSettings({
       });
     } catch (error) {
       logger.error("Failed to upload workspace image", error);
-      toast.error("Could not upload workspace image.");
+      toast.error(t("dialogs.orgImageFailed"));
     } finally {
       setIsUploadingWorkspaceImage(false);
     }
@@ -294,16 +298,16 @@ export function OrganizationSettings({
       setIsDeleteOpen(false);
       setDeleteConfirmation("");
       await setActiveOrganization(null);
-      toast.success("Workspace deleted.");
+      toast.success(t("dialogs.orgDeleted"));
     } catch (error) {
       logger.error("Failed to delete organization", error);
       toast.error(
-        error instanceof Error ? error.message : "Could not delete workspace.",
+        error instanceof Error ? error.message : t("dialogs.orgDeleteFailed"),
       );
     }
   };
 
-  const selectedName = activeOrganization?.name ?? "Personal workspace";
+  const selectedName = activeOrganization?.name ?? t("dialogs.orgPersonal");
   const selectedImage = activeOrganization?.logo ?? session?.user.image;
 
   return (
@@ -352,12 +356,12 @@ export function OrganizationSettings({
               className="gap-3 py-2"
             >
               <WorkspaceAvatar
-                name="Personal workspace"
+                name={t("dialogs.orgPersonal")}
                 image={session?.user.image}
                 className="size-8 rounded-lg"
               />
               <span className="min-w-0 flex-1 truncate">
-                Personal workspace
+                {t("dialogs.orgPersonal")}
               </span>
               {!activeOrganization ? (
                 <Check className="size-4 text-[#2383e2]" />
@@ -384,7 +388,7 @@ export function OrganizationSettings({
             ))}
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => setIsCreateOpen(true)}>
-              <Plus className="size-4" /> Create workspace
+              <Plus className="size-4" /> {t("dialogs.orgCreateTitle")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -398,12 +402,14 @@ export function OrganizationSettings({
           <div className="flex items-start justify-between gap-4 pb-5">
             <div>
               <h2 className="text-lg font-bold">
-                {view === "people" ? "People" : "Workspaces"}
+                {view === "people"
+                  ? t("dialogs.orgPeople")
+                  : t("dialogs.orgWorkspaces")}
               </h2>
               <p className="text-muted-foreground mt-1 text-sm">
                 {view === "people"
                   ? `Manage people and invitations for ${selectedName}.`
-                  : "Switch workspaces or create a new team workspace."}
+                  : t("dialogs.orgSwitchHint")}
               </p>
             </div>
             {view === "people" && (canManageMembers || !activeOrganization) ? (
@@ -420,7 +426,7 @@ export function OrganizationSettings({
                 {!isPreparingInvite ? (
                   <Plus className="size-3.5" />
                 ) : null}{" "}
-                {isPreparingInvite ? "Preparing invite…" : "Invite"}
+                {isPreparingInvite ? "Preparing invite…" : t("dialogs.orgInvite")}
               </Button>
             ) : null}
           </div>
@@ -444,7 +450,9 @@ export function OrganizationSettings({
                     {session.user.email}
                   </p>
                 </div>
-                <span className="text-muted-foreground text-xs">Owner</span>
+                <span className="text-muted-foreground text-xs">
+                  {t("dialogs.orgOwner")}
+                </span>
               </div>
             ) : null}
 
@@ -553,7 +561,9 @@ export function OrganizationSettings({
           <div className="space-y-7">
             <section className="space-y-3">
               <div>
-                <h3 className="text-sm font-semibold">Workspace profile</h3>
+                <h3 className="text-sm font-semibold">
+                  {t("dialogs.orgProfile")}
+                </h3>
                 <p className="text-muted-foreground mt-0.5 text-xs">
                   Change the name and image people see for this workspace.
                 </p>
@@ -579,7 +589,7 @@ export function OrganizationSettings({
               </div>
               <div className="space-y-5">
                 <label className="block text-xs font-medium">
-                  <span className="mb-2 block">Workspace name</span>
+                  <span className="mb-2 block">{t("dialogs.orgName")}</span>
                   <Input
                     value={workspaceName}
                     onChange={(event) =>
@@ -593,7 +603,7 @@ export function OrganizationSettings({
                   />
                 </label>
                 <div className="text-xs font-medium">
-                  <span className="mb-2 block">Workspace image</span>
+                  <span className="mb-2 block">{t("dialogs.orgImage")}</span>
                   <label className="border-border/60 hover:bg-muted/40 flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 transition-colors">
                     {isUploadingWorkspaceImage ? (
                       <>
@@ -641,17 +651,19 @@ export function OrganizationSettings({
             </section>
 
             <section className="space-y-3">
-              <h3 className="text-sm font-semibold">Your workspaces</h3>
+              <h3 className="text-sm font-semibold">
+                {t("dialogs.orgYourWorkspaces")}
+              </h3>
               <div className="divide-border/40 divide-y rounded-lg border px-3">
                 <div className="flex items-center gap-3 py-3">
                   <WorkspaceAvatar
-                    name="Personal workspace"
+                    name={t("dialogs.orgPersonal")}
                     image={session?.user.image}
                     className="size-9"
                   />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">
-                      Personal workspace
+                      {t("dialogs.orgPersonal")}
                     </p>
                     <p className="text-muted-foreground text-xs">
                       Private · Only you
@@ -683,7 +695,7 @@ export function OrganizationSettings({
                 ))}
               </div>
               {!billing.isLoading && !billing.subscription?.hasPro ? (
-                <ProUpgradePrompt feature="Team workspaces" />
+                <ProUpgradePrompt feature={t("dialogs.orgTeam")} />
               ) : (
                 <button
                   type="button"
@@ -698,7 +710,9 @@ export function OrganizationSettings({
             {activeOrganization ? (
               <section className="border-destructive/30 space-y-3 border-t pt-5">
                 <div>
-                  <h3 className="text-sm font-semibold">Delete workspace</h3>
+                  <h3 className="text-sm font-semibold">
+                    {t("dialogs.orgDelete")}
+                  </h3>
                   <p className="text-muted-foreground mt-0.5 text-xs">
                     Permanently remove this workspace and revoke member access.
                   </p>
@@ -708,7 +722,7 @@ export function OrganizationSettings({
                   size="sm"
                   onClick={() => setIsDeleteOpen(true)}
                 >
-                  Delete workspace
+                  {t("dialogs.orgDelete")}
                 </Button>
               </section>
             ) : null}
@@ -738,7 +752,7 @@ export function OrganizationSettings({
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Create a new workspace</DialogTitle>
+            <DialogTitle>{t("dialogs.orgCreateNew")}</DialogTitle>
             <DialogDescription>
               Give your team workspace a clear name. You can invite people after
               it is created.
@@ -748,7 +762,7 @@ export function OrganizationSettings({
             id="organization-name"
             value={name}
             onChange={(event) => setName(event.target.value)}
-            placeholder="Workspace name"
+            placeholder={t("dialogs.orgName")}
             autoFocus
             maxLength={80}
             onKeyDown={(event) => {
@@ -764,7 +778,7 @@ export function OrganizationSettings({
               onClick={() => setIsCreateOpen(false)}
               disabled={isCreating}
             >
-              Cancel
+              {t("dialogs.cancel")}
             </Button>
             <Button
               onClick={() => void createOrganization()}
@@ -775,7 +789,7 @@ export function OrganizationSettings({
               ) : (
                 <Plus />
               )}
-              {isCreating ? "Creating…" : "Create workspace"}
+              {isCreating ? "Creating…" : t("dialogs.orgCreateTitle")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -784,7 +798,11 @@ export function OrganizationSettings({
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Delete {activeOrganization?.name}?</DialogTitle>
+            <DialogTitle>
+              {t("dialogs.orgDeleteConfirm", {
+                name: activeOrganization?.name ?? "",
+              })}
+            </DialogTitle>
             <DialogDescription>
               This permanently deletes the workspace. Type the workspace name to
               confirm.
@@ -798,7 +816,7 @@ export function OrganizationSettings({
           />
           <DialogFooter>
             <Button variant="ghost" onClick={() => setIsDeleteOpen(false)}>
-              Cancel
+              {t("dialogs.cancel")}
             </Button>
             <Button
               variant="destructive"

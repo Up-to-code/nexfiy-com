@@ -19,6 +19,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { logger } from "@/lib/logger";
 import posthog from "posthog-js";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 export function TemplateGalleryDialog({
   open,
@@ -29,6 +30,7 @@ export function TemplateGalleryDialog({
   onOpenChange: (open: boolean) => void;
   parentDocument?: Id<"documents">;
 }) {
+  const { t } = useI18n();
   const router = useRouter();
   const templates = useQuery(api.pageTemplates.list);
   const instantiate = useMutation(api.pageTemplates.instantiate);
@@ -41,11 +43,11 @@ export function TemplateGalleryDialog({
       const created = await instantiate({ templateId, parentDocument });
       posthog.capture("template_instantiated");
       onOpenChange(false);
-      toast.success("Template added to your workspace");
+      toast.success(t("dialogs.templateAdded"));
       router.push(`/documents/${created.rootDocumentId}`);
     } catch (error) {
       logger.error("Failed to instantiate page template", error);
-      toast.error("Could not create pages from that template");
+      toast.error(t("dialogs.templateFailed"));
     } finally {
       setCreatingTemplateId(undefined);
     }
@@ -55,9 +57,9 @@ export function TemplateGalleryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Start from a template</DialogTitle>
+          <DialogTitle>{t("dialogs.templateTitle")}</DialogTitle>
           <DialogDescription>
-            Create a fresh copy of every nested page and block in the template.
+            {t("dialogs.templateDescription")}
           </DialogDescription>
         </DialogHeader>
         {templates === undefined ? (
@@ -80,7 +82,10 @@ export function TemplateGalleryDialog({
                     <h3 className="truncate font-medium">{template.name}</h3>
                     <p className="text-muted-foreground mt-1 line-clamp-2 text-xs">
                       {template.description ??
-                        `${template.pageCount} page${template.pageCount === 1 ? "" : "s"} · ${template.blockCount} blocks`}
+                        t("dialogs.templateStats", {
+                          pageCount: String(template.pageCount),
+                          blockCount: String(template.blockCount),
+                        })}
                     </p>
                   </div>
                 </div>
@@ -93,15 +98,14 @@ export function TemplateGalleryDialog({
                   {creatingTemplateId === template.id ? (
                     <Loader2 className="animate-spin" />
                   ) : null}
-                  Use template
+                  {t("dialogs.templateUse")}
                 </Button>
               </article>
             ))}
           </div>
         ) : (
           <div className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
-            Save any dynamic page from its Page actions menu to create your
-            first template.
+            {t("dialogs.templateEmpty")}
           </div>
         )}
       </DialogContent>

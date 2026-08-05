@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono, Lora, Noto_Sans_Arabic } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { headers } from "next/headers";
 import "./globals.css";
 
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ConvexClientProvider } from "@/components/providers/convex-provider";
 import { ToasterProvider } from "@/components/providers/toaster-provider";
 import { I18nProvider } from "@/lib/i18n/I18nProvider";
+import { localeFromLanguageTag } from "@/lib/i18n";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const lora = Lora({ subsets: ["latin"], variable: "--font-lora" });
@@ -28,7 +30,16 @@ export const metadata: Metadata = {
   },
   description:
     "Write, structure, connect, and publish knowledge from one calm workspace built for people, APIs, and MCP tools.",
-  alternates: { canonical: "/" },
+  alternates: {
+    canonical: "/",
+    languages: {
+      "x-default": "/",
+      en: "/",
+      ar: "/",
+      fr: "/",
+      es: "/",
+    },
+  },
   openGraph: {
     type: "website",
     siteName: "Nexfiy",
@@ -74,13 +85,17 @@ export const metadata: Metadata = {
   manifest: "/site.webmanifest",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const acceptLanguage = (await headers()).get("accept-language") ?? "";
+  const locale = localeFromLanguageTag(acceptLanguage.split(",")[0] ?? "en");
+  const dir = locale === "ar" ? "rtl" : "ltr";
+
   return (
-    <html lang="en" dir="ltr" suppressHydrationWarning>
+    <html lang={locale} dir={dir} suppressHydrationWarning>
       <body
         suppressHydrationWarning
         className={`${inter.className} ${inter.variable} ${lora.variable} ${jetbrainsMono.variable} ${notoSansArabic.variable}`}

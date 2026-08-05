@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import type { Id } from "@/convex/_generated/dataModel";
 import { NormalizedBlockNoteEditor } from "@/features/blocks/NormalizedBlockNoteEditor";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import { cn } from "@/lib/utils";
 import { DateTimePickerPopover } from "./DateTimePickerPopover";
 
@@ -34,6 +35,7 @@ function TagsEditor({
   onSetValue: (optionIds: Id<"databaseSelectOptions">[]) => Promise<boolean>;
   onAddOption: ReturnType<typeof useDatabase>["addSelectOption"];
 }) {
+  const { t } = useI18n();
   const [draft, setDraft] = useState("");
   const selected = selectedIds
     .map((id) => options.find((option) => option.id === id))
@@ -88,7 +90,9 @@ function TagsEditor({
           }
         }}
         onBlur={() => void addTag()}
-        placeholder={selected.length ? "Add tag" : "Empty"}
+        placeholder={
+          selected.length ? t("dialogs.rowAddTag") : t("dialogs.rowEmpty")
+        }
         className="placeholder:text-muted-foreground h-7 min-w-20 max-w-48 flex-1 bg-transparent px-1 text-sm outline-none [field-sizing:content]"
       />
     </div>
@@ -114,6 +118,7 @@ export function DatabaseRowContent({
   smallText?: boolean;
   layout?: "sheet" | "full";
 }) {
+  const { t } = useI18n();
   const row = database.rows.find((candidate) => candidate.id === rowId);
   if (!row) return null;
   return (
@@ -124,7 +129,7 @@ export function DatabaseRowContent({
       )}
     >
       <Input
-        aria-label="Page title"
+        aria-label={t("dialogs.rowTitle")}
         defaultValue={row.title}
         className="mb-6 h-auto border-0 bg-transparent px-0 text-3xl font-bold shadow-none focus-visible:ring-0 dark:bg-transparent"
         onBlur={(event) => onUpdateTitle(row.id, event.target.value)}
@@ -187,10 +192,10 @@ export function DatabaseRowContent({
                     }
                   >
                     <SelectTrigger className="hover:bg-muted/40 h-8 w-fit min-w-24 max-w-80 border-0 bg-transparent px-2.5 text-sm shadow-none dark:bg-transparent">
-                      <SelectValue placeholder="Empty" />
+                      <SelectValue placeholder={t("dialogs.rowEmpty")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="empty">Empty</SelectItem>
+                      <SelectItem value="empty">{t("dialogs.rowEmpty")}</SelectItem>
                       {options.map((option) => (
                         <SelectItem key={option.id} value={option.id}>
                           {option.name}
@@ -214,7 +219,7 @@ export function DatabaseRowContent({
                     defaultValue={
                       value?.textValue ?? value?.numberValue?.toString() ?? ""
                     }
-                    placeholder="Empty"
+                    placeholder={t("dialogs.rowEmpty")}
                     onBlur={(event) =>
                       void onSetValue(
                         row.id,

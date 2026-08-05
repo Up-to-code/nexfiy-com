@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/select";
 import type { Id } from "@/convex/_generated/dataModel";
 import { downloadCsv, exportDatabaseToCsv } from "@/lib/csv";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 import { cn } from "@/lib/utils";
 
 import type { useDatabase } from "./useDatabase";
@@ -79,6 +80,7 @@ function DatabaseCell({
   onSetRelation: ReturnType<typeof useDatabase>["setRelation"];
   onRequestAddOption: (property: DatabaseProperty, row: DatabaseRow) => void;
 }) {
+  const { t } = useI18n();
   const value = row.values.find((item) => item.propertyId === property.id);
 
   if (property.type === "title") return null;
@@ -112,7 +114,7 @@ function DatabaseCell({
                 ))}
               </span>
             ) : (
-              <span className="text-muted-foreground">Empty</span>
+              <span className="text-muted-foreground">{t("dialogs.gridEmpty")}</span>
             )}
           </Button>
         </DropdownMenuTrigger>
@@ -158,10 +160,10 @@ function DatabaseCell({
       value?.numberValue ??
       value?.textValue ??
       (value?.booleanValue === undefined
-        ? "Empty"
+        ? t("dialogs.gridEmpty")
         : value.booleanValue
-          ? "True"
-          : "False");
+          ? t("dialogs.gridTrue")
+          : t("dialogs.gridFalse"));
     return (
       <span className="text-muted-foreground block min-w-28 px-2 py-1.5 tabular-nums">
         {displayValue}
@@ -191,7 +193,7 @@ function DatabaseCell({
           aria-label={`${property.name} for ${row.title}`}
           className="h-8 min-w-36 border-0 bg-transparent px-2 shadow-none"
         >
-          <SelectValue placeholder="Empty">
+          <SelectValue placeholder={t("dialogs.gridEmpty")}>
             {selected ? (
               <span
                 className={cn(
@@ -202,12 +204,12 @@ function DatabaseCell({
                 {selected.name}
               </span>
             ) : (
-              <span className="text-muted-foreground">Empty</span>
+              <span className="text-muted-foreground">{t("dialogs.gridEmpty")}</span>
             )}
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value={EMPTY_VALUE}>Empty</SelectItem>
+          <SelectItem value={EMPTY_VALUE}>{t("dialogs.gridEmpty")}</SelectItem>
           {options.map((option) => (
             <SelectItem key={option.id} value={option.id}>
               {option.name}
@@ -286,7 +288,7 @@ function DatabaseCell({
       aria-label={`${property.name} for ${row.title}`}
       defaultValue={value?.textValue ?? ""}
       className="h-8 min-w-40 border-0 bg-transparent shadow-none"
-      placeholder="Empty"
+      placeholder={t("dialogs.gridEmpty")}
       onBlur={(event) =>
         onSetValue(row.id, property.id, { textValue: event.target.value })
       }
@@ -342,6 +344,7 @@ export function DatabaseGrid({
   onDeleteRows: ReturnType<typeof useDatabase>["deleteRows"];
   readOnly?: boolean;
 }) {
+  const { t } = useI18n();
   const [selectedRowIds, setSelectedRowIds] = useState<Set<Id<"documents">>>(
     new Set(),
   );
@@ -406,7 +409,11 @@ export function DatabaseGrid({
         header: () => (
           <button
             type="button"
-            aria-label={allSelected ? "Deselect all rows" : "Select all rows"}
+            aria-label={
+              allSelected
+                ? t("dialogs.gridDeselectAll")
+                : t("dialogs.gridSelectAll")
+            }
             className="flex items-center"
             onClick={() =>
               setSelectedRowIds(allSelected ? new Set() : new Set(allRowIds))
@@ -608,7 +615,7 @@ export function DatabaseGrid({
               disabled={isDeletingRows}
             >
               <Trash2 className="size-3.5" />
-              {isDeletingRows ? "Deleting…" : "Delete"}
+              {isDeletingRows ? "Deleting…" : t("dialogs.gridDelete")}
             </Button>
           </div>
         </div>
@@ -633,7 +640,7 @@ export function DatabaseGrid({
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="new-database-option-name">Name</Label>
+              <Label htmlFor="new-database-option-name">{t("dialogs.gridName")}</Label>
               <Input
                 id="new-database-option-name"
                 value={newOptionName}
@@ -674,7 +681,7 @@ export function DatabaseGrid({
               onClick={() => void addOption()}
               disabled={isAddingOption || !newOptionName.trim()}
             >
-              {isAddingOption ? "Adding…" : "Add option"}
+              {isAddingOption ? "Adding…" : t("dialogs.gridAddOption")}
             </Button>
           </DialogFooter>
         </DialogContent>
