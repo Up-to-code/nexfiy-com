@@ -98,7 +98,7 @@ export default async function RootLayout({
     <html lang={locale} dir={dir} suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`${inter.className} ${inter.variable} ${lora.variable} ${jetbrainsMono.variable} ${notoSansArabic.variable}`}
+        className={`${inter.variable} ${lora.variable} ${jetbrainsMono.variable} ${notoSansArabic.variable}`}
       >
         <ConvexClientProvider>
           <ThemeProvider

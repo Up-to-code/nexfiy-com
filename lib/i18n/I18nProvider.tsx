@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useState,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
@@ -28,7 +29,6 @@ const dictionaries: Record<Locale, LocalizedDictionary> = { en, ar, fr, es };
 
 const STORAGE_EVENT = "nexfiy-language-change";
 
-const emptySubscribe = () => () => {};
 
 const subscribeToLanguageChanges = (callback: () => void) => {
   window.addEventListener("storage", callback);
@@ -56,11 +56,10 @@ interface I18nContextValue {
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const isMounted = useSyncExternalStore(
-    emptySubscribe,
-    () => true,
-    () => false,
-  );
+  // Use useState+useEffect so that during hydration both server and first client
+  // render see isMounted=false (matching), and only after mount switch to true.
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => { setIsMounted(true); }, []);
 
   const locale = useSyncExternalStore(
     subscribeToLanguageChanges,
@@ -73,14 +72,16 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     window.dispatchEvent(new Event(STORAGE_EVENT));
   }, []);
 
-  const resolvedLocale = resolveLocale(locale);
+  const activeLocale = isMounted ? locale : "system";
+  const resolvedLocale = resolveLocale(activeLocale);
   const dictionary = dictionaries[resolvedLocale];
 
   useEffect(() => {
+    if (!isMounted) return;
     const root = document.documentElement;
     root.lang = resolvedLocale;
     root.dir = resolvedLocale === "ar" ? "rtl" : "ltr";
-  }, [resolvedLocale]);
+  }, [resolvedLocale, isMounted]);
 
   const t = useCallback(
     (key: TranslationKey, values?: Record<string, string>) => {

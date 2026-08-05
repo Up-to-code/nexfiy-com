@@ -36,10 +36,15 @@ import { WebhooksSettings } from "@/features/webhooks/WebhooksSettings";
 import { BillingSettings } from "@/features/billing/BillingSettings";
 import { AccountSettings } from "@/features/account/AccountSettings";
 
-const FONTS: { label: string; value: EditorFont }[] = [
-  { label: "Default", value: "default" },
-  { label: "Sans", value: "Lora" },
-  { label: "Mono", value: "JetBrains Mono" },
+const FONTS: {
+  labelKey: "fontDefault" | "fontSerif" | "fontMono" | "fontArabic";
+  value: EditorFont;
+  sample: string;
+}[] = [
+  { labelKey: "fontDefault", value: "default", sample: "Ag" },
+  { labelKey: "fontSerif", value: "Lora", sample: "Ag" },
+  { labelKey: "fontMono", value: "JetBrains Mono", sample: "Ag" },
+  { labelKey: "fontArabic", value: "Noto Sans Arabic", sample: "أب" },
 ];
 
 export const SettingsModal = () => {
@@ -74,7 +79,7 @@ export const SettingsModal = () => {
           className="flex h-full max-h-full w-full flex-col overflow-hidden sm:flex-row"
         >
           {/* Left Sidebar */}
-          <TabsList className="bg-sidebar border-border/40 flex !h-full w-full shrink-0 flex-col items-stretch justify-start rounded-none border-r p-0 group-data-[orientation=vertical]/tabs:!h-full sm:w-[220px]">
+          <TabsList className="bg-sidebar border-border/40 flex !h-full w-full shrink-0 flex-col items-stretch justify-start rounded-none border-r rtl:border-l rtl:border-r-0 p-0 group-data-[orientation=vertical]/tabs:!h-full sm:w-[220px]">
             <div className="flex-1 overflow-y-auto px-2 py-4">
               {/* Account Group */}
               <div className="mb-4 space-y-0.5">
@@ -140,7 +145,7 @@ export const SettingsModal = () => {
 
           {/* Right Main Content */}
           <div className="bg-background relative h-full min-w-0 flex-1 overflow-y-auto">
-            <DialogClose className="ring-offset-background hover:bg-muted focus:ring-ring absolute top-4 right-4 rounded-sm p-1.5 opacity-70 transition-colors hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-none disabled:pointer-events-none">
+            <DialogClose className="ring-offset-background hover:bg-muted focus:ring-ring absolute top-4 right-4 rtl:right-auto rtl:left-4 rounded-sm p-1.5 opacity-70 transition-colors hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-none disabled:pointer-events-none">
               <X className="size-5" />
               <span className="sr-only">Close</span>
             </DialogClose>
@@ -213,14 +218,14 @@ export const SettingsModal = () => {
                         {t("settings.editorFontHint")}
                       </span>
                     </div>
-                    <div className="grid w-64 shrink-0 grid-cols-3 gap-2">
+                    <div className="grid w-full sm:w-80 shrink-0 grid-cols-2 sm:grid-cols-4 gap-2">
                       {FONTS.map((option) => (
                         <button
                           key={option.value}
                           type="button"
                           onClick={() => setEditorFont(option.value)}
                           className={cn(
-                            "border-border/50 hover:bg-muted/50 flex flex-col items-center justify-center rounded-lg border px-3 py-2.5 text-xs transition-colors",
+                            "border-border/50 hover:bg-muted/50 flex flex-col items-center justify-center rounded-lg border px-2 py-2 text-xs transition-colors min-w-0",
                             editorFont === option.value &&
                               "border-primary bg-primary/10 text-primary ring-primary/40 font-semibold ring-1",
                           )}
@@ -231,10 +236,10 @@ export const SettingsModal = () => {
                               fontFamily: fontFamilies[option.value],
                             }}
                           >
-                            Ag
+                            {option.sample}
                           </span>
-                          <span className="text-muted-foreground text-[10px]">
-                            {option.label}
+                          <span className="text-muted-foreground text-[10px] truncate w-full text-center">
+                            {t(`settings.${option.labelKey}`)}
                           </span>
                         </button>
                       ))}

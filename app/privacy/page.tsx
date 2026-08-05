@@ -1,85 +1,67 @@
+"use client";
+
 import { ShieldCheck } from "lucide-react";
 import { LegalContact, LegalPage } from "@/components/marketing/LegalPage";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 export default function PrivacyPage() {
+  const { t } = useI18n();
+
   return (
     <LegalPage
       icon={ShieldCheck}
-      label="Privacy"
-      title="Privacy Policy"
-      description="How Nexfiy collects, uses, and protects the information in your connected workspace."
+      label={t("privacyPage.label")}
+      title={t("privacyPage.title")}
+      description={t("privacyPage.description")}
     >
-      <p className="text-foreground text-lg leading-8">
-        Your workspace belongs to you. We use your information only to provide,
-        protect, and improve Nexfiy—and we do not sell your personal data.
-      </p>
+      <p className="text-foreground text-lg leading-8">{t("privacyPage.intro")}</p>
 
       <section>
-        <h2>1. Information we collect</h2>
-        <p>
-          We collect the information needed to create your account, operate your
-          workspace, and keep the service reliable.
-        </p>
+        <h2>{t("privacyPage.section1Title")}</h2>
+        <p>{t("privacyPage.section1Body")}</p>
         <ul className="mt-4 list-disc">
           <li>
-            <strong>Account information:</strong> your name, email address,
-            profile picture, and authentication details.
+            <strong>{t("privacyPage.section1Item1Label")}</strong>{" "}
+            {t("privacyPage.section1Item1")}
           </li>
           <li>
-            <strong>Workspace content:</strong> notes, documents, files,
-            comments, and connection settings you add to Nexfiy.
+            <strong>{t("privacyPage.section1Item2Label")}</strong>{" "}
+            {t("privacyPage.section1Item2")}
           </li>
           <li>
-            <strong>Service data:</strong> device, browser, log, and usage data
-            used to maintain security and performance.
+            <strong>{t("privacyPage.section1Item3Label")}</strong>{" "}
+            {t("privacyPage.section1Item3")}
           </li>
         </ul>
       </section>
 
       <section>
-        <h2>2. How we use information</h2>
-        <p>
-          We use this information to operate Nexfiy, process subscriptions,
-          support collaboration, prevent abuse, and communicate important
-          service or security updates.
-        </p>
+        <h2>{t("privacyPage.section2Title")}</h2>
+        <p>{t("privacyPage.section2Body")}</p>
       </section>
 
       <section>
-        <h2>3. Workspace and AI data</h2>
-        <p>
-          Your content remains scoped to your workspace. Private workspace data
-          is not used to train public foundation models without your explicit
-          permission.
-        </p>
+        <h2>{t("privacyPage.section3Title")}</h2>
+        <p>{t("privacyPage.section3Body")}</p>
       </section>
 
       <section>
-        <h2>4. Service providers</h2>
-        <p>
-          We share only the information required by trusted providers that help
-          us host the service, process payments, deliver authentication, and
-          provide customer support. They may use it only to perform those
-          services for Nexfiy.
-        </p>
+        <h2>{t("privacyPage.section4Title")}</h2>
+        <p>{t("privacyPage.section4Body")}</p>
       </section>
 
       <section>
-        <h2>5. Your choices</h2>
-        <p>
-          You can access, export, correct, or request deletion of your account
-          and workspace data. Some records may be retained when required for
-          security, billing, or legal compliance.
-        </p>
+        <h2>{t("privacyPage.section5Title")}</h2>
+        <p>{t("privacyPage.section5Body")}</p>
       </section>
 
       <section className="border-t pt-8">
-        <h2>Contact</h2>
-        <p>Questions about privacy or your data are welcome.</p>
+        <h2>{t("privacyPage.contactTitle")}</h2>
+        <p>{t("privacyPage.contactBody")}</p>
         <LegalContact>
-          Nexfiy Labs, Inc.
+          {t("privacyPage.contactCompany")}
           <br />
-          privacy@nexfiy.com
+          {t("privacyPage.contactEmail")}
         </LegalContact>
       </section>
     </LegalPage>

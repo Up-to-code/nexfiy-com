@@ -1,9 +1,12 @@
+"use client";
+
 import type { LucideIcon } from "lucide-react";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Footer } from "@/app/(landing)/_components/Footer";
 import { Navbar } from "@/app/(landing)/_components/Navbar";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 type LegalPageProps = {
   children: ReactNode;
@@ -20,6 +23,8 @@ export function LegalPage({
   label,
   title,
 }: LegalPageProps) {
+  const { t } = useI18n();
+
   return (
     <div className="bg-background text-foreground flex min-h-screen flex-col">
       <Navbar />
@@ -31,7 +36,7 @@ export function LegalPage({
             className="text-muted-foreground hover:text-foreground mb-10 inline-flex items-center gap-2 text-sm transition-colors"
           >
             <ArrowLeft className="size-4" />
-            Back to home
+            {t("legal.backToHome")}
           </Link>
 
           <header className="mb-12 border-b pb-10">
@@ -46,7 +51,7 @@ export function LegalPage({
               {description}
             </p>
             <p className="text-muted-foreground mt-5 text-xs">
-              Last updated August 1, 2026
+              {t("legal.lastUpdated")}
             </p>
           </header>
 

@@ -25,7 +25,14 @@ const PostHogIdentity = () => {
 
 export const ConvexClientProvider = ({ children }: { children: ReactNode }) => {
   return (
-    <ConvexBetterAuthProvider client={convex} authClient={authClient}>
+    <ConvexBetterAuthProvider
+      client={convex}
+      authClient={
+        authClient as unknown as React.ComponentProps<
+          typeof ConvexBetterAuthProvider
+        >["authClient"]
+      }
+    >
       <PostHogIdentity />
       {children}
     </ConvexBetterAuthProvider>

@@ -10,8 +10,11 @@ export const NEXFIY_PRO_PLAN = {
     "Everything in Free",
     "MCP connections and tools",
     "Content API access",
+    "Webhooks",
     "Multiple workspaces",
     "Invite members and collaborate",
     "Database tables, boards, and timelines",
+    "Version history",
+    "Priority support",
   ],
 } as const;

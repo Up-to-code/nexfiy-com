@@ -2,7 +2,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useLocalStorage } from "usehooks-ts";
 
-export type EditorFont = "default" | "Lora" | "JetBrains Mono";
+export type EditorFont = "default" | "Lora" | "JetBrains Mono" | "Noto Sans Arabic";
 
 interface UseEditorFontOptions {
   enabled?: boolean;

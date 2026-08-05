@@ -17,6 +17,8 @@ import {
 import {
   ChevronDown,
   ChevronRight,
+  CopyPlus,
+  ExternalLink,
   GripVertical,
   LucideIcon,
   MoreHorizontal,
@@ -76,6 +78,7 @@ export const Item = ({
   const createChildPage = useMutation(api.pageBlocks.createChildPage);
   const archive = useMutation(api.documents.archive);
   const restore = useMutation(api.documents.restore);
+  const duplicatePage = useMutation(api.pageTemplates.duplicatePage);
 
   const document = useQuery(
     api.documents.getById,
@@ -109,6 +112,28 @@ export const Item = ({
         },
       });
     });
+  };
+
+  const onOpenInNewTab = (
+    event: React.MouseEvent<HTMLDivElement, MouseEvent>,
+  ) => {
+    event.stopPropagation();
+    if (!id) return;
+    window.open(`/documents/${id}`, "_blank");
+  };
+
+  const onDuplicate = async (
+    event: React.MouseEvent<HTMLDivElement, MouseEvent>,
+  ) => {
+    event.stopPropagation();
+    if (!id) return;
+    try {
+      const duplicatedId = await duplicatePage({ sourcePageId: id });
+      toast.success(t("app.pageDuplicated"));
+      router.push(`/documents/${duplicatedId}`);
+    } catch {
+      toast.error(t("app.duplicateFailed"));
+    }
   };
 
   const handleExpand = (
@@ -227,6 +252,14 @@ export const Item = ({
               side="right"
               forceMount
             >
+              <DropdownMenuItem onClick={onOpenInNewTab}>
+                <ExternalLink className="me-2 h-4 w-4 shrink-0" />
+                {t("app.openInNewTab")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onDuplicate}>
+                <CopyPlus className="me-2 h-4 w-4 shrink-0" />
+                {t("app.duplicate")}
+              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation();
@@ -235,14 +268,14 @@ export const Item = ({
               >
                 <Star
                   className={cn(
-                    "mr-2 h-4 w-4",
+                    "me-2 h-4 w-4 shrink-0",
                     isFavorite && "fill-yellow-400 text-yellow-400",
                   )}
                 />
                 {isFavorite ? t("app.removeFromFavorites") : t("app.addToFavorites")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onArchive}>
-                <Trash className="mr-2 h-4 w-4" />
+                <Trash className="me-2 h-4 w-4 shrink-0" />
                 {t("app.delete")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
