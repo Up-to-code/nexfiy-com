@@ -1,8 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { ConvexHttpClient } from "convex/browser";
+import { unstable_cache } from "next/cache";
 import path from "node:path";
-import sharp from "sharp";
 import { UTApi, UTFile } from "uploadthing/server";
 import { z } from "zod";
 
@@ -21,6 +21,24 @@ const corsHeaders = {
     "Content-Type, Accept, Mcp-Session-Id, Mcp-Protocol-Version, Last-Event-ID",
   "Access-Control-Expose-Headers": "Mcp-Session-Id, Mcp-Protocol-Version",
 };
+
+const blockedTokenHashes = new Set(
+  (process.env.MCP_BLOCKED_TOKEN_HASHES ?? "")
+    .split(",")
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean),
+);
+
+const getCachedMcpAccess = unstable_cache(
+  async (tokenHash: string) => {
+    const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!, {
+      logger: false,
+    });
+    return await convex.query(api.mcpEnvironments.getAccess, { tokenHash });
+  },
+  ["mcp-environment-access", process.env.NEXT_PUBLIC_CONVEX_URL ?? "missing"],
+  { revalidate: 60 },
+);
 
 const pageBlockTypeSchema = z.enum([
   "paragraph",
@@ -97,6 +115,7 @@ async function uploadMcpImage(
   fileName: string,
   workspaceId: string,
 ) {
+  const { default: sharp } = await import("sharp");
   const source = Buffer.from(dataBase64, "base64");
   if (!source.length || source.length > MAX_MCP_IMAGE_BYTES) {
     throw new Error("Image must decode to between 1 byte and 3 MB");
@@ -166,12 +185,15 @@ async function handleMcpRequest(request: Request, context: RouteContext) {
   }
 
   const tokenHash = await hashMcpToken(token);
+  if (blockedTokenHashes.has(tokenHash)) {
+    return jsonRpcError(401, "MCP environment is disabled or unavailable");
+  }
   const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!, {
     logger: false,
   });
   let access;
   try {
-    access = await convex.query(api.mcpEnvironments.getAccess, { tokenHash });
+    access = await getCachedMcpAccess(tokenHash);
   } catch (error) {
     const message = error instanceof Error ? error.message : "MCP unavailable";
     if (/PAYMENT_REQUIRED/i.test(message)) {
