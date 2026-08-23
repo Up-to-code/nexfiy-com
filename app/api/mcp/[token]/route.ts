@@ -16,7 +16,7 @@ type RouteContext = { params: Promise<{ token: string }> };
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers":
     "Content-Type, Accept, Mcp-Session-Id, Mcp-Protocol-Version, Last-Event-ID",
   "Access-Control-Expose-Headers": "Mcp-Session-Id, Mcp-Protocol-Version",
@@ -1459,9 +1459,20 @@ async function handleMcpRequest(request: Request, context: RouteContext) {
   }
 }
 
-export const GET = handleMcpRequest;
 export const POST = handleMcpRequest;
-export const DELETE = handleMcpRequest;
+
+function methodNotAllowed() {
+  return new Response(null, {
+    status: 405,
+    headers: { ...corsHeaders, Allow: "POST" },
+  });
+}
+
+// This endpoint uses a fresh, stateless transport for each JSON response.
+// Opening an SSE stream here would be closed with that transport and cause
+// clients to reconnect continuously, authenticating against Convex each time.
+export const GET = methodNotAllowed;
+export const DELETE = methodNotAllowed;
 
 export function OPTIONS() {
   return new Response(null, { status: 204, headers: corsHeaders });
